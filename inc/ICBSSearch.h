@@ -15,12 +15,17 @@ public:
     bool rectangle_reasoning; // using rectangle reasoning
     bool corridor_reasoning; // using corridor reasoning
     bool target_reasoning; // using target reasoning
+	bool disjoint_splitting; // disjoint splittting
 
 	double runtime = 0;
+	double runtime_generate_child = 0; // runtimr of generating child nodes
+	double runtime_build_MDDs = 0; // runtime of building MDDs
+	double runtime_path_finding = 0; // runtime of finding paths for single agents
 	double runtime_build_dependency_graph = 0;
 	double runtime_solve_MVC = 0;
     double runtime_detect_conflicts = 0;
 	double runtime_classify_conflicts = 0;
+	double runtime_preprocessing = 0; // runtime of building heuristic table for the low level
 
     uint64_t num_corridor = 0;
     uint64_t num_rectangle = 0;
@@ -29,6 +34,7 @@ public:
 
     uint64_t num_merge_MDDs = 0;
     uint64_t num_solve_2agent_problems = 0;
+	uint64_t num_memoization = 0; // number of times when memeorization helps
 
     uint64_t HL_num_expanded = 0;
     uint64_t HL_num_generated = 0;
@@ -37,6 +43,7 @@ public:
 
 
     int max_num_of_mdds = 10000;
+	int initial_h = 0;
 
 	ICBSNode* dummy_start;
 	ICBSNode* goal_node = nullptr;
@@ -114,6 +121,7 @@ private:
 	// high level search
 	bool findPathForSingleAgent(ICBSNode*  node, int ag, int lower_bound = 0);
 	bool generateChild(ICBSNode* child, ICBSNode* curr);
+	bool generateRoot();
 
 	//conflicts
 	void findConflicts(ICBSNode& curr);
@@ -130,7 +138,7 @@ private:
 	// add heuristics for the high-level search
 	int computeHeuristics(ICBSNode& curr);
 	bool buildDependenceGraph(ICBSNode& node);
-	int getEdgeWeight(int a1, int a2, ICBSNode& node, bool cardinal, bool& hit);
+	int getEdgeWeight(int a1, int a2, ICBSNode& node, bool cardinal);
 
 	// build MDD
 	MDD * getMDD(ICBSNode& curr, int id);
@@ -152,5 +160,6 @@ private:
 	void printConflicts(const ICBSNode &curr) const;
 	
 	bool validateSolution() const;
+	inline int ICBSSearch::getAgentLocation(int agent_id, size_t timestep) const;
 };
 

@@ -37,7 +37,7 @@ using std::cerr;
 //typedef confilctGraph_t::vertex_descriptor vertex_t;
 //typedef confilctGraph_t::edge_descriptor edge_t;
 
-
+enum split_strategy { NON_DISJOINT, RANDOM, SINGLETONS, WIDTH, DISJOINT3, SPLIT_COUNT };
 enum heuristics_type { NONE, CG, DG, WDG, STRATEGY_COUNT };
 
 typedef vector< unordered_set<int64_t> > CAT; // conflict avoidance table

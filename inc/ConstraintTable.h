@@ -17,7 +17,7 @@ public:
 
     void copy(const ConstraintTable& other);
 
-	unordered_map<size_t, list<pair<int, int> > > CT;
+	unordered_map<size_t, list<pair<int, int> > > CT; // location -> time range, or edge -> time range
 
 	ConstraintTable()= default;
     ConstraintTable(int goal_location): goal_location(goal_location) {}

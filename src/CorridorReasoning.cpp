@@ -10,9 +10,9 @@ std::shared_ptr<Conflict> findCorridorConflict(const std::shared_ptr<Conflict>& 
         const bool* my_map, int num_col, int map_size)
 {
     int a[2] = {con->a1, con->a2};
-    int  loc1, loc2, timestep;
+    int  agent, loc1, loc2, timestep;
     constraint_type type;
-    std::tie(loc1, loc2, timestep, type) = con->constraint1.back();
+    std::tie(agent, loc1, loc2, timestep, type) = con->constraint1.back();
     int curr = -1;
     if (getDegree(loc1, my_map, num_col, map_size) == 2)
     {

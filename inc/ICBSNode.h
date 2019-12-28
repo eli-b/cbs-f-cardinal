@@ -41,9 +41,7 @@ public:
 	struct ICBSNodeHasher 
 	{
 		std::size_t operator()(const ICBSNode* n) const {
-			size_t agent_id_hash = std::hash<int>()(n->agent_id);
-			size_t time_generated_hash = std::hash<uint64_t>()(n->time_generated);
-			return (agent_id_hash ^ (time_generated_hash << 1));
+			return std::hash<uint64_t>()(n->time_generated);
 		}
 	};
 
@@ -57,7 +55,6 @@ public:
 	boost::unordered_map<int, int> conflictGraph; //<edge index, weight>
 	ICBSNode* parent;
 
-	int agent_id;
 	list< pair< int, Path> > paths; // path of agent_id
 	std::list<Constraint> constraints; // constraints imposed to agent_id
 	
@@ -95,9 +92,10 @@ struct ConstraintsHasher // Hash a CT node by constraints on one agent
             const ICBSNode* curr = c1.n;
             while (curr->parent != nullptr)
             {
-                if ((get<3>(curr->constraints.front()) == constraint_type::LENGTH &&
-                        get<0>(curr->constraints.front()) >= 0) ||
-                        curr->agent_id == c1.a) {
+                if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE ||
+					get<0>(curr->constraints.front()) == c1.a) {
                     for (auto con : curr->constraints)
                         cons1.insert(con);
                 }
@@ -106,9 +104,10 @@ struct ConstraintsHasher // Hash a CT node by constraints on one agent
             curr = c2.n;
             while (curr->parent != nullptr)
             {
-                if ((get<3>(curr->constraints.front()) == constraint_type::LENGTH &&
-                     get<0>(curr->constraints.front()) >= 0) ||
-                     curr->agent_id == c1.a) {
+                if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE ||
+					get<0>(curr->constraints.front()) == c1.a) {
                     for (auto con : curr->constraints)
                         cons2.insert(con);
                 }
@@ -130,7 +129,10 @@ struct ConstraintsHasher // Hash a CT node by constraints on one agent
             size_t cons_hash = 0;
             while (curr->parent != nullptr)
             {
-                if (curr->agent_id == entry.a)
+				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE ||
+					get<0>(curr->constraints.front()) == entry.a)
                 {
                     for (auto con : curr->constraints)
                     {

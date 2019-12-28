@@ -12,9 +12,9 @@ bool blocked(const Path& path, const std::list<Constraint>& constraints, int num
 {
     for (auto constraint : constraints)
     {
-        int x, y, t;
+        int a, x, y, t;
         constraint_type type;
-        tie(x, y, t, type) = constraint;
+        tie(a, x, y, t, type) = constraint;
         if (type == constraint_type::RANGE) // time range constraint
         {
             for (int i = y; i < t; i++)
@@ -73,12 +73,12 @@ bool blocked(const Path& path, const std::list<Constraint>& constraints, int num
 std::ostream& operator<<(std::ostream& os, const Constraint& constraint)
 {
 	os << "<" << std::get<0>(constraint) << "," << std::get<1>(constraint) << "," <<
-		std::get<2>(constraint) << "," << std::get<3>(constraint) << ">";
+		std::get<2>(constraint) << "," << std::get<3>(constraint) << "," << std::get<4>(constraint) << ">";
 	return os;
 }
 
 // add a horizontal modified barrier constraint
-bool Conflict::addModifiedHorizontalBarrierConstraint(const MDD* mdd, int x,
+bool Conflict::addModifiedHorizontalBarrierConstraint(int agent, const MDD* mdd, int x,
 	int Ri_y, int Rg_y, int Rg_t, int num_col,
 	std::list<Constraint>& constraints)
 {
@@ -103,7 +103,7 @@ bool Conflict::addModifiedHorizontalBarrierConstraint(const MDD* mdd, int x,
 		{
 			int loc1 = (Ri_y + (t1 - Ri_t) * sign) + x * num_col;
 			int loc2 = (Ri_y + (t2 - 1 - Ri_t) * sign) + x * num_col;
-			constraints.emplace_back(loc1, loc2, t2 - 1, constraint_type::BARRIER);
+			constraints.emplace_back(agent, loc1, loc2, t2 - 1, constraint_type::BARRIER);
 			t1 = -1;
 			continue;
 		}
@@ -114,7 +114,7 @@ bool Conflict::addModifiedHorizontalBarrierConstraint(const MDD* mdd, int x,
 		if (it != nullptr && t2 == t_max)
 		{
 			int loc1 = (Ri_y + (t1 - Ri_t) * sign) + x * num_col;
-			constraints.emplace_back(loc1, loc, t2, constraint_type::BARRIER); // add constraints [t1, t2]
+			constraints.emplace_back(agent, loc1, loc, t2, constraint_type::BARRIER); // add constraints [t1, t2]
 		}
 	}
 	if (constraints.empty())
@@ -127,7 +127,7 @@ bool Conflict::addModifiedHorizontalBarrierConstraint(const MDD* mdd, int x,
 }
 
 // add a vertival modified barrier constraint
-bool Conflict::addModifiedVerticalBarrierConstraint(const MDD* mdd, int y,
+bool Conflict::addModifiedVerticalBarrierConstraint(int agent, const MDD* mdd, int y,
 	int Ri_x, int Rg_x, int Rg_t, int num_col,
 	std::list<Constraint>& constraints)
 {
@@ -152,7 +152,7 @@ bool Conflict::addModifiedVerticalBarrierConstraint(const MDD* mdd, int y,
 		{
 			int loc1 = (Ri_x + (t1 - Ri_t) * sign) * num_col + y;
 			int loc2 = (Ri_x + (t2 - 1 - Ri_t) * sign) * num_col + y;
-			constraints.emplace_back(loc1, loc2, t2 - 1, constraint_type::BARRIER);
+			constraints.emplace_back(agent, loc1, loc2, t2 - 1, constraint_type::BARRIER);
 			t1 = -1;
 			continue;
 		}
@@ -163,7 +163,7 @@ bool Conflict::addModifiedVerticalBarrierConstraint(const MDD* mdd, int y,
 		if (it != nullptr && t2 == t_max)
 		{
 			int loc1 = (Ri_x + (t1 - Ri_t) * sign) * num_col + y;
-			constraints.emplace_back(loc1, loc, t2, constraint_type::BARRIER); // add constraints [t1, t2]
+			constraints.emplace_back(agent, loc1, loc, t2, constraint_type::BARRIER); // add constraints [t1, t2]
 		}
 	}
 	if (constraints.empty())
@@ -267,11 +267,11 @@ bool Conflict::rectangleConflict(int a1, int a2, const std::pair<int, int>& Rs, 
         if ((s1.second - s2.second) * (s2.second - Rg.second) >= 0)
         {
             // first agent moves horizontally and second agent moves vertically
-            if (!addModifiedVerticalBarrierConstraint(mdd1, Rg.second, Rs.first, Rg.first, Rg_t, num_col, constraint1))
+            if (!addModifiedVerticalBarrierConstraint(a1, mdd1, Rg.second, Rs.first, Rg.first, Rg_t, num_col, constraint1))
             {
                 return false;
             }
-            if (!addModifiedHorizontalBarrierConstraint(mdd2, Rg.first, Rs.second, Rg.second, Rg_t, num_col, constraint2))
+            if (!addModifiedHorizontalBarrierConstraint(a2, mdd2, Rg.first, Rs.second, Rg.second, Rg_t, num_col, constraint2))
             {
                 return false;
             }
@@ -279,11 +279,11 @@ bool Conflict::rectangleConflict(int a1, int a2, const std::pair<int, int>& Rs, 
         else
         {
             // first agent moves vertically and second agent moves horizontally
-            if (!addModifiedHorizontalBarrierConstraint(mdd1, Rg.first, Rs.second, Rg.second, Rg_t, num_col, constraint1))
+            if (!addModifiedHorizontalBarrierConstraint(a1, mdd1, Rg.first, Rs.second, Rg.second, Rg_t, num_col, constraint1))
             {
                 return false;
             }
-            if (!addModifiedVerticalBarrierConstraint(mdd2, Rg.second, Rs.first, Rg.first, Rg_t, num_col, constraint2))
+            if (!addModifiedVerticalBarrierConstraint(a2, mdd2, Rg.second, Rs.first, Rg.first, Rg_t, num_col, constraint2))
             {
                 return false;
             }
@@ -292,11 +292,11 @@ bool Conflict::rectangleConflict(int a1, int a2, const std::pair<int, int>& Rs, 
     else if ((s1.first - s2.first)*(s2.first - Rg.first) >= 0)
     {
         // first agent moves vertically and second agent moves horizontally
-        if (!addModifiedHorizontalBarrierConstraint(mdd1, Rg.first, Rs.second, Rg.second, Rg_t, num_col, constraint1))
+        if (!addModifiedHorizontalBarrierConstraint(a1, mdd1, Rg.first, Rs.second, Rg.second, Rg_t, num_col, constraint1))
         {
             return false;
         }
-        if (!addModifiedVerticalBarrierConstraint(mdd2, Rg.second, Rs.first, Rg.first, Rg_t, num_col, constraint2))
+        if (!addModifiedVerticalBarrierConstraint(a2, mdd2, Rg.second, Rs.first, Rg.first, Rg_t, num_col, constraint2))
         {
             return false;
         }
@@ -304,11 +304,11 @@ bool Conflict::rectangleConflict(int a1, int a2, const std::pair<int, int>& Rs, 
     else
     {
         // first agent moves horizontally and second agent moves vertically
-        if (!addModifiedVerticalBarrierConstraint(mdd1, Rg.second, Rs.first, Rg.first, Rg_t, num_col, constraint1))
+        if (!addModifiedVerticalBarrierConstraint(a1, mdd1, Rg.second, Rs.first, Rg.first, Rg_t, num_col, constraint1))
         {
             return false;
         }
-        if (!addModifiedHorizontalBarrierConstraint(mdd2, Rg.first, Rs.second, Rg.second, Rg_t, num_col, constraint2))
+        if (!addModifiedHorizontalBarrierConstraint(a2, mdd2, Rg.first, Rs.second, Rg.second, Rg_t, num_col, constraint2))
         {
             return false;
         }

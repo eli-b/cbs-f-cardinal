@@ -33,6 +33,7 @@ int main(int argc, char** argv)
 		("obs", po::value<int>()->default_value(0), "number of obstacles")		
 		("PC,p", po::value<bool>()->default_value(true), "conflict prioirtization")
 		("heuristics,h", po::value<std::string>()->default_value("NONE"), "heuristics for the high-level search (NONE, CG,DG, WDG)")
+		("disjointSplitting", po::value<bool>()->default_value(true), "disjoint splitting")
 		("agentNum,k", po::value<int>()->default_value(0), "number of agents")
 		("cutoffTime,t", po::value<double>()->default_value(7200), "cutoff time (seconds)")
 		("MaxMDDs", po::value<int>(), "maximum number of MDDs saved for each pair of agents")
@@ -78,8 +79,9 @@ int main(int argc, char** argv)
 		std::cout <<"WRONG HEURISTICS NAME!" << std::endl;
 		return -1;
 	}
-	ICBSSearch icbs(ml, al, 1.0, h, vm["PC"].as<bool>(), vm["cutoffTime"].as<double>(), vm["screen"].as<int>());
 
+	ICBSSearch icbs(ml, al, 1.0, h, vm["PC"].as<bool>(), vm["cutoffTime"].as<double>(), vm["screen"].as<int>());
+	icbs.disjoint_splitting = vm["disjointSplitting"].as<bool>();
 	icbs.rectangle_reasoning = vm["rectangleReasoning"].as<bool>();
     icbs.corridor_reasoning = vm["corridorReasoning"].as<bool>();
     icbs.target_reasoning = vm["targetReasoning"].as<bool>();

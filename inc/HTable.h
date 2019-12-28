@@ -19,15 +19,19 @@ struct HTableEntry // look-up table entry
 			const ICBSNode* curr = h1.n;
 			while (curr->parent != nullptr)
 			{
-			    if (get<3>(curr->constraints.front()) == constraint_type::LENGTH &&
-			        get<0>(curr->constraints.front()) >= 0) {
-                    cons1[0].insert(curr->constraints.front());
-                    cons2[0].insert(curr->constraints.front());
+			    if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE) {
+					for (auto con : curr->constraints)
+					{
+						cons1[0].insert(con);
+						cons2[0].insert(con);
+					}
                 } else {
-                    if (curr->agent_id == h1.a1)
+                    if (get<0>(curr->constraints.front()) == h1.a1)
                         for (auto con : curr->constraints)
                             cons1[0].insert(con);
-                    else if (curr->agent_id == h1.a2)
+                    else if (get<0>(curr->constraints.front()) == h1.a2)
                         for (auto con : curr->constraints)
                             cons2[0].insert(con);
 			    }
@@ -37,15 +41,19 @@ struct HTableEntry // look-up table entry
 			curr = h2.n;
 			while (curr->parent != nullptr)
 			{
-                if (get<3>(curr->constraints.front()) == constraint_type::LENGTH &&
-                    get<0>(curr->constraints.front()) >= 0) {
-                    cons1[1].insert(curr->constraints.front());
-                    cons2[1].insert(curr->constraints.front());
+				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE) {
+					for (auto con : curr->constraints)
+					{
+						cons1[1].insert(con);
+						cons2[1].insert(con);
+					}
                 } else {
-                    if (curr->agent_id == h2.a1)
+                    if (get<0>(curr->constraints.front()) == h2.a1)
                         for (auto con : curr->constraints)
                             cons1[1].insert(con);
-                    else if (curr->agent_id == h2.a2)
+                    else if (get<0>(curr->constraints.front()) == h2.a2)
                         for (auto con : curr->constraints)
                             cons2[1].insert(con);
                 }
@@ -70,7 +78,10 @@ struct HTableEntry // look-up table entry
 			size_t cons1_hash = 0, cons2_hash = 0;
 			while (curr->parent != nullptr)
 			{
-				if (curr->agent_id == entry.a1)
+				if (get<0>(curr->constraints.front()) == entry.a1 ||
+					get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE)
 				{
 					for (auto con : curr->constraints)
 					{
@@ -80,7 +91,10 @@ struct HTableEntry // look-up table entry
                                         11 * std::hash<int>()(std::get<3>(con));
 					}
 				}
-				else if (curr->agent_id == entry.a2)
+				else if (get<0>(curr->constraints.front()) == entry.a2 ||
+					get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE)
 				{
 					for (auto con : curr->constraints)
 					{
