@@ -16,6 +16,7 @@ public:
     bool corridor_reasoning; // using corridor reasoning
     bool target_reasoning; // using target reasoning
 	bool disjoint_splitting; // disjoint splittting
+	bool bypass; // using Bypass1
 
 	double runtime = 0;
 	double runtime_generate_child = 0; // runtimr of generating child nodes
@@ -35,6 +36,7 @@ public:
     uint64_t num_merge_MDDs = 0;
     uint64_t num_solve_2agent_problems = 0;
 	uint64_t num_memoization = 0; // number of times when memeorization helps
+	uint64_t num_adopt_bypass = 0; // number of times when adopting bypasses
 
     uint64_t HL_num_expanded = 0;
     uint64_t HL_num_generated = 0;
@@ -161,5 +163,6 @@ private:
 	
 	bool validateSolution() const;
 	inline int ICBSSearch::getAgentLocation(int agent_id, size_t timestep) const;
+	inline void pushNode(ICBSNode* node);
 };
 

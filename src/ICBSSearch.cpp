@@ -12,7 +12,7 @@ inline void ICBSSearch::updatePaths(ICBSNode* curr)
 		paths[i] = &paths_found_initially[i];
 	vector<bool> updated(num_of_agents, false);  // initialized for false
 
-	while (curr->parent != nullptr)
+	while (curr != nullptr)
 	{
         for (auto it = curr->paths.begin(); it != curr->paths.end() ; ++it)
         {
@@ -105,6 +105,10 @@ int ICBSSearch::collectConstraints(ICBSNode* curr, int agent_id, std::vector <st
 
 int ICBSSearch::computeHeuristics(ICBSNode& curr)
 {
+	if (h_type == heuristics_type::NONE)
+	{
+		return 0;
+	}
 	// create conflict graph
     clock_t t = std::clock();
 	vector<int> CG(num_of_agents * num_of_agents, 0);
@@ -233,8 +237,8 @@ int ICBSSearch::getEdgeWeight(int a1, int a2, ICBSNode& node, bool cardinal)
 		cons[1].goal_location = search_engines[a2]->goal_location;
 		node.getConstraintTable(cons[1], a2, ml->cols, ml->map_size());
 		ICBSSearch solver(ml, engines, cons, initial_paths, 1.0, max(rst, 0), heuristics_type::CG, true, upperbound, cutoffTime, scr);
-		solver.disjoint_splitting = this->disjoint_splitting;
-		solver.max_num_of_mdds = this->max_num_of_mdds;
+		solver.disjoint_splitting = disjoint_splitting;
+		solver.bypass = false; // I guess that bypassing does not help two-agent path finding???
         solver.rectangle_reasoning = rectangle_reasoning;
         solver.corridor_reasoning = corridor_reasoning;
         solver.target_reasoning = target_reasoning;
@@ -845,6 +849,13 @@ bool ICBSSearch::generateChild(ICBSNode*  node, ICBSNode* parent)
 
 	copyConflictGraph(*node, *node->parent);
 
+	assert(!node->paths.empty());
+	runtime_generate_child += (double)(clock() - t1) / CLOCKS_PER_SEC;
+	return true;
+}
+
+inline void ICBSSearch::pushNode(ICBSNode* node)
+{
 	// update handles
 	node->open_handle = open_list.push(node);
 	HL_num_generated++;
@@ -852,11 +863,6 @@ bool ICBSSearch::generateChild(ICBSNode*  node, ICBSNode* parent)
 	if (node->f_val <= focal_list_threshold)
 		node->focal_handle = focal_list.push(node);
 	allNodes_table.push_back(node);
-
-	
-	assert(!node->paths.empty());
-	runtime_generate_child += (double)(clock() - t1) / CLOCKS_PER_SEC;
-	return true;
 }
 
 void ICBSSearch::copyConflictGraph(ICBSNode& child, const ICBSNode& parent)
@@ -971,11 +977,12 @@ void ICBSSearch::saveResults(const std::string &fileName, const std::string &ins
 		ofstream addHeads(fileName);
 		addHeads << "runtime,#high-level expanded,#high-level generated,#low-level expanded,#low-level generated," <<
 								"solution cost,min f value,root g value, root f value," <<
+								"#adopt bypasses," <<
 								"standard conflicts,rectangle conflicts,corridor conflicts,target conflicts," <<
 								"#merge MDDs,#solve 2 agents,#memoization," <<
 								"runtime of building heuristic graph,runtime of solving MVC," <<
 								"runtime of detecting conflicts,runtime of classifying conflicts," <<
-								"runtime of building MDDs,runtime of path finding,runtime of generating child nodes" <<
+								"runtime of building MDDs,runtime of path finding,runtime of generating child nodes," <<
 								"preprocessing runtime,solver name,instance name" << endl;
 		addHeads.close();
 	}
@@ -983,6 +990,8 @@ void ICBSSearch::saveResults(const std::string &fileName, const std::string &ins
  	stats << runtime << "," << HL_num_expanded << "," << HL_num_generated << "," << LL_num_expanded << "," << LL_num_generated << "," <<
 
 		solution_cost << "," << min_f_val << "," << dummy_start->g_val << "," << dummy_start->f_val << "," <<
+
+		num_adopt_bypass << "," <<
 
 		num_standard << "," << num_rectangle << "," << num_corridor << "," << num_target << "," <<
 
@@ -1012,10 +1021,10 @@ void ICBSSearch::printConflicts(const ICBSNode &curr) const
 string ICBSSearch::getSolverName() const
 {
     string name;
+	if (disjoint_splitting)
+		name += "Disjoint ";
 	switch (h_type)
 	{
-		if (disjoint_splitting)
-			name += "Disjoint ";
         case heuristics_type::NONE:
             if(PC)
                 name += "ICBS";
@@ -1040,6 +1049,8 @@ string ICBSSearch::getSolverName() const
 	    name += "+C";
 	if (target_reasoning)
 	    name += "+T";
+	if(bypass)
+		name += "+BP";
 	return name;
 }
 
@@ -1048,7 +1059,7 @@ bool ICBSSearch::runICBSSearch()
 	if(screen > 0) // 1 or 2
     {
 	    string name = getSolverName();
-	    name.resize(15, ' ');
+	    name.resize(20, ' ');
         cout << name << ": ";
     }
 	// set timer
@@ -1056,8 +1067,9 @@ bool ICBSSearch::runICBSSearch()
 
 	generateRoot();
 
-	while (!focal_list.empty() && !solution_found) 
+	while (!open_list.empty() && !solution_found) 
 	{
+		updateFocalList();
 		if (min_f_val >= cost_upperbound)
 		{
 			solution_cost = (int)min_f_val;
@@ -1077,6 +1089,9 @@ bool ICBSSearch::runICBSSearch()
 		// takes the paths_found_initially and UPDATE all constrained paths found for agents from curr to dummy_start (and lower-bounds)
 		updatePaths(curr);
 
+		if (screen > 1)
+			std::cout << endl << "Pop " << *curr  << endl;
+
 		if (curr->num_of_collisions == 0) //no conflicts
 		{// found a solution (and finish the while look)
 			solution_found = true;
@@ -1084,178 +1099,180 @@ bool ICBSSearch::runICBSSearch()
 			goal_node = curr;
 			break;
 		}
-		else if (h_type == heuristics_type::NONE) // No heuristics
-		{
-			if(PC) // priortize conflicts
-				classifyConflicts(*curr);
-			curr->conflict = chooseConflict(*curr);
-		}
-		else if(curr->conflict == nullptr) //use h value, and h value has not been computed yet
-		{
-			if (screen == 3)
-			{
-				std::cout << std::endl << "****** Compute h for #" << curr->time_generated << " with f= " << curr->g_val <<
-					"+" << curr->h_val << " (";
-				for (int i = 0; i < num_of_agents; i++)
-					std::cout << paths[i]->size() - 1 << ", ";
-				std::cout << ") and #conflicts = " << curr->num_of_collisions << std::endl;
-			}
 
-			if (PC) // priortize conflicts
-				classifyConflicts(*curr);
+		if (PC) // priortize conflicts
+			classifyConflicts(*curr);
 
+		if (!curr->h_computed) // heuristics has not been computed yet
+		{
+			curr->h_computed = true;
 			int h = computeHeuristics(*curr);
 
 			if (h < 0) // no solution, so prune this node
 			{
 				curr->clear();
-				if (open_list.empty())
-				{
-					solution_found = false;
-					break;
-				}
-				updateFocalList();
 				continue;
 			}
 
 			curr->h_val = std::max(h, curr->h_val); // use consistent h values
 			curr->f_val = curr->g_val + curr->h_val;
 
-			if(screen == 2)
+			if (screen == 2 && h_type != heuristics_type::NONE)
 				curr->printConflictGraph(num_of_agents);
 
-			curr->conflict = chooseConflict(*curr);
-
 			if (curr->f_val > focal_list_threshold)
-			{	
-				if (screen == 3)
+			{
+				if (screen == 2)
 				{
-					std::cout << "Reinsert the node with f =" << curr->g_val << "+" << curr->h_val << std::endl;
+					std::cout << "	Reinsert " << *curr << endl;
 				}
-
 				curr->open_handle = open_list.push(curr);
-				updateFocalList();
 				continue;
 			}
 		}
 
-
 		 //Expand the node
 		HL_num_expanded++;
 		curr->time_expanded = HL_num_expanded;
-		auto n1 = new ICBSNode();
-		auto n2 = new ICBSNode();
-
-		if (disjoint_splitting && curr->conflict->type == conflict_type::STANDARD)
+		bool foundBypass = true;
+		while (foundBypass)
 		{
-			bool first = (bool)(rand() % 2);
-			if (first) // disjoint splitting on the first agent
+			foundBypass = false;
+			ICBSNode* child[2] = { new ICBSNode() , new ICBSNode() };
+
+			curr->conflict = chooseConflict(*curr);
+
+			if (disjoint_splitting && curr->conflict->type == conflict_type::STANDARD)
 			{
-				n1->constraints = curr->conflict->constraint1;
-				int a, x, y, t;
-				constraint_type type;
-				tie(a, x, y, t, type) = curr->conflict->constraint1.back();
-				if (type == constraint_type::VERTEX)
+				int first = (bool)(rand() % 2);
+				if (first) // disjoint splitting on the first agent
 				{
-					n2->constraints.emplace_back(a, x, y, t, constraint_type::POSITIVE_VERTEX);
+					child[0]->constraints = curr->conflict->constraint1;
+					int a, x, y, t;
+					constraint_type type;
+					tie(a, x, y, t, type) = curr->conflict->constraint1.back();
+					if (type == constraint_type::VERTEX)
+					{
+						child[1]->constraints.emplace_back(a, x, y, t, constraint_type::POSITIVE_VERTEX);
+					}
+					else
+					{
+						assert(type == constraint_type::EDGE);
+						child[1]->constraints.emplace_back(a, x, y, t, constraint_type::POSITIVE_EDGE);
+					}
 				}
-				else
+				else // disjoint splitting on the second agent
 				{
-					assert(type == constraint_type::EDGE);
-					n2->constraints.emplace_back(a, x, y, t, constraint_type::POSITIVE_EDGE);
+					child[1]->constraints = curr->conflict->constraint2;
+					int a, x, y, t;
+					constraint_type type;
+					tie(a, x, y, t, type) = curr->conflict->constraint2.back();
+					if (type == constraint_type::VERTEX)
+					{
+						child[0]->constraints.emplace_back(a, x, y, t, constraint_type::POSITIVE_VERTEX);
+					}
+					else
+					{
+						assert(type == constraint_type::EDGE);
+						child[0]->constraints.emplace_back(a, x, y, t, constraint_type::POSITIVE_EDGE);
+					}
 				}
 			}
-			else // disjoint splitting on the second agent
+			else
 			{
-				n2->constraints = curr->conflict->constraint2;
-				int a, x, y, t;
-				constraint_type type;
-				tie(a, x, y, t, type) = curr->conflict->constraint2.back();
-				if (type == constraint_type::VERTEX)
+				child[0]->constraints = curr->conflict->constraint1;
+				child[1]->constraints = curr->conflict->constraint2;
+			}
+
+			if (screen > 1)
+				cout << "	Expand " << *curr << endl << 
+					"	on " << *(curr->conflict) << endl;
+
+			bool solved[2] = {false, false};
+			vector<vector<PathEntry>*> copy(paths);
+
+			for (int i = 0; i < 2; i++)
+			{
+				if (i > 0)
+					paths = copy;
+				solved[i] = generateChild(child[i], curr);
+				if (!solved[i])
 				{
-					n1->constraints.emplace_back(a, x, y, t, constraint_type::POSITIVE_VERTEX);
+					delete (child[i]);
+					continue;
 				}
-				else
+				if (child[i]->f_val == min_f_val && child[i]->num_of_collisions == 0) //no conflicts
+				{// found a solution (and finish the while look)
+					break;
+				}
+				else if (bypass && child[i]->g_val == curr->g_val && child[i]->num_of_collisions < curr->num_of_collisions) // Bypass1
 				{
-					assert(type == constraint_type::EDGE);
-					n1->constraints.emplace_back(a, x, y, t, constraint_type::POSITIVE_EDGE);
+					if (i == 1 && !solved[0])
+						continue;
+					foundBypass = true;
+					num_adopt_bypass++;
+					curr->conflicts = child[i]->conflicts;
+					curr->unknownConf = child[i]->unknownConf;
+					curr->num_of_collisions = child[i]->num_of_collisions;
+					curr->conflict = nullptr;
+					for (const auto& path : child[i]->paths) // update paths
+					{
+						auto p = curr->paths.begin();
+						while (p != curr->paths.end())
+						{
+							if (path.first == p->first)
+							{
+								p->second = path.second;
+								paths[p->first] = &p->second;
+								break;
+							}
+							++p;
+						}
+						if (p == curr->paths.end())
+						{
+							curr->paths.emplace_back(path);
+							paths[path.first] = &curr->paths.back().second;
+						}
+					}
+					if (screen > 1)
+					{
+						std::cout << "	Update " << *curr << endl;
+					}
+					break;
 				}
 			}
+			if (foundBypass)
+			{
+				for (int i = 0; i < 2; i++)
+				{
+					delete (child[i]);
+					child[i] = nullptr;
+				}
+			}
+			else
+			{
+				for (int i = 0; i < 2; i++)
+				{
+					if (solved[i])
+					{
+						pushNode(child[i]);
+						if (screen > 1)
+						{
+							std::cout << "		Generate " << *child[i] << endl;
+						}
+					}						
+				}
+				if (curr->conflict->type == conflict_type::CORRIDOR)
+					num_corridor++;
+				else if (curr->conflict->type == conflict_type::STANDARD)
+					num_standard++;
+				else if (curr->conflict->type == conflict_type::RECTANGLE)
+					num_rectangle++;
+				else if (curr->conflict->type == conflict_type::TARGET)
+					num_target++;
+				curr->clear();
+			}
 		}
-		else
-		{
-			n1->constraints = curr->conflict->constraint1;
-			n2->constraints = curr->conflict->constraint2;
-		}
-
-		if(screen > 1)
-			std::cout << "Expand Node " << curr->time_generated << " ( " << curr->f_val << "= " << curr->g_val << " + " <<
-				curr->h_val << " ) on " << *curr->conflict << std::endl;
-		
-
-        if (curr->conflict->type == conflict_type::CORRIDOR)
-            num_corridor++;
-        else if (curr->conflict->type == conflict_type::STANDARD)
-            num_standard++;
-        else if (curr->conflict->type == conflict_type::RECTANGLE)
-            num_rectangle++;
-        else if (curr->conflict->type == conflict_type::TARGET)
-            num_target++;
-
-		bool Sol1 = false, Sol2 = false;
-		vector<vector<PathEntry>*> copy(paths);
-		Sol1 = generateChild(n1, curr);
-		if (screen > 1 && Sol1)
-		{
-			std::cout << "Generate #" << n1->time_generated
-				<< " with cost " << n1->g_val
-				<< " and " << n1->num_of_collisions << " conflicts " << std::endl;
-		}
-		if (Sol1 && n1->f_val == min_f_val && n1->num_of_collisions == 0) //no conflicts
-		{// found a solution (and finish the while look)
-			solution_found = true;
-			solution_cost = n1->g_val;
-			goal_node = n1;
-			break;
-		}
-		else if(!Sol1)
-		{
-			delete (n1);
-			n1 = nullptr;
-		}
-		paths = copy;
-		Sol2 = generateChild(n2, curr);
-		if (screen > 1 && Sol2)
-		{
-			std::cout << "Generate #" << n2->time_generated
-				<< " with cost " << n2->g_val
-				<< " and " << n2->num_of_collisions << " conflicts " << std::endl;
-
-		}
-		if (Sol2 && n2->f_val == min_f_val && n2->num_of_collisions == 0) //no conflicts
-		{// found a solution (and finish the while look)
-			solution_found = true;
-			solution_cost = n2->g_val;
-			goal_node = n2;
-			break;
-		}
-		else if(!Sol2)
-		{
-			delete (n2);
-			n2 = nullptr;
-		}
-
-		curr->clear();
-
-		// releaseMDDMemory(curr->agent_id);
-
-		if (open_list.empty())
-		{
-			solution_found = false;
-			break;
-		}
-		updateFocalList();
-
 	}  // end of while loop
 
 

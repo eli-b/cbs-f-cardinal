@@ -216,7 +216,6 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 	os << " and " << conflict.a2 << " with ";
 	for (auto con : conflict.constraint2)
 		os << con << ",";		
-	os << std::endl;
 	return os;
 }
 

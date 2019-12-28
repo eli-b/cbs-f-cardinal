@@ -65,6 +65,7 @@ public:
 	size_t depth; // depath of this CT node
 	size_t makespan; // makespan over all paths
 	int num_of_collisions; // number of conflicts in the current paths
+	bool h_computed = false;
 
 	uint64_t time_expanded;
 	uint64_t time_generated;
@@ -150,6 +151,6 @@ struct ConstraintsHasher // Hash a CT node by constraints on one agent
 };
 
 
-
+std::ostream& operator<<(std::ostream& os, const ICBSNode& node);
 
 typedef unordered_map<ConstraintsHasher, MDD*, ConstraintsHasher::Hasher, ConstraintsHasher::EqNode> MDDTable;

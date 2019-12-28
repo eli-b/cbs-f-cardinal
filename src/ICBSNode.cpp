@@ -10,13 +10,16 @@ void ICBSNode::clear()
 
 void ICBSNode::printConflictGraph(int num_of_agents) const
 {
-	std::cout << "Conflict graph in Node " << time_generated << " with f=" << g_val << "+" << h_val << std::endl;
+	cout << "	Build conflict graph in " << *this << ": ";
 	for (auto e : conflictGraph)
 	{
+		if (e.second == 0)
+			continue;
 		int i = e.first / num_of_agents;
 		int j = e.first % num_of_agents;
-		std::cout << "(" << i << "," << j << ")=" << e.second << std::endl;
+		std::cout << "(" << i << "," << j << ")=" << e.second << ",";
 	}
+	cout << endl;
 }
 
 void ICBSNode::getConstraintTable(ConstraintTable& constraint_table, int agent,
@@ -139,4 +142,13 @@ void ICBSNode::getConstraintTable(ConstraintTable& constraint_table, int agent,
         curr = curr->parent;
     }
 
+}
+
+
+std::ostream& operator<<(std::ostream& os, const ICBSNode& node)
+{
+	os << "Node " << node.time_generated << " (" << node.f_val << " = " << node.g_val << " + " <<
+		node.h_val << " ) with " << node.num_of_collisions << " conflicts and " <<
+		node.paths.size() << " new paths ";
+	return os;
 }
