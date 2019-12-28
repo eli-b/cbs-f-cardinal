@@ -7,7 +7,7 @@ Variants of Conflict-Based Search.
  
 ## To do:
 
-1. Add disjoint splitting -- done!
+1. Add disjoint splitting -- done with the main framework, but still need different agent selection strategies and the landmark method.
 
 2. Add sipp (or scipp)
 
