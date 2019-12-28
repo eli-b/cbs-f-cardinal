@@ -12,3 +12,5 @@ Variants of Conflict-Based Search.
 2. Add sipp (or scipp)
 
 3. Add bypassing
+
+4. Add random restart
