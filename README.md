@@ -11,6 +11,6 @@ Variants of Conflict-Based Search.
 
 2. Add sipp (or scipp)
 
-3. Add bypassing
+3. Add bypassing -- done with BP1. Do we need BP2 in https://docs.wixstatic.com/ugd/749b4b_6c85984d14ff4379b3a4400aab955b7b.pdf?
 
 4. Add random restart
