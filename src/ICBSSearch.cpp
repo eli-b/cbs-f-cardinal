@@ -1059,7 +1059,7 @@ bool ICBSSearch::runICBSSearch()
 	if(screen > 0) // 1 or 2
     {
 	    string name = getSolverName();
-	    name.resize(20, ' ');
+	    name.resize(25, ' ');
         cout << name << ": ";
     }
 	// set timer
