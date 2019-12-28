@@ -7,6 +7,8 @@ Variants of Conflict-Based Search.
  
 ## To do:
 
-1. Add disjoint splitting
+1. Add disjoint splitting -- done!
 
 2. Add sipp (or scipp)
+
+3. Add bypassing
