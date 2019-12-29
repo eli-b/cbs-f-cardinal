@@ -45,34 +45,34 @@ public:
 
 
     int max_num_of_mdds = 10000;
-	int initial_h = 0;
 
-	ICBSNode* dummy_start;
+	ICBSNode* dummy_start = nullptr;
 	ICBSNode* goal_node = nullptr;
 
 
 
 	bool solution_found = false;
-	int solution_cost = -2;;
+	int solution_cost = -2;
 	double min_f_val;
 	double focal_list_threshold;
 
 	// Runs the algorithm until the problem is solved or time is exhausted 
-	bool runICBSSearch();
+	bool runICBSSearch(double time_limit, int initial_h);
 
 	ICBSSearch(const MapLoader& ml, const AgentsLoader& al, double f_w, 
-		heuristics_type h_type, bool PC,
-		double time_limit, int screen);
+		heuristics_type h_type, bool PC, int screen);
 	ICBSSearch(const MapLoader* ml, vector<SingleAgentICBS*>& search_engines,
 	        const vector<ConstraintTable>& constraints,
-		vector<vector<PathEntry>>& paths_found_initially, double f_w, int initial_h, 
-		heuristics_type h_type, bool PC, int cost_upperbound, double time_limit, int screen);
+		vector<vector<PathEntry>>& paths_found_initially, double f_w, 
+		heuristics_type h_type, bool PC, int cost_upperbound, int screen);
 	void clearSearchEngines();
 	~ICBSSearch();
 
 	// Save results
 	void saveResults(const std::string &fileName, const std::string &instanceName) const;
 	// void saveLogs(const std::string &fileName) const;
+
+	void clear(); // used for rapid random  restart
 
 private:
 
@@ -94,18 +94,19 @@ private:
 
 	int screen;
 	heuristics_type h_type;
-	const double time_limit;
+	double time_limit;
 	double focal_w = 1.0;
 	const int cost_upperbound = INT_MAX;
 	
 
 	// Logs
+	/*
 	vector<int> sum_h_vals; // sum of heuristics for the CT nodes at level t
 	vector<int> sum_f_vals; // sum of f values for the CT nodes at level t
 	vector<int> num_CTnodes; // number of CT nodes at level t that has heuristics
 	vector<int> sum_runtime; // sum of runtime for computing heuristics for the CT nodes at level t
 	list<pair<int, int>> log_min_f; // changes of lowerbound in terms of expanded nodes: <lowerbound, #expanded nodes>
-
+	*/
 
 	vector<ConstraintTable> initial_constraints;
 	const MapLoader* ml;
@@ -123,7 +124,7 @@ private:
 	// high level search
 	bool findPathForSingleAgent(ICBSNode*  node, int ag, int lower_bound = 0);
 	bool generateChild(ICBSNode* child, ICBSNode* curr);
-	bool generateRoot();
+	bool generateRoot(int initial_h);
 
 	//conflicts
 	void findConflicts(ICBSNode& curr);
@@ -153,11 +154,11 @@ private:
 	void updateReservationTable(CAT& res_table, int exclude_agent, const ICBSNode &node);
 	inline void releaseClosedListNodes();
 	inline void releaseOpenListNodes();
+	inline void releaseMDDTable();
 	void copyConflictGraph(ICBSNode& child, const ICBSNode& parent);
 
 	// print and save
 	void printPaths() const;
-	void printStrategy() const;
 	void printResults() const;
 	void printConflicts(const ICBSNode &curr) const;
 	

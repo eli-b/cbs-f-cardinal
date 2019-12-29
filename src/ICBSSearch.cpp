@@ -1,4 +1,7 @@
-﻿#include "ICBSSearch.h"
+﻿#include <algorithm>    // std::shuffle
+#include <random>      // std::default_random_engine
+#include <chrono>       // std::chrono::system_clock
+#include "ICBSSearch.h"
 #include "RectangleReasoning.h"
 #include "CorridorReasoning.h"
 
@@ -236,13 +239,13 @@ int ICBSSearch::getEdgeWeight(int a1, int a2, ICBSNode& node, bool cardinal)
 		node.getConstraintTable(cons[0], a1, ml->cols, ml->map_size());
 		cons[1].goal_location = search_engines[a2]->goal_location;
 		node.getConstraintTable(cons[1], a2, ml->cols, ml->map_size());
-		ICBSSearch solver(ml, engines, cons, initial_paths, 1.0, max(rst, 0), heuristics_type::CG, true, upperbound, cutoffTime, scr);
+		ICBSSearch solver(ml, engines, cons, initial_paths, 1.0, heuristics_type::CG, true, upperbound, scr);
 		solver.disjoint_splitting = disjoint_splitting;
 		solver.bypass = false; // I guess that bypassing does not help two-agent path finding???
         solver.rectangle_reasoning = rectangle_reasoning;
         solver.corridor_reasoning = corridor_reasoning;
         solver.target_reasoning = target_reasoning;
-		solver.runICBSSearch();
+		solver.runICBSSearch(cutoffTime, max(rst, 0));
 		if (solver.runtime >= cutoffTime) // time out
 			rst = (int)solver.min_f_val - cost_shortestPath; // using lowerbound to approximate
 		else if (solver.solution_cost  < 0) // no solution
@@ -821,7 +824,7 @@ bool ICBSSearch::generateChild(ICBSNode*  node, ICBSNode* parent)
 	
 	//Estimate h value
 	node->h_val = 0;
-	if (parent->h_val  == 0);
+	/*if (parent->h_val  == 0);
 	else if (parent->conflictGraph.empty())
 	{
 		node->h_val = parent->h_val - 1; // stronger pathmax
@@ -841,7 +844,7 @@ bool ICBSSearch::generateChild(ICBSNode*  node, ICBSNode* parent)
 		}
 		if (maxWeight < parent->h_val)
 			node->h_val = parent->h_val - maxWeight; // stronger pathmax
-	}
+	}*/
 	node->h_val = std::max(node->h_val, parent->f_val - node->g_val); // pathmax
 	node->f_val = node->g_val + node->h_val;
 
@@ -1054,8 +1057,9 @@ string ICBSSearch::getSolverName() const
 	return name;
 }
 
-bool ICBSSearch::runICBSSearch() 
+bool ICBSSearch::runICBSSearch(double time_limit, int initial_h)
 {
+	this->time_limit = time_limit;
 	if(screen > 0) // 1 or 2
     {
 	    string name = getSolverName();
@@ -1065,7 +1069,7 @@ bool ICBSSearch::runICBSSearch()
 	// set timer
 	start = std::clock();
 
-	generateRoot();
+	generateRoot(initial_h);
 
 	while (!open_list.empty() && !solution_found) 
 	{
@@ -1316,30 +1320,19 @@ void ICBSSearch::releaseMDDMemory(int id)
 
 ICBSSearch::ICBSSearch(const MapLoader* ml, vector<SingleAgentICBS*>& search_engines,
         const vector<ConstraintTable>& constraints,
-	vector<Path>& paths_found_initially, double f_w, int initial_h,
+	vector<Path>& paths_found_initially, double f_w,
 	heuristics_type h_type, bool PC,
-	int cost_upperbound, double time_limit, int screen):
-        PC(PC), screen(screen), h_type(h_type), time_limit(time_limit), focal_w(f_w), cost_upperbound(cost_upperbound),
-		initial_h(initial_h), initial_constraints(constraints), ml(ml), paths_found_initially(paths_found_initially),
+	int cost_upperbound, int screen):
+        PC(PC), screen(screen), h_type(h_type), focal_w(f_w), cost_upperbound(cost_upperbound),
+		initial_constraints(constraints), ml(ml), paths_found_initially(paths_found_initially),
         search_engines(search_engines)
 {
-	HL_num_expanded = 0;
-	HL_num_generated = 0;
-	LL_num_expanded = 0;
-	LL_num_generated = 0;
-	
 	num_of_agents = search_engines.size();
-
-	solution_found = false;
-	solution_cost = -2;
-
-	if (rectangle_reasoning)
-		mddTable.resize(num_of_agents);
 }
 
 ICBSSearch::ICBSSearch(const MapLoader& ml, const AgentsLoader& al, double f_w, heuristics_type h_type,
-	bool PC, double time_limit, int screen):
-        PC(PC), screen(screen), h_type(h_type), time_limit(time_limit), focal_w(f_w),
+	bool PC, int screen):
+        PC(PC), screen(screen), h_type(h_type), focal_w(f_w),
         ml(&ml), num_of_agents(al.num_of_agents)
 {
 	initial_constraints.resize(num_of_agents);
@@ -1363,6 +1356,14 @@ ICBSSearch::ICBSSearch(const MapLoader& ml, const AgentsLoader& al, double f_w, 
 		al.printAgentsInitGoal();
 	}
 
+	
+}
+
+bool ICBSSearch::generateRoot(int initial_h)
+{
+	dummy_start = new ICBSNode();
+	dummy_start->g_val = 0;
+	paths.resize(num_of_agents, nullptr);
 	hTable.resize(num_of_agents);
 	for (int i = 0; i < num_of_agents; i++)
 	{
@@ -1371,19 +1372,21 @@ ICBSSearch::ICBSSearch(const MapLoader& ml, const AgentsLoader& al, double f_w, 
 
 	if (rectangle_reasoning || h_type == heuristics_type::DG || h_type == heuristics_type::WDG)
 		mddTable.resize(num_of_agents);
-}
-
-bool ICBSSearch::generateRoot()
-{
-	dummy_start = new ICBSNode();
-	dummy_start->g_val = 0;
-	paths.resize(num_of_agents, nullptr);
-
 	// initialize paths_found_initially
 	if (paths_found_initially.empty())
 	{
 		paths_found_initially.resize(num_of_agents);
+
+		//generate random permuattion of agent indices
+		vector<int> agents(num_of_agents);
 		for (int i = 0; i < num_of_agents; i++)
+		{
+			agents[i] = i;
+		}
+		auto rng = std::default_random_engine{};
+		std::shuffle(std::begin(agents), std::end(agents), rng);
+
+		for (auto i : agents)
 		{
 			ConstraintTable ct;
 			CAT cat(dummy_start->makespan + 1);  // initialized to false
@@ -1439,6 +1442,22 @@ inline void ICBSSearch::releaseClosedListNodes()
 {
 	for (auto node: allNodes_table)
 		delete node;
+	allNodes_table.clear();
+}
+
+inline void ICBSSearch::releaseMDDTable()
+{
+	if (!mddTable.empty())
+	{
+		for (int i = 0; i < num_of_agents; i++)
+		{
+			for (auto mdd : mddTable[i])
+			{
+				delete mdd.second;
+			}
+		}
+	}
+	mddTable.clear();
 }
 
 inline void ICBSSearch::releaseOpenListNodes()
@@ -1454,24 +1473,7 @@ inline void ICBSSearch::releaseOpenListNodes()
 ICBSSearch::~ICBSSearch()
 {
 	releaseClosedListNodes();
-	/*if (!mdds_initially.empty())
-	{
-		for (auto mdd : mdds_initially)
-		{
-			if (mdd != NULL)
-				delete mdd;
-		}
-	}*/
-	if (!mddTable.empty())
-	{
-		for (int i = 0; i < num_of_agents; i++)
-		{
-			for (auto mdd : mddTable[i])
-			{
-					delete mdd.second;
-			}
-		}
-	}
+	releaseMDDTable();
 }
 
 void ICBSSearch::clearSearchEngines()
@@ -1530,4 +1532,21 @@ inline int ICBSSearch::getAgentLocation(int agent_id, size_t timestep) const
 {
 	size_t t = max(min(timestep, paths[agent_id]->size() - 1), (size_t)0);
 	return paths[agent_id]->at(t).location;
+}
+
+
+// used for rapid random  restart
+void ICBSSearch::clear()
+{
+	releaseClosedListNodes();
+	releaseMDDTable();
+	open_list.clear();
+	focal_list.clear();
+	hTable.clear();
+	paths.clear();
+	paths_found_initially.clear();
+	dummy_start = nullptr;
+	goal_node = nullptr;
+	solution_found = false;
+	solution_cost = -2;
 }
