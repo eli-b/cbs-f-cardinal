@@ -4,7 +4,7 @@ Variants of Conflict-Based Search.
  The code requires the external library BOOST (https://www.boost.org/).
  
  
-![alt text](https://github.com/Jiaoyang-Li/CBS-variants/edit/master/overview.png "overview")
+![overview](./overview.png "overview")
  
 ## To do:
 
