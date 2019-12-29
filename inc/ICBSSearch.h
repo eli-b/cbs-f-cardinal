@@ -12,9 +12,9 @@
 class ICBSSearch
 {
 public:
-    bool rectangle_reasoning; // using rectangle reasoning
-    bool corridor_reasoning; // using corridor reasoning
-    bool target_reasoning; // using target reasoning
+	bool rectangle_reasoning; // using rectangle reasoning
+	bool corridor_reasoning; // using corridor reasoning
+	bool target_reasoning; // using target reasoning
 	bool disjoint_splitting; // disjoint splittting
 	bool bypass; // using Bypass1
 
@@ -24,55 +24,55 @@ public:
 	double runtime_path_finding = 0; // runtime of finding paths for single agents
 	double runtime_build_dependency_graph = 0;
 	double runtime_solve_MVC = 0;
-    double runtime_detect_conflicts = 0;
+	double runtime_detect_conflicts = 0;
 	double runtime_classify_conflicts = 0;
 	double runtime_preprocessing = 0; // runtime of building heuristic table for the low level
 
-    uint64_t num_corridor = 0;
-    uint64_t num_rectangle = 0;
-    uint64_t num_target = 0;
-    uint64_t num_standard = 0;
+	uint64_t num_corridor = 0;
+	uint64_t num_rectangle = 0;
+	uint64_t num_target = 0;
+	uint64_t num_standard = 0;
 
-    uint64_t num_merge_MDDs = 0;
-    uint64_t num_solve_2agent_problems = 0;
+	uint64_t num_merge_MDDs = 0;
+	uint64_t num_solve_2agent_problems = 0;
 	uint64_t num_memoization = 0; // number of times when memeorization helps
 	uint64_t num_adopt_bypass = 0; // number of times when adopting bypasses
 
-    uint64_t HL_num_expanded = 0;
-    uint64_t HL_num_generated = 0;
-    uint64_t LL_num_expanded = 0;
-    uint64_t LL_num_generated = 0;
+	uint64_t HL_num_expanded = 0;
+	uint64_t HL_num_generated = 0;
+	uint64_t LL_num_expanded = 0;
+	uint64_t LL_num_generated = 0;
 
 
-    int max_num_of_mdds = 10000;
-	int initial_h = 0;
+	int max_num_of_mdds = 10000;
 
-	ICBSNode* dummy_start;
+	ICBSNode* dummy_start = nullptr;
 	ICBSNode* goal_node = nullptr;
 
 
 
 	bool solution_found = false;
-	int solution_cost = -2;;
+	int solution_cost = -2;
 	double min_f_val;
 	double focal_list_threshold;
 
 	// Runs the algorithm until the problem is solved or time is exhausted 
-	bool runICBSSearch();
+	bool runICBSSearch(double time_limit, int initial_h);
 
-	ICBSSearch(const MapLoader& ml, const AgentsLoader& al, double f_w, 
-		heuristics_type h_type, bool PC,
-		double time_limit, int screen);
+	ICBSSearch(const MapLoader& ml, const AgentsLoader& al, double f_w,
+		heuristics_type h_type, bool PC, int screen);
 	ICBSSearch(const MapLoader* ml, vector<SingleAgentICBS*>& search_engines,
-	        const vector<ConstraintTable>& constraints,
-		vector<vector<PathEntry>>& paths_found_initially, double f_w, int initial_h, 
-		heuristics_type h_type, bool PC, int cost_upperbound, double time_limit, int screen);
+		const vector<ConstraintTable>& constraints,
+		vector<vector<PathEntry>>& paths_found_initially, double f_w,
+		heuristics_type h_type, bool PC, int cost_upperbound, int screen);
 	void clearSearchEngines();
 	~ICBSSearch();
 
 	// Save results
 	void saveResults(const std::string &fileName, const std::string &instanceName) const;
 	// void saveLogs(const std::string &fileName) const;
+
+	void clear(); // used for rapid random  restart
 
 private:
 
@@ -90,22 +90,23 @@ private:
 
 	bool PC; // prioritize conflicts or not
 
-    string getSolverName() const;
+	string getSolverName() const;
 
 	int screen;
 	heuristics_type h_type;
-	const double time_limit;
+	double time_limit;
 	double focal_w = 1.0;
 	const int cost_upperbound = INT_MAX;
-	
+
 
 	// Logs
+	/*
 	vector<int> sum_h_vals; // sum of heuristics for the CT nodes at level t
 	vector<int> sum_f_vals; // sum of f values for the CT nodes at level t
 	vector<int> num_CTnodes; // number of CT nodes at level t that has heuristics
 	vector<int> sum_runtime; // sum of runtime for computing heuristics for the CT nodes at level t
 	list<pair<int, int>> log_min_f; // changes of lowerbound in terms of expanded nodes: <lowerbound, #expanded nodes>
-
+	*/
 
 	vector<ConstraintTable> initial_constraints;
 	const MapLoader* ml;
@@ -120,22 +121,22 @@ private:
 	vector < SingleAgentICBS* > search_engines;  // used to find (single) agents' paths and mdd
 
 
-	// high level search
+												 // high level search
 	bool findPathForSingleAgent(ICBSNode*  node, int ag, int lower_bound = 0);
 	bool generateChild(ICBSNode* child, ICBSNode* curr);
-	bool generateRoot();
+	bool generateRoot(int initial_h);
 
 	//conflicts
 	void findConflicts(ICBSNode& curr);
 	void findConflicts(ICBSNode& curr, int a1, int a2);
-    std::shared_ptr<Conflict> chooseConflict(const ICBSNode &node) const;
+	std::shared_ptr<Conflict> chooseConflict(const ICBSNode &node) const;
 	void classifyConflicts(ICBSNode &parent);
 	void copyConflicts(const std::list<std::shared_ptr<Conflict>>& conflicts,
 		std::list<std::shared_ptr<Conflict>>& copy, int excluded_agent) const;
 	void copyConflicts(const std::list<std::shared_ptr<Conflict>>& conflicts,
 		std::list<std::shared_ptr<Conflict>>& copy, const list<int>& excluded_agent) const;
 	void removeLowPriorityConflicts(std::list<std::shared_ptr<Conflict>>& conflicts) const;
-    //bool isCorridorConflict(std::shared_ptr<Conflict>& corridor, const std::shared_ptr<Conflict>& con, bool cardinal, ICBSNode* node);
+	//bool isCorridorConflict(std::shared_ptr<Conflict>& corridor, const std::shared_ptr<Conflict>& con, bool cardinal, ICBSNode* node);
 
 	// add heuristics for the high-level search
 	int computeHeuristics(ICBSNode& curr);
@@ -153,16 +154,15 @@ private:
 	void updateReservationTable(CAT& res_table, int exclude_agent, const ICBSNode &node);
 	inline void releaseClosedListNodes();
 	inline void releaseOpenListNodes();
+	inline void releaseMDDTable();
 	void copyConflictGraph(ICBSNode& child, const ICBSNode& parent);
 
 	// print and save
 	void printPaths() const;
-	void printStrategy() const;
 	void printResults() const;
 	void printConflicts(const ICBSNode &curr) const;
-	
+
 	bool validateSolution() const;
 	inline int ICBSSearch::getAgentLocation(int agent_id, size_t timestep) const;
 	inline void pushNode(ICBSNode* node);
 };
-
