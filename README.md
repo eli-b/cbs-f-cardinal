@@ -16,4 +16,4 @@ Variants of Conflict-Based Search.
 
 4. Add random restart -- done with the random permutation of the orders of agents that plan paths at the root node.
 
-5. Add the improved version of rectangle reasoning
+5. Add Cardinal Rectangle Reasoning, Rectangle Reasoning and the improved version of Rectangle Reasoning with MDDs.
