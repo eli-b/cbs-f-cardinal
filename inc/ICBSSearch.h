@@ -81,10 +81,7 @@ private:
 	list<ICBSNode*> allNodes_table;
 
 	std::vector<MDDTable> mddTable;
-	// int num_released_mdds = 0;
 	std::vector<std::vector<HTable>> hTable;
-	// int bookingHitTimes = 0;
-	// double bookingSearchtime = 0;
 
 	bool PC; // prioritize conflicts or not
 

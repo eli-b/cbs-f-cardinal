@@ -34,7 +34,7 @@ int main(int argc, char** argv)
 
 		("PC,p", po::value<bool>()->default_value(true), "conflict prioirtization")
 		("bypass", po::value<bool>()->default_value(true), "Bypass1")
-		("heuristics,h", po::value<std::string>()->default_value("NONE"), "heuristics for the high-level search (NONE, CG,DG, WDG)")
+		("heuristics,h", po::value<string>()->default_value("NONE"), "heuristics for the high-level search (NONE, CG,DG, WDG)")
 		("disjointSplitting", po::value<bool>()->default_value(true), "disjoint splitting")
 		("rectangleReasoning", po::value<bool>()->default_value(false), "Using rectangle reasoning")
 		("corridorReasoning", po::value<bool>()->default_value(false), "Using corridor reasoning")
@@ -52,6 +52,13 @@ int main(int argc, char** argv)
 	}
 
 	po::notify(vm);
+
+	if (vm["sipp"].as<bool>() && vm["targetReasoning"].as<bool>())
+	{
+		cerr << "SIPP cannot work together with target reasoning!" << endl;
+		return -1;
+	}
+
 	srand((int)time(0));
 
 	// read the map file and construct its two-dim array
@@ -79,7 +86,8 @@ int main(int argc, char** argv)
 
 	int runs = vm["restart"].as<int>();
 	assert(runs > 0);
-	ICBSSearch icbs(instance, 1.0, h, vm["PC"].as<bool>(), vm["sipp"].as<bool>(), vm["screen"].as<int>());
+	ICBSSearch icbs(instance, 1.0, h, vm["PC"].as<bool>(), vm["sipp"].as<bool>(), 
+		vm["screen"].as<int>());
 	icbs.disjoint_splitting = vm["disjointSplitting"].as<bool>();
 	icbs.bypass = vm["bypass"].as<bool>();
 	icbs.rectangle_reasoning = vm["rectangleReasoning"].as<bool>();

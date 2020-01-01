@@ -481,6 +481,13 @@ MDD * ICBSSearch::getMDD(ICBSNode& node, int id)
 		auto got = mddTable[c.a].find(c);
 		if (got != mddTable[c.a].end())
 		{
+			if (got->second->levels.size() != paths[id]->size())
+			{
+				auto existing_node = got->first;
+				auto existing_mdd = got->second;
+				cout << *existing_node.n << endl << existing_mdd->levels.size();
+				cout << endl;
+			}
 			assert(got->second->levels.size() == paths[id]->size());
 			return got->second;
 		}
@@ -626,13 +633,13 @@ void ICBSSearch::classifyConflicts(ICBSNode &parent)
 		}
 
 
-		if (rectangle_reasoning // rectangle reasoning using MDDs
+		if (rectangle_reasoning // rectangle reasoning
 			&& type == constraint_type::VERTEX) // vertex conflict
 		{
 			auto mdd1 = getMDD(parent, a1);
 			auto mdd2 = getMDD(parent, a2);
 
-			auto rectangle = rectangle_helper.findRectangleConflict(paths, timestep, a1, a2, loc1, mdd1, mdd2);
+			auto rectangle = rectangle_helper.findRectangleConflict(paths, timestep, a1, a2, mdd1, mdd2);
 			if (rectangle != nullptr)
 			{
 				parent.conflicts.push_back(rectangle);
@@ -1290,7 +1297,7 @@ ICBSSearch::ICBSSearch(vector<SingleAgentSolver*>& search_engines,
 	PC(PC), screen(screen), h_type(h_type), focal_w(f_w), cost_upperbound(cost_upperbound),
 	initial_constraints(initial_constraints), paths_found_initially(paths_found_initially),
 	search_engines(search_engines), 
-	rectangle_helper(search_engines[0]->instance), 
+	rectangle_helper(search_engines[0]->instance),
 	corridor_helper(search_engines[0]->instance, initial_constraints, search_engines[0]->getName() == "SIPP")
 {
 	num_of_agents = search_engines.size();

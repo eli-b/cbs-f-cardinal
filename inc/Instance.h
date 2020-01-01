@@ -39,7 +39,12 @@ public:
 			int loc1_y = col_coordinate(loc1);
 			int loc2_x = row_coordinate(loc2);
 			int loc2_y = col_coordinate(loc2);
-			return std::abs(loc1_x - loc2_x) + std::abs(loc1_y - loc2_y);
+			return abs(loc1_x - loc2_x) + abs(loc1_y - loc2_y);
+		}
+
+		inline int getManhattanDistance(const pair<int, int>& loc1, const pair<int, int>& loc2) const
+		{
+			return abs(loc1.first - loc2.first) + abs(loc1.second - loc2.second);
 		}
 
 	int getDegree(int loc) const
