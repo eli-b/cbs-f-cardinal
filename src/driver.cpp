@@ -7,16 +7,10 @@
 /*driver.cpp
 * Solve a MAPF instance on 2D grids.
 */
-
-#include "map_loader.h"
-#include "agents_loader.h"
+#include <boost/program_options.hpp>
+#include <boost/tokenizer.hpp>
 #include "ICBSSearch.h"
 
-#include <iostream>
-
-
-#include <boost/program_options.hpp>
-#include<boost/tokenizer.hpp>
 
 int main(int argc, char** argv)
 {
@@ -46,7 +40,7 @@ int main(int argc, char** argv)
 		("corridorReasoning", po::value<bool>()->default_value(false), "Using corridor reasoning")
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
 		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
-
+		("sipp", po::value<bool>()->default_value(true), "using sipp as the single agent solver")
 		;
 
 	po::variables_map vm;
@@ -61,12 +55,11 @@ int main(int argc, char** argv)
 	srand((int)time(0));
 
 	// read the map file and construct its two-dim array
-	MapLoader ml(vm["map"].as<string>(), vm["rows"].as<int>(),
-		vm["cols"].as<int>(), vm["obs"].as<int>());
+	Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
+		vm["agentNum"].as<int>(),
+		vm["rows"].as<int>(), vm["cols"].as<int>(), vm["obs"].as<int>(), vm["warehouseWidth"].as<int>());
 
 	// read agents' start and goal locations
-	AgentsLoader al(vm["agents"].as<string>(), ml, vm["agentNum"].as<int>(), vm["warehouseWidth"].as<int>());
-
 	srand(vm["seed"].as<int>());
 
 	heuristics_type h;
@@ -86,13 +79,12 @@ int main(int argc, char** argv)
 
 	int runs = vm["restart"].as<int>();
 	assert(runs > 0);
-	ICBSSearch icbs(ml, al, 1.0, h, vm["PC"].as<bool>(), vm["screen"].as<int>());
+	ICBSSearch icbs(instance, 1.0, h, vm["PC"].as<bool>(), vm["sipp"].as<bool>(), vm["screen"].as<int>());
 	icbs.disjoint_splitting = vm["disjointSplitting"].as<bool>();
 	icbs.bypass = vm["bypass"].as<bool>();
 	icbs.rectangle_reasoning = vm["rectangleReasoning"].as<bool>();
 	icbs.corridor_reasoning = vm["corridorReasoning"].as<bool>();
 	icbs.target_reasoning = vm["targetReasoning"].as<bool>();
-
 	if (vm.count("MaxMDDs"))
 		icbs.max_num_of_mdds = vm["MaxMDDs"].as<int>();
 

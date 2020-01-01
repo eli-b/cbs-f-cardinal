@@ -19,10 +19,10 @@
 	return false;
 }*/
 
-bool MDD::buildMDD(const ConstraintTable& ct, int map_size,
-        int numOfLevels, const SingleAgentICBS & solver)
+bool MDD::buildMDD(const ConstraintTable& ct,
+        int numOfLevels, const SingleAgentSolver* solver)
 {
-    auto root = new MDDNode(solver.start_location, nullptr); // Root
+    auto root = new MDDNode(solver->start_location, nullptr); // Root
 	std::queue<MDDNode*> open;
 	std::list<MDDNode*> closed;
 	open.push(root);
@@ -36,47 +36,39 @@ bool MDD::buildMDD(const ConstraintTable& ct, int map_size,
 		if (curr->level == numOfLevels - 1)
 		{
 			levels.back().push_back(curr);
-			if(!open.empty())
-			{
-				std::cerr << "Failed to build MDD!" << std::endl;
-				exit(1);
-			}
+			assert(open.empty());
 			break;
 		}
-		// We want (g + 1)+h <= f = numOfLevels - 1, so h <= numOfLevels - g. -1 because it's the bound of the children.
-		double heuristicBound = numOfLevels - curr->level - 2+ 0.001;
-		for (int i = 0; i < 5; i++) // Try every possible move. We only add backward edges in this step.
+		// We want (g + 1)+h <= f = numOfLevels - 1, so h <= numOfLevels - g - 2. -1 because it's the bound of the children.
+		int heuristicBound = numOfLevels - curr->level - 2;
+		list<int> next_locations = solver->getNextLocations(curr->location);
+		for (int next_location : next_locations) // Try every possible move. We only add backward edges in this step.
 		{
-			int newLoc = curr->location + solver.moves_offset[i];
-			if (solver.validMove(curr->location, newLoc) &&
-				solver.my_heuristic[newLoc] < heuristicBound &&
-				!ct.is_constrained(newLoc, curr->level + 1) &&
-				!ct.is_constrained(curr->location, newLoc, curr->level + 1, map_size)) // valid move
+			if (solver->my_heuristic[next_location] <= heuristicBound &&
+				!ct.constrained(next_location, curr->level + 1) &&
+				!ct.constrained(curr->location, next_location, curr->level + 1)) // valid move
 			{
 				auto child = closed.rbegin();
 				bool find = false;
 				for (; child != closed.rend() && ((*child)->level == curr->level + 1); ++child)
-					if ((*child)->location == newLoc) // If the child node exists
+				{
+					if ((*child)->location == next_location) // If the child node exists
 					{
 						(*child)->parents.push_back(curr); // then add corresponding parent link and child link
 						find = true;
 						break;
 					}
+				}
 				if (!find) // Else generate a new mdd node
 				{
-					auto childNode = new MDDNode(newLoc, curr);
+					auto childNode = new MDDNode(next_location, curr);
 					open.push(childNode);
 					closed.push_back(childNode);
 				}
 			}
 		}
 	}
-
-    if(levels.back().size() != 1)
-    {
-        std::cerr << "Failed to build MDD!" << std::endl;
-        exit(1);
-    }
+	assert(levels.back().size() == 1);
 
 	// Backward
 	for (int t = numOfLevels - 1; t > 0; t--)

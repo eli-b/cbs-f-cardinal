@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
 #include "Conflict.h"
-#include "ConstraintTable.h"
+// #include "MDD.h"
 
 class ICBSNode
 {
@@ -20,13 +20,6 @@ public:
 	{
 		bool operator()(const ICBSNode* n1, const ICBSNode* n2) const 
 		{
-			/*if (n1->num_of_collisions == n2->num_of_collisions)
-			{
-				if(rand()%2 == 0)
-					return true;
-				else
-					return false;
-			}*/
 			return n1->num_of_collisions >= n2->num_of_collisions;
 		}
 	};  // used by FOCAL to compare nodes by num_of_collisions (top of the heap has min h-val)
@@ -46,17 +39,17 @@ public:
 	};
 
 	// conflicts in the current paths
-	std::list<std::shared_ptr<Conflict> > conflicts;
-	std::list<std::shared_ptr<Conflict> > unknownConf;
+	list<shared_ptr<Conflict> > conflicts;
+	list<shared_ptr<Conflict> > unknownConf;
 	
 	// The chosen conflict
-	std::shared_ptr<Conflict> conflict;
+	shared_ptr<Conflict> conflict;
 
 	boost::unordered_map<int, int> conflictGraph; //<edge index, weight>
 	ICBSNode* parent;
 
-	list< pair< int, Path> > paths; // path of agent_id
-	std::list<Constraint> constraints; // constraints imposed to agent_id
+	list< pair< int, Path> > paths; // new paths
+	list<Constraint> constraints; // new constraints
 	
 
 	int g_val;
@@ -73,84 +66,79 @@ public:
 
 	void clear();
 	void printConflictGraph(int num_of_agents) const;
-
-	void getConstraintTable(ConstraintTable& constraint_table, int agent_id,
-                            int num_col, int map_size) const;
-};
-
-
-struct ConstraintsHasher // Hash a CT node by constraints on one agent
-{
-    int a{};
-    const ICBSNode* n{};
-    ConstraintsHasher(int a, ICBSNode* n) : a(a), n(n) {};
-
-    struct EqNode
-    {
-        bool operator() (const ConstraintsHasher& c1, const ConstraintsHasher& c2) const
-        {
-            std::set<Constraint> cons1, cons2;
-            const ICBSNode* curr = c1.n;
-            while (curr->parent != nullptr)
-            {
-                if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE ||
-					get<0>(curr->constraints.front()) == c1.a) {
-                    for (auto con : curr->constraints)
-                        cons1.insert(con);
-                }
-                curr = curr->parent;
-            }
-            curr = c2.n;
-            while (curr->parent != nullptr)
-            {
-                if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE ||
-					get<0>(curr->constraints.front()) == c1.a) {
-                    for (auto con : curr->constraints)
-                        cons2.insert(con);
-                }
-
-                curr = curr->parent;
-            }
-            if (cons1.size() != cons2.size())
-                return false;
-
-            return equal(cons1.begin(), cons1.end(), cons2.begin());
-        }
-    };
-
-    struct Hasher
-    {
-        std::size_t operator()(const ConstraintsHasher& entry) const
-        {
-            const ICBSNode* curr = entry.n;
-            size_t cons_hash = 0;
-            while (curr->parent != nullptr)
-            {
-				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE ||
-					get<0>(curr->constraints.front()) == entry.a)
-                {
-                    for (auto con : curr->constraints)
-                    {
-                        cons_hash += 3 * std::hash<int>()(std::get<0>(con)) +
-                                     5 * std::hash<int>()(std::get<1>(con)) +
-                                     7 * std::hash<int>()(std::get<2>(con)) +
-                                     11 * std::hash<int>()(std::get<3>(con));
-                    }
-                }
-                curr = curr->parent;
-            }
-            return cons_hash;
-        }
-    };
 };
 
 
 std::ostream& operator<<(std::ostream& os, const ICBSNode& node);
 
-typedef unordered_map<ConstraintsHasher, MDD*, ConstraintsHasher::Hasher, ConstraintsHasher::EqNode> MDDTable;
+
+struct ConstraintsHasher // Hash a CT node by constraints on one agent
+{
+	int a{};
+	const ICBSNode* n{};
+	ConstraintsHasher(int a, ICBSNode* n) : a(a), n(n) {};
+
+	struct EqNode
+	{
+		bool operator() (const ConstraintsHasher& c1, const ConstraintsHasher& c2) const
+		{
+			assert(c1.a == c2.a);
+				
+			std::set<Constraint> cons1, cons2;
+			const ICBSNode* curr = c1.n;
+			while (curr->parent != nullptr)
+			{
+				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE ||
+					get<0>(curr->constraints.front()) == c1.a) {
+					for (auto con : curr->constraints)
+						cons1.insert(con);
+				}
+				curr = curr->parent;
+			}
+			curr = c2.n;
+			while (curr->parent != nullptr)
+			{
+				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE ||
+					get<0>(curr->constraints.front()) == c2.a) {
+					for (auto con : curr->constraints)
+						cons2.insert(con);
+				}
+
+				curr = curr->parent;
+			}
+
+			return equal(cons1.begin(), cons1.end(), cons2.begin(), cons2.end());
+		}
+	};
+
+	struct Hasher
+	{
+		std::size_t operator()(const ConstraintsHasher& entry) const
+		{
+			const ICBSNode* curr = entry.n;
+			size_t cons_hash = 0;
+			while (curr->parent != nullptr)
+			{
+				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE ||
+					get<0>(curr->constraints.front()) == entry.a)
+				{
+					for (auto con : curr->constraints)
+					{
+						cons_hash += 3 * std::hash<int>()(std::get<0>(con)) +
+							5 * std::hash<int>()(std::get<1>(con)) +
+							7 * std::hash<int>()(std::get<2>(con)) +
+							11 * std::hash<int>()(std::get<3>(con));
+					}
+				}
+				curr = curr->parent;
+			}
+			return cons_hash;
+		}
+	};
+};

@@ -2,8 +2,8 @@
 #include <random>      // std::default_random_engine
 #include <chrono>       // std::chrono::system_clock
 #include "ICBSSearch.h"
-#include "RectangleReasoning.h"
-#include "CorridorReasoning.h"
+#include "SIPP.h"
+#include "SpaceTimeAStar.h"
 
 #define MAX_RUNTIME4PAIR 6000
 
@@ -220,7 +220,7 @@ int ICBSSearch::getEdgeWeight(int a1, int a2, ICBSNode& node, bool cardinal)
 	}
 	if (h_type == heuristics_type::WDG && rst > 0)
 	{
-		vector<SingleAgentICBS*> engines(2);
+		vector<SingleAgentSolver*> engines(2);
 		engines[0] = search_engines[a1];
 		engines[1] = search_engines[a2];
 		vector<vector<PathEntry>> initial_paths(2);
@@ -228,18 +228,12 @@ int ICBSSearch::getEdgeWeight(int a1, int a2, ICBSNode& node, bool cardinal)
 		initial_paths[1] = *paths[a2];
 		double cutoffTime = std::min(MAX_RUNTIME4PAIR * 1.0, time_limit - runtime);
 		int upperbound = (int)initial_paths[0].size() + (int)initial_paths[1].size() + 10;
-		vector<ConstraintTable> cons(2);
-		/*ConstraintTable ct1(initial_constraints[a1]);
-		ct1.goal_location = search_engines[a1]->goal_location;
-		node.getConstraintTable(ct1, a1, ml->cols, ml->map_size());
-		ConstraintTable ct2(initial_constraints[a2]);
-		ct2.goal_location = search_engines[a2]->goal_location;
-		node.getConstraintTable(ct2, a2, ml->cols, ml->map_size());*/
-		cons[0].goal_location = search_engines[a1]->goal_location;
-		node.getConstraintTable(cons[0], a1, ml->cols, ml->map_size());
-		cons[1].goal_location = search_engines[a2]->goal_location;
-		node.getConstraintTable(cons[1], a2, ml->cols, ml->map_size());
-		ICBSSearch solver(ml, engines, cons, initial_paths, 1.0, heuristics_type::CG, true, upperbound, scr);
+		vector<ConstraintTable> constraints{
+			ConstraintTable(initial_constraints[a1]),
+			ConstraintTable(initial_constraints[a2])};
+		constraints[0].build(node, a1);
+		constraints[1].build(node, a2);
+		ICBSSearch solver(engines, constraints, initial_paths, 1.0, heuristics_type::CG, true, upperbound, scr);
 		solver.disjoint_splitting = disjoint_splitting;
 		solver.bypass = false; // I guess that bypassing does not help two-agent path finding???
 		solver.rectangle_reasoning = rectangle_reasoning;
@@ -433,7 +427,7 @@ void ICBSSearch::findConflicts(ICBSNode& curr, int a1, int a2)
 void ICBSSearch::findConflicts(ICBSNode& curr)
 {
 	clock_t t = clock();
-	if (curr.parent != NULL)
+	if (curr.parent != nullptr)
 	{
 		// Copy from parent、
 		list<int> new_agents;
@@ -496,8 +490,8 @@ MDD * ICBSSearch::getMDD(ICBSNode& node, int id)
 	clock_t t = std::clock();
 	MDD * mdd = new MDD();
 	ConstraintTable ct(initial_constraints[id]);
-	node.getConstraintTable(ct, id, ml->cols, ml->map_size());
-	mdd->buildMDD(ct, ml->map_size(), paths[id]->size(), *search_engines[id]);
+	ct.build(node, id);
+	mdd->buildMDD(ct, paths[id]->size(), search_engines[id]);
 	if (!mddTable.empty())
 	{
 		ConstraintsHasher c(id, &node);
@@ -615,8 +609,7 @@ void ICBSSearch::classifyConflicts(ICBSNode &parent)
 		// Corridor reasoning
 		if (corridor_reasoning)
 		{
-			auto corridor = findCorridorConflict(con, paths, initial_constraints, cardinal1 && cardinal2, &parent,
-				ml->get_map(), ml->cols, ml->map_size());
+			auto corridor = corridor_helper.findCorridorConflict(con, paths, cardinal1 && cardinal2, parent);
 			if (corridor != nullptr)
 			{
 				corridor->p = con->p;
@@ -639,7 +632,7 @@ void ICBSSearch::classifyConflicts(ICBSNode &parent)
 			auto mdd1 = getMDD(parent, a1);
 			auto mdd2 = getMDD(parent, a2);
 
-			auto rectangle = findRectangleConflict(paths, timestep, ml->cols, ml->map_size(), a1, a2, loc1, mdd1, mdd2);
+			auto rectangle = rectangle_helper.findRectangleConflict(paths, timestep, a1, a2, loc1, mdd1, mdd2);
 			if (rectangle != nullptr)
 			{
 				parent.conflicts.push_back(rectangle);
@@ -690,30 +683,25 @@ void ICBSSearch::removeLowPriorityConflicts(std::list<std::shared_ptr<Conflict>>
 bool ICBSSearch::findPathForSingleAgent(ICBSNode*  node, int ag, int lowerbound)
 {
 	clock_t t = clock();
-	// extract all constraints on agent ag
-	ConstraintTable ct(initial_constraints[ag]);
-	node->getConstraintTable(ct, ag, ml->cols, ml->map_size());
-
 	// build reservation table
-	CAT cat(node->makespan + 1);  // initialized to false
-	updateReservationTable(cat, ag, *node);
+	// CAT cat(node->makespan + 1);  // initialized to false
+	// updateReservationTable(cat, ag, *node);
 	// find a path
-	vector<PathEntry> newPath;
-	bool foundSol = search_engines[ag]->findPath(newPath, ct, cat, lowerbound);
+	Path new_path = search_engines[ag]->findPath(*node, initial_constraints[ag], paths, ag, lowerbound);
 	LL_num_expanded += search_engines[ag]->num_expanded;
 	LL_num_generated += search_engines[ag]->num_generated;
 	runtime_path_finding += (double)(clock() - t) / CLOCKS_PER_SEC;
-	if (foundSol)
+	if (!new_path.empty())
 	{
-		if (isSamePath(*paths[ag], newPath))
+		if (isSamePath(*paths[ag], new_path))
 		{
 			cerr << "Should not find the same path!" << endl;
 			exit(-1);
 		}
-		node->paths.emplace_back(ag, newPath);
-		node->g_val = node->g_val - (int)paths[ag]->size() + (int)newPath.size();
+		node->paths.emplace_back(ag, new_path);
+		node->g_val = node->g_val - (int)paths[ag]->size() + (int)new_path.size();
 		paths[ag] = &node->paths.back().second;
-		node->makespan = std::max(node->makespan, newPath.size() - 1);
+		node->makespan = std::max(node->makespan, new_path.size() - 1);
 		return true;
 	}
 	else
@@ -812,7 +800,8 @@ bool ICBSSearch::generateChild(ICBSNode*  node, ICBSNode* parent)
 		int lowerbound;
 		if (parent->conflict->t >= (int)paths[agent]->size()) //conflict happens after agent reaches its goal
 			lowerbound = parent->conflict->t + 1;
-		else if (parent->conflict->p == conflict_priority::CARDINAL)
+		else if (parent->conflict->p == conflict_priority::CARDINAL && 
+			parent->conflict->type != conflict_type::CORRIDOR)
 			lowerbound = (int)paths[agent]->size();
 		else
 			lowerbound = (int)paths[agent]->size() - 1;
@@ -891,12 +880,11 @@ void ICBSSearch::printPaths() const
 {
 	for (int i = 0; i < num_of_agents; i++)
 	{
-		std::cout << "Agent " << i << " (" << paths_found_initially[i].size() - 1 << " -->" <<
+		cout << "Agent " << i << " (" << paths_found_initially[i].size() - 1 << " -->" <<
 			paths[i]->size() - 1 << "): ";
-		for (auto & t : *paths[i])
-			std::cout << "(" << t.location / search_engines[0]->num_col << "," <<
-			t.location % search_engines[0]->num_col << ")->";
-		std::cout << std::endl;
+		for (const auto & t : *paths[i])
+			cout << t.location  << "->";
+		cout << std::endl;
 	}
 }
 
@@ -927,32 +915,6 @@ void ICBSSearch::updateFocalList()
 	}
 }
 
-void ICBSSearch::updateReservationTable(CAT& cat, int exclude_agent, const ICBSNode &node)
-{
-	for (int ag = 0; ag < num_of_agents; ag++)
-	{
-		if (ag != exclude_agent && paths[ag] != nullptr)
-		{
-			for (size_t timestep = 0; timestep < node.makespan + 1; timestep++)
-			{
-				if (timestep >= paths[ag]->size())
-				{
-					cat[timestep].insert(paths[ag]->back().location);
-				}
-				else// otherwise, return its location for that timestep
-				{
-					int id = paths[ag]->at(timestep).location;
-					cat[timestep].insert(id);
-					if (timestep > 0 && paths[ag]->at(timestep - 1).location != id)
-					{
-						int prev_id = paths[ag]->at(timestep - 1).location;
-						cat[timestep].insert((1 + id) * ml->cols * ml->rows + prev_id);
-					}
-				}
-			}
-		}
-	}
-}
 
 void ICBSSearch::printResults() const
 {
@@ -966,14 +928,14 @@ void ICBSSearch::printResults() const
 		cout << "Nodesout,";
 
 	std::cout << solution_cost << "," << runtime << "," <<
-		HL_num_expanded << "," << // HL_num_generated << "," << LL_num_expanded << "," << LL_num_generated << "," <<
+		HL_num_expanded << "," << LL_num_expanded << "," << // HL_num_generated << "," << LL_num_generated << "," <<
 		min_f_val << "," << dummy_start->g_val << "," << dummy_start->f_val << "," <<
 		std::endl;
 }
 
 void ICBSSearch::saveResults(const std::string &fileName, const std::string &instanceName) const
 {
-	ifstream infile(fileName);
+	std::ifstream infile(fileName);
 	bool exist = infile.good();
 	infile.close();
 	if (!exist)
@@ -990,7 +952,7 @@ void ICBSSearch::saveResults(const std::string &fileName, const std::string &ins
 			"preprocessing runtime,solver name,instance name" << endl;
 		addHeads.close();
 	}
-	ofstream stats(fileName, ios::app);
+	ofstream stats(fileName, std::ios::app);
 	stats << runtime << "," << HL_num_expanded << "," << HL_num_generated << "," << LL_num_expanded << "," << LL_num_generated << "," <<
 
 		solution_cost << "," << min_f_val << "," << dummy_start->g_val << "," << dummy_start->f_val << "," <<
@@ -1055,6 +1017,7 @@ string ICBSSearch::getSolverName() const
 		name += "+T";
 	if (bypass)
 		name += "+BP";
+	name += " with " + search_engines[0]->getName();
 	return name;
 }
 
@@ -1064,7 +1027,7 @@ bool ICBSSearch::runICBSSearch(double time_limit, int initial_h)
 	if (screen > 0) // 1 or 2
 	{
 		string name = getSolverName();
-		name.resize(25, ' ');
+		name.resize(35, ' ');
 		cout << name << ": ";
 	}
 	// set timer
@@ -1319,45 +1282,47 @@ void ICBSSearch::releaseMDDMemory(int id)
 }
 
 
-ICBSSearch::ICBSSearch(const MapLoader* ml, vector<SingleAgentICBS*>& search_engines,
-	const vector<ConstraintTable>& constraints,
+ICBSSearch::ICBSSearch(vector<SingleAgentSolver*>& search_engines,
+	const vector<ConstraintTable>& initial_constraints,
 	vector<Path>& paths_found_initially, double f_w,
 	heuristics_type h_type, bool PC,
 	int cost_upperbound, int screen) :
 	PC(PC), screen(screen), h_type(h_type), focal_w(f_w), cost_upperbound(cost_upperbound),
-	initial_constraints(constraints), ml(ml), paths_found_initially(paths_found_initially),
-	search_engines(search_engines)
+	initial_constraints(initial_constraints), paths_found_initially(paths_found_initially),
+	search_engines(search_engines), 
+	rectangle_helper(search_engines[0]->instance), 
+	corridor_helper(search_engines[0]->instance, initial_constraints, search_engines[0]->getName() == "SIPP")
 {
 	num_of_agents = search_engines.size();
 }
 
-ICBSSearch::ICBSSearch(const MapLoader& ml, const AgentsLoader& al, double f_w, heuristics_type h_type,
-	bool PC, int screen) :
+ICBSSearch::ICBSSearch(const Instance& instance, double f_w, heuristics_type h_type,
+	bool PC, bool sipp, int screen) :
 	PC(PC), screen(screen), h_type(h_type), focal_w(f_w),
-	ml(&ml), num_of_agents(al.num_of_agents)
+	num_of_agents(instance.getDefaultNumberOfAgents()),
+	rectangle_helper(instance),
+	corridor_helper(instance, initial_constraints, sipp)
 {
-	initial_constraints.resize(num_of_agents);
-
 	clock_t t = std::clock();
-	search_engines = vector < SingleAgentICBS* >(num_of_agents);
+	initial_constraints.resize(num_of_agents, 
+		ConstraintTable(instance.num_of_cols, instance.map_size));
+
+	search_engines = vector < SingleAgentSolver* >(num_of_agents);
 	for (int i = 0; i < num_of_agents; i++)
 	{
-		int init_loc = ml.linearize_coordinate((al.initial_locations[i]).first, (al.initial_locations[i]).second);
-		int goal_loc = ml.linearize_coordinate((al.goal_locations[i]).first, (al.goal_locations[i]).second);
-		initial_constraints[i].goal_location = goal_loc;
-		ComputeHeuristic ch(init_loc, goal_loc, ml.get_map(), ml.rows, ml.cols, ml.get_moves_offset());
-		search_engines[i] = new SingleAgentICBS(init_loc, goal_loc, ml.get_map(), ml.rows*ml.cols,
-			ml.get_moves_offset(), ml.cols);
-		ch.getHVals(search_engines[i]->my_heuristic);
+		if (sipp)
+			search_engines[i] = new SIPP(instance, i);
+		else
+			search_engines[i] = new SpaceTimeAStar(instance, i);
+
+		initial_constraints[i].goal_location = search_engines[i]->goal_location;
 	}
 	runtime_preprocessing = (double)(std::clock() - t) / CLOCKS_PER_SEC;
 
 	if (screen >= 2) // print start and goals
 	{
-		al.printAgentsInitGoal();
+		instance.printAgents();
 	}
-
-
 }
 
 bool ICBSSearch::generateRoot(int initial_h)
@@ -1389,13 +1354,12 @@ bool ICBSSearch::generateRoot(int initial_h)
 
 		for (auto i : agents)
 		{
-			ConstraintTable ct;
-			CAT cat(dummy_start->makespan + 1);  // initialized to false
-			updateReservationTable(cat, i, *dummy_start);
-
-			if (!search_engines[i]->findPath(paths_found_initially[i], ct, cat, 0))
+			//CAT cat(dummy_start->makespan + 1);  // initialized to false
+			//updateReservationTable(cat, i, *dummy_start);
+			paths_found_initially[i] = search_engines[i]->findPath(*dummy_start, initial_constraints[i], paths, i, 0);
+			if (paths_found_initially[i].empty())
 			{
-				cout << "NO SOLUTION EXISTS";
+				cout << "No path exists for agent " << i << endl;
 				return false;
 			}
 

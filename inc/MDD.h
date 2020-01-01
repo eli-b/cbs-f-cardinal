@@ -1,6 +1,5 @@
 #pragma once
-
-#include "SingleAgentICBS.h"
+#include "SingleAgentSolver.h"
 
 
 class MDDNode
@@ -39,8 +38,8 @@ class MDD
 public:
 	std::vector<std::list<MDDNode*>> levels;
 
-	bool buildMDD(const ConstraintTable& ct, int map_size,
-		int numOfLevels, const SingleAgentICBS & solver);
+	bool buildMDD(const ConstraintTable& ct,
+		int numOfLevels, const SingleAgentSolver* solver);
 	// bool buildMDD(const std::vector <std::list< std::pair<int, int> > >& constraints, int numOfLevels,
 	// 	int start_location, const int* moves_offset, const std::vector<int>& my_heuristic, int map_size, int num_col);
 
@@ -100,3 +99,5 @@ public:
 
 // Match and prune MDD according to another MDD.
 bool SyncMDDs(const MDD &mdd1, const MDD& mdd2);
+
+typedef unordered_map<ConstraintsHasher, MDD*, ConstraintsHasher::Hasher, ConstraintsHasher::EqNode> MDDTable;

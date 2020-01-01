@@ -1,33 +1,33 @@
 #include "CorridorReasoning.h"
 #include "Conflict.h"
 #include <memory>
-#include "LLNode.h"
+#include "SpaceTimeAstar.h"
+#include "SIPP.h"
 
-std::shared_ptr<Conflict> findCorridorConflict(const std::shared_ptr<Conflict>& con,
-        const vector<Path*>& paths,
-        const vector<ConstraintTable>& initial_constraints,
-        bool cardinal, ICBSNode* node,
-        const bool* my_map, int num_col, int map_size)
+
+std::shared_ptr<Conflict> CorridorReasoning::findCorridorConflict(const std::shared_ptr<Conflict>& conflict,
+	const vector<Path*>& paths,
+	bool cardinal, const ICBSNode& node)
 {
-    int a[2] = {con->a1, con->a2};
+    int a[2] = { conflict->a1, conflict->a2 };
     int  agent, loc1, loc2, timestep;
     constraint_type type;
-    std::tie(agent, loc1, loc2, timestep, type) = con->constraint1.back();
+    std::tie(agent, loc1, loc2, timestep, type) = conflict->constraint1.back();
     int curr = -1;
-    if (getDegree(loc1, my_map, num_col, map_size) == 2)
+    if (instance.getDegree(loc1) == 2)
     {
         curr = loc1;
         if (loc2 >= 0)
             timestep--;
     }
-    else if (getDegree(loc2, my_map, num_col, map_size) == 2)
+    else if (loc2 >= 0 && instance.getDegree(loc2) == 2)
         curr = loc2;
     if (curr <= 0)
         return nullptr;
 
     int t[2];
     for (int i = 0; i < 2; i++)
-        t[i] = getEnteringTime(*paths[a[i]], *paths[a[1-i]], timestep, my_map, num_col, map_size);
+        t[i] = getEnteringTime(*paths[a[i]], *paths[a[1-i]], timestep);
     if (t[0] > t[1])
     {
         int temp = t[0]; t[0] = t[1]; t[1] = temp;
@@ -51,68 +51,52 @@ std::shared_ptr<Conflict> findCorridorConflict(const std::shared_ptr<Conflict>& 
     }
     std::pair<int, int> edge; // one edge in the corridor
     int k = getCorridorLength(*paths[a[0]], t[0], u[1], edge);
-
-    std::pair<int, int> edge_empty = make_pair(-1, -1);
-    ConstraintTable ct1(initial_constraints[a[0]]);
-    node->getConstraintTable(ct1, a[0], num_col, map_size);
-    int t3 = getBypassLength(paths[a[0]]->front().location, u[1], edge_empty, my_map, num_col, map_size, ct1, INT_MAX);
-    int t3_ = getBypassLength(paths[a[0]]->front().location, u[1], edge, my_map, num_col, map_size, ct1, t3 + 2 * k  + 1);
-    ConstraintTable ct2(initial_constraints[a[1]]);
-    node->getConstraintTable(ct2, a[1], num_col, map_size);
-    int t4 = getBypassLength(paths[a[1]]->front().location, u[0], edge_empty, my_map, num_col, map_size, ct2, INT_MAX);
-    int t4_ = getBypassLength(paths[a[1]]->front().location, u[0], edge, my_map, num_col, map_size, ct2, t3 + k + 1);
+	int t3, t3_, t4, t4_;
+	if (usingSIPP)
+	{
+		std::pair<int, int> edge_empty = make_pair(-1, -1);
+		ReservationTable rt1(initial_constraints[a[0]]);
+		rt1.build(node, a[0]);
+		t3 = getBypassLengthBySIPP(paths[a[0]]->front().location, u[1], edge_empty, rt1, INT_MAX);
+		t3_ = getBypassLengthBySIPP(paths[a[0]]->front().location, u[1], edge, rt1, t3 + 2 * k + 1);
+		ReservationTable rt2(initial_constraints[a[1]]);
+		rt2.build(node, a[1]);
+		t4 = getBypassLengthBySIPP(paths[a[1]]->front().location, u[0], edge_empty, rt2, INT_MAX);
+		t4_ = getBypassLengthBySIPP(paths[a[1]]->front().location, u[0], edge, rt2, t3 + k + 1);
+	}
+	else
+	{
+		std::pair<int, int> edge_empty = make_pair(-1, -1);
+		ConstraintTable ct1(initial_constraints[a[0]]);
+		ct1.build(node, a[0]);
+		t3 = getBypassLengthByAStar(paths[a[0]]->front().location, u[1], edge_empty, ct1, INT_MAX);
+		t3_ = getBypassLengthByAStar(paths[a[0]]->front().location, u[1], edge, ct1, t3 + 2 * k + 1);
+		ConstraintTable ct2(initial_constraints[a[1]]);
+		ct2.build(node, a[1]);
+		t4 = getBypassLengthByAStar(paths[a[1]]->front().location, u[0], edge_empty, ct2, INT_MAX);
+		t4_ = getBypassLengthByAStar(paths[a[1]]->front().location, u[0], edge, ct2, t3 + k + 1);
+	}
+   
     if (abs(t3 - t4) <= k && t3_ > t3 && t4_ > t4)
     {
         std::shared_ptr<Conflict> corridor = std::make_shared<Conflict>();
         corridor->corridorConflict(a[0], a[1], u[1], u[0], t3, t4, t3_, t4_, k);
-        if (blocked(*paths[corridor->a1], corridor->constraint1, num_col) && blocked(*paths[corridor->a2], corridor->constraint2, num_col))
+        if (blocked(*paths[corridor->a1], corridor->constraint1.front()) && 
+			blocked(*paths[corridor->a2], corridor->constraint2.front()))
             return corridor;
     }
 
     return nullptr;
 }
 
-/*bool validMove(int curr, int next, int map_cols, int map_size)
-{
-	if (next < 0 || next >= map_size)
-		return false;
-	return getMahattanDistance(curr, next, map_cols) < 2;
-}*/
 
-int getMahattanDistance(int loc1, int loc2, int map_cols)
-{
-	int loc1_x = loc1 / map_cols;
-	int loc1_y = loc1 % map_cols;
-	int loc2_x = loc2 / map_cols;
-	int loc2_y = loc2 % map_cols;
-	return std::abs(loc1_x - loc2_x) + std::abs(loc1_y - loc2_y);
-}
-
-
-int getDegree(int loc, const bool*map, int num_col, int map_size)
-{
-	if (loc < 0 || loc >= map_size || map[loc])
-		return -1;
-	int degree = 0;
-	if (0 < loc - num_col && !map[loc - num_col])
-		degree++;
-	if (loc + num_col < map_size && !map[loc + num_col])
-		degree++;
-	if (loc % num_col > 0 && !map[loc - 1])
-		degree++;
-	if (loc % num_col < num_col - 1 && !map[loc + 1])
-		degree++;
-	return degree;
-}
-
-int getEnteringTime(const std::vector<PathEntry>& path, const std::vector<PathEntry>& path2, int t,
-	const bool*map, int num_col, int map_size)
+int CorridorReasoning::getEnteringTime(const std::vector<PathEntry>& path, const std::vector<PathEntry>& path2, int t)
 {
 	if (t >= (int)path.size())
 		t = (int)path.size() - 1;
 	int loc = path[t].location;
 	while (loc != path.front().location && loc != path2.back().location &&
-		getDegree(loc, map, num_col, map_size) == 2)
+		instance.getDegree(loc) == 2)
 	{
 		t--;
 		loc = path[t].location;
@@ -120,7 +104,7 @@ int getEnteringTime(const std::vector<PathEntry>& path, const std::vector<PathEn
 	return t;
 }
 
-int getCorridorLength(const std::vector<PathEntry>& path, int t_start, int loc_end, std::pair<int, int>& edge)
+int CorridorReasoning::getCorridorLength(const std::vector<PathEntry>& path, int t_start, int loc_end, std::pair<int, int>& edge)
 {
 	int curr = path[t_start].location;
 	int next;
@@ -154,19 +138,19 @@ int getCorridorLength(const std::vector<PathEntry>& path, int t_start, int loc_e
 	return length;
 }
 
-int getBypassLength(int start, int end, std::pair<int, int> blocked, const bool* my_map, int num_col, int map_size)
+/*int getBypassLength(int start, int end, std::pair<int, int> blocked, const bool* my_map, int num_col, int map_size)
 {
 	int length = INT_MAX;
 	// generate a heap that can save nodes (and a open_handle)
-	boost::heap::fibonacci_heap< LLNode*, boost::heap::compare<LLNode::compare_node> > heap;
-	boost::heap::fibonacci_heap< LLNode*, boost::heap::compare<LLNode::compare_node> >::handle_type open_handle;
-	unordered_set<LLNode*, LLNode::NodeHasher, LLNode::eqnode> nodes;
+	boost::heap::fibonacci_heap< AStarNode*, boost::heap::compare<AStarNode::compare_node> > heap;
+	// boost::heap::fibonacci_heap< AStarNode*, boost::heap::compare<AStarNode::compare_node> >::handle_type open_handle;
+	unordered_set<AStarNode*, AStarNode::NodeHasher, AStarNode::eqnode> nodes;
 
-	auto root = new LLNode(start, 0, getMahattanDistance(start, end, num_col), nullptr, 0);
+	auto root = new AStarNode(start, 0, getMahattanDistance(start, end, num_col), nullptr, 0);
 	root->open_handle = heap.push(root);  // add root to heap
 	nodes.insert(root);       // add root to hash_table (nodes)
 	int moves_offset[4] = { 1, -1, num_col, -num_col };
-	LLNode* curr = nullptr;
+	AStarNode* curr = nullptr;
 	while (!heap.empty())
 	{
 		curr = heap.top();
@@ -176,7 +160,7 @@ int getBypassLength(int start, int end, std::pair<int, int> blocked, const bool*
 			length = curr->g_val;
 			break;
 		}
-		for (int direction = 0; direction < 5; direction++)
+		for (int direction = 0; direction < 4; direction++)
 		{
 			int next_loc = curr->loc + moves_offset[direction];
 			if (validMove(curr->loc, next_loc, num_col, map_size) && !my_map[next_loc])
@@ -187,7 +171,7 @@ int getBypassLength(int start, int end, std::pair<int, int> blocked, const bool*
 					continue;
 				}
 				int next_g_val = curr->g_val + 1;
-				auto next = new LLNode(next_loc, next_g_val, getMahattanDistance(next_loc, end, num_col), NULL, 0);
+				auto next = new LLNode(next_loc, next_g_val, getMahattanDistance(next_loc, end, num_col), nullptr, 0);
 				auto it = nodes.find(next);
 				if (it == nodes.end())
 				{  // add the newly generated node to heap and hash table
@@ -212,72 +196,70 @@ int getBypassLength(int start, int end, std::pair<int, int> blocked, const bool*
 		delete node;
 	}
 	return length;
-}
+}*/
 
-
-int getBypassLength(int start, int end, std::pair<int, int> blocked, const bool* my_map, int num_col, int map_size, ConstraintTable& constraint_table, int upper_bound)
+// run space-time A* to find the length of the shortest path between start and goal without using the blocked edge from either direction.
+// if the length is longer than the upper bound, then give up.
+int CorridorReasoning::getBypassLengthByAStar(int start, int end, std::pair<int, int> blocked,
+	const ConstraintTable& constraint_table, int upper_bound)
 {
 	int length = INT_MAX;
 	// generate a heap that can save nodes (and a open_handle)
-	boost::heap::fibonacci_heap< LLNode*, boost::heap::compare<LLNode::compare_node> > heap;
-	boost::heap::fibonacci_heap< LLNode*, boost::heap::compare<LLNode::compare_node> >::handle_type open_handle;
-	unordered_set<LLNode*, LLNode::NodeHasher, LLNode::eqnode> nodes;
-	auto root = new LLNode(start, 0, getMahattanDistance(start, end, num_col), nullptr, 0);
-	root->open_handle = heap.push(root);  // add root to heap
+	boost::heap::fibonacci_heap< AStarNode*, boost::heap::compare<AStarNode::compare_node> > open_list;
+	// boost::heap::fibonacci_heap< AStarNode*, boost::heap::compare<LLNode::compare_node> >::handle_type open_handle;
+	unordered_set<AStarNode*, AStarNode::NodeHasher, AStarNode::eqnode> nodes;
+	auto root = new AStarNode(start, 0, instance.getManhattanDistance(start, end), nullptr, 0);
+	root->open_handle = open_list.push(root);  // add root to heap
 	nodes.insert(root);       // add root to hash_table (nodes)
-	int moves_offset[5] = { 1, -1, num_col, -num_col, 0};
-	LLNode* curr = nullptr;
-	while (!heap.empty())
+	AStarNode* curr = nullptr;
+	while (!open_list.empty())
 	{
-		curr = heap.top();
-		heap.pop();
-		if (curr->loc == end)
+		curr = open_list.top(); open_list.pop();
+		if (curr->location == end)
 		{
 			length = curr->g_val;
 			break;
 		}
-		for (int direction = 0; direction < 5; direction++)
+		list<int> next_locations = instance.getNeighbors(curr->location);
+		next_locations.emplace_back(curr->location);
+		for (int next_location : next_locations)
 		{
-			int next_loc = curr->loc + moves_offset[direction];
 			int next_timestep = curr->timestep + 1;
+			int next_g_val = curr->g_val + 1;
 			if (constraint_table.latest_timestep <= curr->timestep)
 			{
-				if (direction == 4)
+				if (curr->location == next_location)
 				{
 					continue;
 				}
 				next_timestep--;
 			}
-			
-			if (validMove(curr->loc, next_loc, num_col, map_size) && !my_map[next_loc] && 
-				!constraint_table.is_constrained(next_loc, next_timestep) &&
-				!constraint_table.is_constrained(curr->loc * map_size + next_loc, next_timestep))
+			if ((curr->location == blocked.first && next_location == blocked.second) ||
+				(curr->location == blocked.second && next_location == blocked.first)) // use the prohibited edge
+			{
+				continue;
+			}
+			if (!constraint_table.constrained(next_location, next_timestep) &&
+				!constraint_table.constrained(curr->location, next_location, next_timestep))
 			{  // if that grid is not blocked
-				if ((curr->loc == blocked.first && next_loc == blocked.second) ||
-					(curr->loc == blocked.second && next_loc == blocked.first)) // use the prohibited edge
-				{
-					continue;
-				}
-				int next_g_val = curr->g_val + 1;
-				int next_h_val = getMahattanDistance(next_loc, end, num_col);
+				int next_h_val = instance.getManhattanDistance(next_location, end);
 				if (next_g_val + next_h_val >= upper_bound) // the cost of the path is larger than the upper bound
 					continue;
-				auto* next = new LLNode(next_loc, next_g_val, next_h_val, nullptr, next_timestep);
+				auto next = new AStarNode(next_location, next_g_val, next_h_val, nullptr, next_timestep);
 				auto it = nodes.find(next);
 				if (it == nodes.end())
 				{  // add the newly generated node to heap and hash table
-					next->open_handle = heap.push(next);
+					next->open_handle = open_list.push(next);
 					nodes.insert(next);
 				}
 				else {  // update existing node's g_val if needed (only in the heap)
 					delete(next);  // not needed anymore -- we already generated it before
-					LLNode* existing_next = *it;
-					open_handle = (*it)->open_handle;
+					auto existing_next = *it;
 					if (existing_next->g_val > next_g_val)
 					{
 						existing_next->g_val = next_g_val;
 						existing_next->timestep = next_timestep;
-						heap.update(open_handle);
+						open_list.update(existing_next->open_handle);
 					}
 				}
 			}
@@ -291,19 +273,84 @@ int getBypassLength(int start, int end, std::pair<int, int> blocked, const bool*
 }
 
 
-bool isConstrained(int curr_id, int next_id, int next_timestep, const std::vector< std::list< std::pair<int, int> > >* cons)
+int CorridorReasoning::getBypassLengthBySIPP(int start, int end, std::pair<int, int> blocked,
+	ReservationTable& reservation_table, int upper_bound)
 {
-	if (cons == nullptr)
-		return false;
-	// check vertex constraints (being in next_id at next_timestep is disallowed)
-	if (next_timestep < static_cast<int>(cons->size()))
+	int length = INT_MAX;
+	// generate a heap that can save nodes (and a open_handle)
+	boost::heap::fibonacci_heap< SIPPNode*, boost::heap::compare<SIPPNode::compare_node> > open_list;
+	// boost::heap::fibonacci_heap< AStarNode*, boost::heap::compare<LLNode::compare_node> >::handle_type open_handle;
+	unordered_set<SIPPNode*, SIPPNode::NodeHasher, SIPPNode::eqnode> nodes;
+	
+	Interval interval = reservation_table.get_first_safe_interval(start);
+	assert(std::get<0>(interval) == 0);
+	auto root = new SIPPNode(start, 0, instance.getManhattanDistance(start, end), nullptr, 0, interval);
+	root->open_handle = open_list.push(root);  // add root to heap
+	nodes.insert(root);       // add root to hash_table (nodes)
+
+	while (!open_list.empty())
 	{
-		for (const auto & it : cons->at(next_timestep))
+		auto curr = open_list.top(); open_list.pop();
+		if (curr->location == end)
 		{
-			if ((std::get<0>(it) == next_id && std::get<1>(it) < 0)//vertex constraint
-				|| (std::get<0>(it) == curr_id && std::get<1>(it) == next_id)) // edge constraint
-				return true;
+			length = curr->g_val;
+			break;
 		}
+		for (int next_location : instance.getNeighbors(curr->location))
+		{
+			if ((curr->location == blocked.first && next_location == blocked.second) ||
+				(curr->location == blocked.second && next_location == blocked.first)) // use the prohibited edge
+			{
+				continue;
+			}
+
+			for (auto interval : reservation_table.get_safe_intervals(
+				curr->location, next_location, curr->timestep + 1, std::get<1>(curr->interval) + 1))
+			{
+				int next_timestep = max(curr->timestep + 1, (int)get<0>(interval));
+				int next_g_val = next_timestep;
+				int next_h_val = instance.getManhattanDistance(next_location, end);
+				if (next_g_val + next_h_val >= upper_bound) // the cost of the path is larger than the upper bound
+					continue;
+				auto next = new SIPPNode(next_location, next_g_val, next_h_val, nullptr, next_timestep, interval);
+				auto it = nodes.find(next);
+				if (it == nodes.end())
+				{  // add the newly generated node to heap and hash table
+					next->open_handle = open_list.push(next);
+					nodes.insert(next);
+				}
+				else {  // update existing node's g_val if needed (only in the heap)
+					delete(next);  // not needed anymore -- we already generated it before
+					auto existing_next = *it;
+					if (existing_next->g_val > next_g_val)
+					{
+						existing_next->g_val = next_g_val;
+						existing_next->timestep = next_timestep;
+						open_list.update(existing_next->open_handle);
+					}
+				}
+			}
+		}
+	}
+	for (auto node : nodes)
+	{
+		delete node;
+	}
+	return length;
+}
+
+bool CorridorReasoning::blocked(const Path& path, const Constraint& constraint)
+{
+	int a, loc, t1, t2;
+	constraint_type type;
+	tie(a, loc, t1, t2, type) = constraint;
+	assert(type == constraint_type::RANGE);
+	for (int t = t1; t < t2; t++)
+	{
+		if (t >= (int)path.size() && loc == path.back().location)
+			return true;
+		else if (t >= 0 && path[t].location == loc)
+			return true;
 	}
 	return false;
 }

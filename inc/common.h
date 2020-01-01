@@ -19,6 +19,7 @@ using std::vector;
 using std::list;
 using std::get;
 using std::tuple;
+using std::make_tuple;
 using std::pair;
 using std::make_pair;
 using std::tie;
@@ -31,16 +32,12 @@ using std::cout;
 using std::endl;
 using std::ofstream;
 using std::cerr;
+using std::string;
 
-//#include <boost/graph/adjacency_list.hpp>
-//typedef boost::adjacency_list_traits<int, int, boost::undirectedS > confilctGraph_t;
-//typedef confilctGraph_t::vertex_descriptor vertex_t;
-//typedef confilctGraph_t::edge_descriptor edge_t;
+#define MAX_TIMESTEP INT_MAX
 
 enum split_strategy { NON_DISJOINT, RANDOM, SINGLETONS, WIDTH, DISJOINT3, SPLIT_COUNT };
 enum heuristics_type { NONE, CG, DG, WDG, STRATEGY_COUNT };
-
-typedef vector< unordered_set<int64_t> > CAT; // conflict avoidance table
 
 struct PathEntry
 {
@@ -51,13 +48,12 @@ struct PathEntry
 
 typedef std::vector<PathEntry> Path;
 
-bool validMove(int curr, int next, int num_col, int map_size);
 
 bool isSamePath(const Path& p1, const Path& p2);
 
 // Only for three-tuples of std::hash-able types for simplicity.
 // You can of course template this struct to allow other hash functions
-struct three_tuple_hash {
+/*struct three_tuple_hash {
     template <class T1, class T2, class T3>
     std::size_t operator () (const std::tuple<T1, T2, T3> &p) const {
         auto h1 = std::hash<T1>{}(get<0>(p));
@@ -67,4 +63,4 @@ struct three_tuple_hash {
         // In the real world, use sth. like boost.hash_combine
         return h1 ^ h2 ^ h3;
     }
-};
+};*/

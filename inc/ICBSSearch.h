@@ -1,13 +1,8 @@
 #pragma once
 #include "HLHeuristic.h"
-#include "ICBSNode.h"
-#include "SingleAgentICBS.h"
-#include "compute_heuristic.h"
-#include "agents_loader.h"
-#include <ctime>
 #include "HTable.h"
-#include "MDD.h"
-#include "Conflict.h"
+#include "RectangleReasoning.h"
+#include "CorridorReasoning.h"
 
 class ICBSSearch
 {
@@ -59,9 +54,9 @@ public:
 	// Runs the algorithm until the problem is solved or time is exhausted 
 	bool runICBSSearch(double time_limit, int initial_h);
 
-	ICBSSearch(const MapLoader& ml, const AgentsLoader& al, double f_w,
-		heuristics_type h_type, bool PC, int screen);
-	ICBSSearch(const MapLoader* ml, vector<SingleAgentICBS*>& search_engines,
+	ICBSSearch(const Instance& instance, double f_w,
+		heuristics_type h_type, bool PC, bool sipp, int screen);
+	ICBSSearch(vector<SingleAgentSolver*>& search_engines,
 		const vector<ConstraintTable>& constraints,
 		vector<vector<PathEntry>>& paths_found_initially, double f_w,
 		heuristics_type h_type, bool PC, int cost_upperbound, int screen);
@@ -75,7 +70,10 @@ public:
 	void clear(); // used for rapid random  restart
 
 private:
-
+	RectangleReasoning rectangle_helper;
+	CorridorReasoning corridor_helper;
+	
+	// const Instance& instance;
 	typedef boost::heap::fibonacci_heap< ICBSNode*, boost::heap::compare<ICBSNode::compare_node> > heap_open_t;
 	typedef boost::heap::fibonacci_heap< ICBSNode*, boost::heap::compare<ICBSNode::secondary_compare_node> > heap_focal_t;
 	heap_open_t open_list;
@@ -109,7 +107,6 @@ private:
 	*/
 
 	vector<ConstraintTable> initial_constraints;
-	const MapLoader* ml;
 	std::clock_t start;
 
 	int num_of_agents;
@@ -118,7 +115,7 @@ private:
 	vector<Path*> paths;
 	vector<Path> paths_found_initially;  // contain initial paths found
 	vector<MDD*> mdds_initially;  // contain initial paths found
-	vector < SingleAgentICBS* > search_engines;  // used to find (single) agents' paths and mdd
+	vector < SingleAgentSolver* > search_engines;  // used to find (single) agents' paths and mdd
 
 
 												 // high level search
@@ -148,10 +145,8 @@ private:
 	void releaseMDDMemory(int id);
 
 	//update information
-	// int collectConstraints(ICBSNode* curr, int agent_id, std::vector <std::list< std::pair<int, int> > >& cons_vec); // return the minimal length of the path
 	inline void updatePaths(ICBSNode* curr);
 	void updateFocalList();
-	void updateReservationTable(CAT& res_table, int exclude_agent, const ICBSNode &node);
 	inline void releaseClosedListNodes();
 	inline void releaseOpenListNodes();
 	inline void releaseMDDTable();

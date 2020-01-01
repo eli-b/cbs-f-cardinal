@@ -1,6 +1,6 @@
 #pragma once
 #include "common.h"
-#include "MDD.h"
+
 
 enum conflict_type { TARGET, CORRIDOR, RECTANGLE, STANDARD, TYPE_COUNT };
 enum conflict_priority { CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
@@ -18,21 +18,6 @@ typedef std::tuple<int, int, int, int, constraint_type> Constraint;
 
 std::ostream& operator<<(std::ostream& os, const Constraint& constraint);
 
-/*
-// add a horizontal modified barrier constraint
-bool addModifiedHorizontalBarrierConstraint(const MDD* mdd, int x,
-	int Ri_y, int Rg_y, int Rg_t, int num_col,
-	std::list<Constraint>& constraints);
-
-// add a vertival modified barrier constraint
-bool addModifiedVerticalBarrierConstraint(const MDD* mdd, int y,
-	int Ri_x, int Rg_x, int Rg_t, int num_col,
-	std::list<Constraint>& constraints);
- */
-
-bool traverse(const Path& path, int loc, int t);
-
-bool blocked(const Path& path, const std::list<Constraint>& constraints, int num_col);
 
 class Conflict
 {
@@ -40,8 +25,8 @@ public:
 	int a1;
 	int a2;
 	int t;
-	std::list<Constraint> constraint1;
-	std::list<Constraint> constraint2;
+	list<Constraint> constraint1;
+	list<Constraint> constraint2;
 	conflict_type type;
 	conflict_priority p = conflict_priority::UNKNOWN;
 
@@ -82,8 +67,17 @@ public:
 	}
 
 	bool rectangleConflict(int a1, int a2, const std::pair<int, int>& Rs, const std::pair<int, int>& Rg,
-	                        const std::pair<int, int>& s1, const std::pair<int, int>& s2, int Rg_t,
-	                        const MDD* mdd1, const MDD* mdd2, int num_col); // For RM
+	                         int Rg_t, const list<Constraint>& constraint1, const list<Constraint>& constraint2) // For RM
+	{
+		this->a1 = a1;
+		this->a2 = a2;
+		this->t = Rg_t - abs(Rg.first - Rs.first) - abs(Rg.second - Rs.second);
+		this->constraint1 = constraint1;
+		this->constraint2 = constraint2;
+		type = conflict_type::RECTANGLE;
+		return true;
+	}
+
 
 	void targetConflict(int a1, int a2, int v, int t)
 	{
@@ -97,15 +91,7 @@ public:
 		type = conflict_type::TARGET;
 	}
 
-    // add a horizontal modified barrier constraint
-    static bool addModifiedHorizontalBarrierConstraint(int agent, const MDD* mdd, int x,
-                                                int Ri_y, int Rg_y, int Rg_t, int num_col,
-                                                std::list<Constraint>& constraints);
 
-    // add a vertival modified barrier constraint
-    static bool addModifiedVerticalBarrierConstraint(int agent, const MDD* mdd, int y,
-                                              int Ri_x, int Rg_x, int Rg_t, int num_col,
-                                              std::list<Constraint>& constraints);
 
 };
 
