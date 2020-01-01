@@ -10,7 +10,7 @@ Variants of Conflict-Based Search.
 
 1. Add disjoint splitting -- done with the main framework, but still need different agent selection strategies and the landmark method.
 
-2. Add sipp (or scipp)
+2. Add sipp (or scipp) -- done!
 
 3. Add bypassing -- done with BP1. Do we need BP2 in https://docs.wixstatic.com/ugd/749b4b_6c85984d14ff4379b3a4400aab955b7b.pdf?
 
