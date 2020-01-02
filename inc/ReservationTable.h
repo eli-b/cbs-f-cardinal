@@ -22,11 +22,14 @@ public:
    Interval get_first_safe_interval(int location);
     bool find_safe_interval(Interval& interval, int location, int t_min);
 
+	void buildCAT(int agent, const vector<Path*>& paths); // build the conflict avoidance table
 
     void print() const;
 
 private:
 	unordered_map<size_t, list<Interval > > rt; // location -> [t_min, t_max), num_of_collisions
+
+	unordered_map< size_t, list<pair<int, int> > > cat; // conflict avoidance table cat:  location -> time range, or edge -> time range
 
     void insert2RT(int location, size_t t_min, size_t t_max);
     void insertSoftConstraint2RT(int location, size_t t_min, size_t t_max);
@@ -34,4 +37,5 @@ private:
 
 	void updateRT(int location); // update RT at the gvien location
 
+	int getNumOfConflictsForStep(int curr_id, int next_id, int next_timestep) const;
 };

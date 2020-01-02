@@ -32,10 +32,14 @@ Path SIPP::findPath(const ICBSNode& node, const ConstraintTable& initial_constra
 	const vector<Path*>& paths, int agent, int lowerbound)
 {
 	Path path;
+	auto t = clock();
 	ReservationTable reservation_table(initial_constraints);
 	reservation_table.build(node, agent);
+	runtime_build_CT = (double)(clock() - t) / CLOCKS_PER_SEC;
 	int holding_time = reservation_table.getHoldingTime();
+	t = clock();
 	reservation_table.buildCAT(agent, paths);
+	runtime_build_CAT = (double)(clock() - t) / CLOCKS_PER_SEC;
 
 	num_expanded = 0;
 	num_generated = 0;

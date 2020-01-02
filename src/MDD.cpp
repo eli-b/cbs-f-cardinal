@@ -20,27 +20,27 @@
 }*/
 
 bool MDD::buildMDD(const ConstraintTable& ct,
-        int numOfLevels, const SingleAgentSolver* solver)
+        int num_of_levels, const SingleAgentSolver* solver)
 {
     auto root = new MDDNode(solver->start_location, nullptr); // Root
 	std::queue<MDDNode*> open;
 	std::list<MDDNode*> closed;
 	open.push(root);
 	closed.push_back(root);
-	levels.resize(numOfLevels);
+	levels.resize(num_of_levels);
 	while (!open.empty())
 	{
 		auto curr = open.front();
 		open.pop();
 		// Here we suppose all edge cost equals 1
-		if (curr->level == numOfLevels - 1)
+		if (curr->level == num_of_levels - 1)
 		{
 			levels.back().push_back(curr);
 			assert(open.empty());
 			break;
 		}
 		// We want (g + 1)+h <= f = numOfLevels - 1, so h <= numOfLevels - g - 2. -1 because it's the bound of the children.
-		int heuristicBound = numOfLevels - curr->level - 2;
+		int heuristicBound = num_of_levels - curr->level - 2;
 		list<int> next_locations = solver->getNextLocations(curr->location);
 		for (int next_location : next_locations) // Try every possible move. We only add backward edges in this step.
 		{
@@ -71,24 +71,32 @@ bool MDD::buildMDD(const ConstraintTable& ct,
 	assert(levels.back().size() == 1);
 
 	// Backward
-	for (int t = numOfLevels - 1; t > 0; t--)
+	auto goal_node = levels.back().back();
+	for (auto parent : goal_node->parents)
 	{
-		for (auto it = levels[t].begin(); it != levels[t].end(); ++it)
+		if (parent->location == goal_node->location) // the parent of the goal node should not be at the goal location
+			continue;
+		levels[num_of_levels - 2].push_back(parent);
+		parent->children.push_back(goal_node); // add forward edge	
+	}
+	for (int t = num_of_levels - 2; t > 0; t--)
+	{
+		for (auto node : levels[t])
 		{
-			for (auto parent = (*it)->parents.begin(); parent != (*it)->parents.end(); parent++)
+			for (auto parent : node->parents)
 			{
-				if ((*parent)->children.empty()) // a new node
+				if (parent->children.empty()) // a new node
 				{
-					levels[t - 1].push_back(*parent);
+					levels[t - 1].push_back(parent);
 				}
-				(*parent)->children.push_back(*it); // add forward edge	
+				parent->children.push_back(node); // add forward edge	
 			}
 		}
 	}
 
 	// Delete useless nodes (nodes who don't have any children)
-	for (auto & it : closed)
-		if (it->children.empty() && it->level < numOfLevels - 1)
+	for (auto it : closed)
+		if (it->children.empty() && it->level < num_of_levels - 1)
 			delete it;
 	closed.clear();
 	return true;

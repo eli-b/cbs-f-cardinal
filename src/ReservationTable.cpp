@@ -28,6 +28,59 @@
 }*/
 
 
+// build the constraint table and the conflict avoidance table
+void ReservationTable::buildCAT(int agent, const vector<Path*>& paths)
+{
+	for (size_t ag = 0; ag < paths.size(); ag++)
+	{
+		if (ag == agent || paths[ag] == nullptr)
+			continue;
+		if (paths[ag]->size() == 1) // its start location is its goal location
+		{
+			cat[paths[ag]->front().location].emplace_back(0, MAX_TIMESTEP);
+			continue;
+		}
+		int prev_location = paths[ag]->front().location;
+		int prev_timestep = 0;
+		for (size_t timestep = 0; timestep < paths[ag]->size(); timestep++)
+		{
+			int curr_location = paths[ag]->at(timestep).location;
+			if (prev_location != curr_location)
+			{
+				cat[prev_location].emplace_back(prev_timestep, timestep); // add vertex conflict
+				cat[getEdgeIndex(curr_location, prev_location)].emplace_back(timestep, timestep + 1); // add edge conflict
+				prev_location = curr_location;
+				prev_timestep = timestep;
+			}
+		}
+		cat[paths[ag]->back().location].emplace_back(paths[ag]->size() - 1, MAX_TIMESTEP);
+	}
+}
+
+int ReservationTable::getNumOfConflictsForStep(int curr_id, int next_id, int next_timestep) const
+{
+	int rst = 0;
+	auto& it = cat.find(next_id);
+	if (it != cat.end())
+	{
+		for (const auto& constraint : it->second)
+		{
+			if (constraint.first <= next_timestep && next_timestep < constraint.second)
+				rst++;
+		}
+	}
+	it = cat.find(getEdgeIndex(curr_id, next_id));
+	if (it != cat.end())
+	{
+		for (const auto& constraint : it->second)
+		{
+			if (constraint.first <= next_timestep && next_timestep < constraint.second)
+				rst++;
+		}
+	}
+	return rst;
+}
+
 void ReservationTable::insert2RT(int location, size_t t_min, size_t t_max)
 {
     if (rt.find(location) == rt.end())

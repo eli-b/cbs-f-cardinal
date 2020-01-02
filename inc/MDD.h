@@ -39,7 +39,7 @@ public:
 	std::vector<std::list<MDDNode*>> levels;
 
 	bool buildMDD(const ConstraintTable& ct,
-		int numOfLevels, const SingleAgentSolver* solver);
+		int num_of_levels, const SingleAgentSolver* solver);
 	// bool buildMDD(const std::vector <std::list< std::pair<int, int> > >& constraints, int numOfLevels,
 	// 	int start_location, const int* moves_offset, const std::vector<int>& my_heuristic, int map_size, int num_col);
 

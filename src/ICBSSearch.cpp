@@ -697,6 +697,8 @@ bool ICBSSearch::findPathForSingleAgent(ICBSNode*  node, int ag, int lowerbound)
 	Path new_path = search_engines[ag]->findPath(*node, initial_constraints[ag], paths, ag, lowerbound);
 	LL_num_expanded += search_engines[ag]->num_expanded;
 	LL_num_generated += search_engines[ag]->num_generated;
+	runtime_build_CT += search_engines[ag]->runtime_build_CT;
+	runtime_build_CAT += search_engines[ag]->runtime_build_CAT;
 	runtime_path_finding += (double)(clock() - t) / CLOCKS_PER_SEC;
 	if (!new_path.empty())
 	{
@@ -955,7 +957,8 @@ void ICBSSearch::saveResults(const std::string &fileName, const std::string &ins
 			"#merge MDDs,#solve 2 agents,#memoization," <<
 			"runtime of building heuristic graph,runtime of solving MVC," <<
 			"runtime of detecting conflicts,runtime of classifying conflicts," <<
-			"runtime of building MDDs,runtime of path finding,runtime of generating child nodes," <<
+			"runtime of building MDDs,runtime of building constraint tables,runtime of building CATs," <<
+			"runtime of path finding,runtime of generating child nodes," <<
 			"preprocessing runtime,solver name,instance name" << endl;
 		addHeads.close();
 	}
@@ -972,7 +975,8 @@ void ICBSSearch::saveResults(const std::string &fileName, const std::string &ins
 		runtime_build_dependency_graph << "," << runtime_solve_MVC << "," <<
 
 		runtime_detect_conflicts << "," << runtime_classify_conflicts << "," <<
-		runtime_build_MDDs << "," << runtime_path_finding << "," << runtime_generate_child << "," <<
+		runtime_build_MDDs << "," << runtime_build_CT << "," << runtime_build_CAT << "," <<
+		runtime_path_finding << "," << runtime_generate_child << "," <<
 
 		runtime_preprocessing << "," << getSolverName() << "," << instanceName << endl;
 	stats.close();

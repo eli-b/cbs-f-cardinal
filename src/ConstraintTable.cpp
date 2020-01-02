@@ -171,58 +171,142 @@ void ConstraintTable::build(const ICBSNode& node, int agent)
 }
 
 
-// build the constraint table and the conflict avoidance table
-void ConstraintTable::buildCAT(int agent, const vector<Path*>& paths)
+// build the conflict avoidance table
+void ConstraintTable::buildCAT(int agent, const vector<Path*>& paths, size_t cat_size)
 {
-	for (size_t ag = 0; ag < paths.size(); ag++)
+	if (map_size < map_size_threshold)
 	{
-		if (ag == agent || paths[ag] == nullptr)
-			continue;
-		if (paths[ag]->size() == 1) // its start location is its goal location
+		// cat_small.resize(cat_size * map_size, false);
+		cat_small.resize(cat_size, vector<size_t>(map_size, false));
+		for (size_t ag = 0; ag < paths.size(); ag++)
 		{
-			cat[paths[ag]->front().location].emplace_back(0, MAX_TIMESTEP);
-			continue;
-		}
-		int prev_location = paths[ag]->front().location;
-		int prev_timestep = 0;
-		for (size_t timestep = 0; timestep < paths[ag]->size(); timestep++)
-		{
-			int curr_location = paths[ag]->at(timestep).location;
-			if (prev_location != curr_location)
+			if (ag == agent || paths[ag] == nullptr)
+				continue;
+			for (size_t timestep = 0; timestep < paths[ag]->size(); timestep++)
 			{
-				cat[prev_location].emplace_back(prev_timestep, timestep); // add vertex conflict
-				cat[getEdgeIndex(prev_location, curr_location)].emplace_back(timestep, timestep + 1); // add edge conflict
-				prev_location = curr_location;
-				prev_timestep = timestep;
+				//cat_small[timestep * map_size + paths[ag]->at(timestep).location] = true;
+				cat_small[timestep][paths[ag]->at(timestep).location] = true;
 			}
+			int goal = paths[ag]->back().location;
+			for (size_t timestep = paths[ag]->size(); timestep < cat_size; timestep++)
+				// cat_small[timestep * map_size + goal] = true;
+				cat_small[timestep][goal] = true;
 		}
-		cat[paths[ag]->back().location].emplace_back(paths[ag]->size() - 1, MAX_TIMESTEP);
+	}
+	else
+	{
+		cat_large.resize(cat_size);
+		for (size_t ag = 0; ag < paths.size(); ag++)
+		{
+			if (ag == agent || paths[ag] == nullptr)
+				continue;
+			int prev = paths[ag]->front().location;
+			int curr;
+			for (size_t timestep = 1; timestep < paths[ag]->size(); timestep++)
+			{
+				curr = paths[ag]->at(timestep).location;
+				cat_large[timestep].push_back(curr);
+				cat_large[timestep].push_back(getEdgeIndex(curr, prev));
+				prev = curr;
+			}
+			int goal = paths[ag]->back().location;
+			for (size_t timestep = paths[ag]->size(); timestep < cat_size; timestep++)
+				cat_large[timestep].push_back(goal);
+		}
 	}
 }
 
 int ConstraintTable::getNumOfConflictsForStep(int curr_id, int next_id, int next_timestep) const
 {
-	int rst = 0;
-	auto& it = cat.find(next_id);
-	if (it != cat.end())
+	if (map_size < map_size_threshold)
 	{
-		for (const auto& constraint : it->second)
+		if (next_timestep >= (int)cat_small.size())
 		{
-			if (constraint.first <= next_timestep && next_timestep < constraint.second)
-				rst++;
+			if (cat_small.back()[next_id])
+				return 1;
+			else
+				return 0;
+		}
+		if (cat_small[next_timestep][next_id] ||
+			(curr_id != next_id && cat_small[next_timestep - 1][next_id] && cat_small[next_timestep][curr_id]))
+			return 1;
+		else
+			return 0;
+	}
+	else
+	{
+		if (next_timestep >= (int)cat_large.size())
+		{
+			for (const auto& loc : cat_large.back())
+			{
+				if (loc == next_id)
+					return 1;
+			}
+			return 0;
+		}
+		for (const auto& loc : cat_large[next_timestep])
+		{
+			if (loc == next_id)
+			{
+				return 1;
+			}
+			if (loc == getEdgeIndex(curr_id, next_id))
+			{
+				return 1;
+			}
+		}
+		return 0;
+		/*auto& it = cat.back().find(next_id);
+		if (it != cat.back().end())
+			return 1;
+		else
+			return 0;*/
+	}
+	/*int rst = 0;
+	auto& it = cat[next_timestep].find(next_id);
+	if (it != cat[next_timestep].end())
+	{
+		rst++;
+	}
+	if (curr_id != next_id)
+	{
+		it = cat[next_timestep].find(getEdgeIndex(curr_id, next_id));
+		if (it != cat[next_timestep].end())
+		{
+			rst++;
 		}
 	}
-	it = cat.find(getEdgeIndex(curr_id, next_id));
-	if (it != cat.end())
+	return rst;*/
+	
+
+	/*if (next_timestep >= (int)cat.size())
 	{
-		for (const auto& constraint : it->second)
+		auto& it = cat.back().find(next_id);
+		if (it != cat.back().end())
+			return 1;
+		else
+			return 0;
+	}
+	int rst = 0;
+	auto& it = cat[next_timestep].find(next_id);
+	if (it != cat[next_timestep].end())
+	{
+		rst++;
+	}
+	if (curr_id != next_id)
+	{
+		it = cat[next_timestep].find(getEdgeIndex(curr_id, next_id));
+		if (it != cat[next_timestep].end())
 		{
-			if (constraint.first <= next_timestep && next_timestep < constraint.second)
-				rst++;
+			rst++;
 		}
 	}
 	return rst;
+
+	*/
 }
+
+
 
 
 // return the earliest timestep that the agent can hold its goal location

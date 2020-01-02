@@ -25,17 +25,19 @@ Path SpaceTimeAStar::findPath(const ICBSNode& node, const ConstraintTable& initi
 	num_generated = 0;
 
 	// build constraint table
+	auto t = clock();
 	ConstraintTable constraint_table(initial_constraints);
 	constraint_table.build(node, agent);
-
+	runtime_build_CT = (double)(clock() - t) / CLOCKS_PER_SEC;
     if (constraint_table.constrained(start_location, 0))
     {
         return path;
     }
 
 	int holding_time = constraint_table.getHoldingTime();
-	constraint_table.buildCAT(agent, paths);
-
+	t = clock();
+	constraint_table.buildCAT(agent, paths, node.makespan + 1);
+	runtime_build_CAT = (double)(clock() - t) / CLOCKS_PER_SEC;
 	 // generate start and add it to the OPEN & FOCAL list
 	auto start = new AStarNode(start_location, 0, my_heuristic[start_location], nullptr, 0, 0, false);
 	num_generated++;
