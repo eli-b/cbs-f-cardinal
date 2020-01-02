@@ -21,7 +21,7 @@ Instance::Instance(const string& map_fname, const string& agent_fname,
 		}
 		else
 		{
-			cerr << "Map file " << map_fname << " not found." << std::endl;
+			cerr << "Map file " << map_fname << " not found." << endl;
 			exit(-1);
 		}
 	}
@@ -36,7 +36,7 @@ Instance::Instance(const string& map_fname, const string& agent_fname,
 		}
 		else
 		{
-			cerr << "Agent file " << agent_fname << " not found." << std::endl;
+			cerr << "Agent file " << agent_fname << " not found." << endl;
 			exit(-1);
 		}
 	}
@@ -78,7 +78,7 @@ void Instance::generateRandomAgents(int warehouse_width)
 		while ( k < num_of_agents)
 		{
 			int x = rand() % num_of_rows, y = rand() % num_of_cols;
-			int start = linearize_coordinate(x, y);
+			int start = linearizeCoordinate(x, y);
 			if (my_map[start] || starts[start])
 				continue;
 				
@@ -108,7 +108,7 @@ void Instance::generateRandomAgents(int warehouse_width)
 			int x = rand() % num_of_rows, y = rand() % warehouse_width;
 			if (k % 2 == 0)
 				y = num_of_cols - y - 1;
-			int start = linearize_coordinate(x, y);
+			int start = linearizeCoordinate(x, y);
 			if (starts[start])
 				continue;
 			// update start
@@ -124,7 +124,7 @@ void Instance::generateRandomAgents(int warehouse_width)
 			int x = rand() % num_of_rows, y = rand() % warehouse_width;
 			if (k % 2 == 1)
 				y = num_of_cols - y - 1;
-			int goal = linearize_coordinate(x, y);
+			int goal = linearizeCoordinate(x, y);
 			if (goals[goal])
 				continue;
 			// update goal
@@ -150,8 +150,8 @@ bool Instance::addObstacle(int obstacle)
 	if (my_map[obstacle])
 		return false;
 	my_map[obstacle] = true;
-	int obstacle_x = row_coordinate(obstacle);
-	int obstacle_y = col_coordinate(obstacle);
+	int obstacle_x = getRowCoordinate(obstacle);
+	int obstacle_y = getColCoordinate(obstacle);
 	int x[4] = { obstacle_x, obstacle_x + 1, obstacle_x, obstacle_x - 1 };
 	int y[4] = { obstacle_y - 1, obstacle_y, obstacle_y + 1, obstacle_y };
 	int start = 0;
@@ -159,14 +159,14 @@ bool Instance::addObstacle(int obstacle)
 	while (start < 3 && goal < 4)
 	{
 		if (x[start] < 0 || x[start] >= num_of_rows || y[start] < 0 || y[start] >= num_of_cols 
-			|| my_map[linearize_coordinate(x[start], y[start])])
+			|| my_map[linearizeCoordinate(x[start], y[start])])
 			start++;
 		else if (goal <= start)
 			goal = start + 1;
 		else if (x[goal] < 0 || x[goal] >= num_of_rows || y[goal] < 0 || y[goal] >= num_of_cols 
-			|| my_map[linearize_coordinate(x[goal], y[goal])])
+			|| my_map[linearizeCoordinate(x[goal], y[goal])])
 			goal++;
-		else if (isConnected(linearize_coordinate(x[start], y[start]), linearize_coordinate(x[goal], y[goal]))) // cannot find a path from start to goal 
+		else if (isConnected(linearizeCoordinate(x[start], y[start]), linearizeCoordinate(x[goal], y[goal]))) // cannot find a path from start to goal 
 		{
 			start = goal;
 			goal++;
@@ -183,7 +183,7 @@ bool Instance::addObstacle(int obstacle)
 bool Instance::isConnected(int start, int goal)
 {
 	std::queue<int> open;
-	std::vector<bool> closed(map_size, false);
+	vector<bool> closed(map_size, false);
 	open.push(start);
 	closed[start] = true;
 	while (!open.empty())
@@ -204,7 +204,7 @@ bool Instance::isConnected(int start, int goal)
 
 void Instance::generateConnectedRandomGrid(int rows, int cols, int obstacles)
 {
-	std::cout << "Generate a " << rows << " x " << cols << " grid with " << obstacles << " obstacles. " << std::endl;
+	cout << "Generate a " << rows << " x " << cols << " grid with " << obstacles << " obstacles. " << endl;
 	int i, j;
 	num_of_rows = rows + 2;
 	num_of_cols = cols + 2;
@@ -220,16 +220,16 @@ void Instance::generateConnectedRandomGrid(int rows, int cols, int obstacles)
 	// add padding
 	i = 0;
 	for (j = 0; j<num_of_cols; j++)
-		my_map[linearize_coordinate(i, j)] = true;
+		my_map[linearizeCoordinate(i, j)] = true;
 	i = num_of_rows - 1;
 	for (j = 0; j<num_of_cols; j++)
-		my_map[linearize_coordinate(i, j)] = true;
+		my_map[linearizeCoordinate(i, j)] = true;
 	j = 0;
 	for (i = 0; i<num_of_rows; i++)
-		my_map[linearize_coordinate(i, j)] = true;
+		my_map[linearizeCoordinate(i, j)] = true;
 	j = num_of_cols - 1;
 	for (i = 0; i<num_of_rows; i++)
-		my_map[linearize_coordinate(i, j)] = true;
+		my_map[linearizeCoordinate(i, j)] = true;
 
 	// add obstacles uniformly at random
 	i = 0;
@@ -284,7 +284,7 @@ bool Instance::loadMap()
 	for (int i = 0; i < num_of_rows; i++) {
 		getline(myfile, line);
 		for (int j = 0; j < num_of_cols; j++) {
-			my_map[linearize_coordinate(i, j)] = (line[j] != '.');
+			my_map[linearizeCoordinate(i, j)] = (line[j] != '.');
 		}
 	}
 	myfile.close();
@@ -305,7 +305,7 @@ void Instance::printMap() const
 	{
 		for (int j = 0; j < num_of_cols; j++)
 		{
-			if (this->my_map[linearize_coordinate(i, j)])
+			if (this->my_map[linearizeCoordinate(i, j)])
 				cout << '@';
 			else
 				cout << '.';
@@ -324,7 +324,7 @@ void Instance::saveMap() const
 	{
 		for (int j = 0; j < num_of_cols; j++)
 		{
-			if (my_map[linearize_coordinate(i, j)])
+			if (my_map[linearizeCoordinate(i, j)])
 				myfile << "@";
 			else
 				myfile << ".";
@@ -369,13 +369,13 @@ bool Instance::loadAgents()
 			int col = atoi((*beg).c_str());
 			beg++;
 			int row = atoi((*beg).c_str());
-			start_locations[i] = linearize_coordinate(row, col);
+			start_locations[i] = linearizeCoordinate(row, col);
 			// read goal [row,col] for agent i
 			beg++;
 			col = atoi((*beg).c_str());
 			beg++;
 			row = atoi((*beg).c_str());
-			goal_locations[i] = linearize_coordinate(row, col);
+			goal_locations[i] = linearizeCoordinate(row, col);
 		}
 	}
 	else // My benchmark
@@ -396,13 +396,13 @@ bool Instance::loadAgents()
 			int row = atoi((*c_beg).c_str());
 			c_beg++;
 			int col = atoi((*c_beg).c_str());
-			start_locations[i] = linearize_coordinate(row, col);
+			start_locations[i] = linearizeCoordinate(row, col);
 			// read goal [row,col] for agent i
 			c_beg++;
 			row = atoi((*c_beg).c_str());
 			c_beg++;
 			col = atoi((*c_beg).c_str());
-			goal_locations[i] = linearize_coordinate(row, col);
+			goal_locations[i] = linearizeCoordinate(row, col);
 		}
 	}
 	myfile.close();
@@ -415,8 +415,8 @@ void Instance::printAgents() const
 {
   for (int i = 0; i < num_of_agents; i++) 
   {
-    cout << "Agent" << i << " : S=(" << row_coordinate(start_locations[i]) << "," << col_coordinate(start_locations[i]) 
-				<< ") ; G=(" << row_coordinate(goal_locations[i]) << "," << col_coordinate(goal_locations[i]) << ")" << endl;
+    cout << "Agent" << i << " : S=(" << getRowCoordinate(start_locations[i]) << "," << getColCoordinate(start_locations[i]) 
+				<< ") ; G=(" << getRowCoordinate(goal_locations[i]) << "," << getColCoordinate(goal_locations[i]) << ")" << endl;
   }
 }
 
@@ -427,8 +427,8 @@ void Instance::saveAgents() const
   myfile.open(agent_fname);
   myfile << num_of_agents << endl;
   for (int i = 0; i < num_of_agents; i++)
-    myfile << row_coordinate(start_locations[i]) << "," << col_coordinate(start_locations[i]) << ","
-           << row_coordinate(goal_locations[i]) << "," << col_coordinate(goal_locations[i]) << "," << endl;
+    myfile << getRowCoordinate(start_locations[i]) << "," << getColCoordinate(start_locations[i]) << ","
+           << getRowCoordinate(goal_locations[i]) << "," << getColCoordinate(goal_locations[i]) << "," << endl;
   myfile.close();
 }
 

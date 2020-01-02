@@ -24,7 +24,7 @@ bool MDD::buildMDD(const ConstraintTable& ct,
 {
     auto root = new MDDNode(solver->start_location, nullptr); // Root
 	std::queue<MDDNode*> open;
-	std::list<MDDNode*> closed;
+	list<MDDNode*> closed;
 	open.push(root);
 	closed.push_back(root);
 	levels.resize(num_of_levels);
@@ -226,7 +226,7 @@ MDD::MDD(const MDD & cpy) // deep copy
 		for (auto node = levels[t].begin(); node != levels[t].end(); ++node)
 		{
 			MDDNode* cpyNode = cpy.find((*node)->location, (*node)->level);
-			for (std::list<MDDNode*>::const_iterator cpyChild = cpyNode->children.begin(); cpyChild != cpyNode->children.end(); ++cpyChild)
+			for (list<MDDNode*>::const_iterator cpyChild = cpyNode->children.begin(); cpyChild != cpyNode->children.end(); ++cpyChild)
 			{
 				MDDNode* child = find((*cpyChild)->location, (*cpyChild)->level);
 				if (child == nullptr)
@@ -262,7 +262,7 @@ SyncMDD::SyncMDD(const MDD & cpy) // deep copy of a MDD
 		for (auto node = levels[t].begin(); node != levels[t].end(); ++node)
 		{
 			MDDNode* cpyNode = cpy.find((*node)->location, t);
-			for (std::list<MDDNode*>::const_iterator cpyChild = cpyNode->children.begin(); cpyChild != cpyNode->children.end(); ++cpyChild)
+			for (list<MDDNode*>::const_iterator cpyChild = cpyNode->children.begin(); cpyChild != cpyNode->children.end(); ++cpyChild)
 			{
 				SyncMDDNode* child = find((*cpyChild)->location, (*cpyChild)->level);
 				if (child == nullptr)

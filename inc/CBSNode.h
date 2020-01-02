@@ -1,15 +1,15 @@
 #pragma once
 #include "common.h"
 #include "Conflict.h"
-// #include "MDD.h"
 
-class ICBSNode
+
+class CBSNode
 {
 public:
 	// the following is used to comapre nodes in the OPEN list
 	struct compare_node 
 	{
-		bool operator()(const ICBSNode* n1, const ICBSNode* n2) const 
+		bool operator()(const CBSNode* n1, const CBSNode* n2) const 
 		{
 			return n1->f_val >= n2->f_val;
 		}
@@ -18,14 +18,14 @@ public:
 	// the following is used to comapre nodes in the FOCAL list
 	struct secondary_compare_node 
 	{
-		bool operator()(const ICBSNode* n1, const ICBSNode* n2) const 
+		bool operator()(const CBSNode* n1, const CBSNode* n2) const 
 		{
 			return n1->num_of_collisions >= n2->num_of_collisions;
 		}
 	};  // used by FOCAL to compare nodes by num_of_collisions (top of the heap has min h-val)
 
-	typedef boost::heap::pairing_heap< ICBSNode*, boost::heap::compare<ICBSNode::compare_node> >::handle_type open_handle_t;
-	typedef boost::heap::pairing_heap< ICBSNode*, boost::heap::compare<ICBSNode::secondary_compare_node> >::handle_type focal_handle_t;
+	typedef boost::heap::pairing_heap< CBSNode*, boost::heap::compare<CBSNode::compare_node> >::handle_type open_handle_t;
+	typedef boost::heap::pairing_heap< CBSNode*, boost::heap::compare<CBSNode::secondary_compare_node> >::handle_type focal_handle_t;
 	open_handle_t open_handle;
 	focal_handle_t focal_handle;
 
@@ -33,7 +33,7 @@ public:
 	// this is needed because otherwise we'll have to define the specilized template inside std namespace
 	struct ICBSNodeHasher 
 	{
-		std::size_t operator()(const ICBSNode* n) const {
+		std::size_t operator()(const CBSNode* n) const {
 			return std::hash<uint64_t>()(n->time_generated);
 		}
 	};
@@ -46,7 +46,7 @@ public:
 	shared_ptr<Conflict> conflict;
 
 	boost::unordered_map<int, int> conflictGraph; //<edge index, weight>
-	ICBSNode* parent;
+	CBSNode* parent;
 
 	list< pair< int, Path> > paths; // new paths
 	list<Constraint> constraints; // new constraints
@@ -69,14 +69,14 @@ public:
 };
 
 
-std::ostream& operator<<(std::ostream& os, const ICBSNode& node);
+std::ostream& operator<<(std::ostream& os, const CBSNode& node);
 
 
 struct ConstraintsHasher // Hash a CT node by constraints on one agent
 {
 	int a{};
-	const ICBSNode* n{};
-	ConstraintsHasher(int a, ICBSNode* n) : a(a), n(n) {};
+	const CBSNode* n{};
+	ConstraintsHasher(int a, CBSNode* n) : a(a), n(n) {};
 
 	struct EqNode
 	{
@@ -85,7 +85,7 @@ struct ConstraintsHasher // Hash a CT node by constraints on one agent
 			assert(c1.a == c2.a);
 				
 			std::set<Constraint> cons1, cons2;
-			const ICBSNode* curr = c1.n;
+			const CBSNode* curr = c1.n;
 			while (curr->parent != nullptr)
 			{
 				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
@@ -119,7 +119,7 @@ struct ConstraintsHasher // Hash a CT node by constraints on one agent
 	{
 		std::size_t operator()(const ConstraintsHasher& entry) const
 		{
-			const ICBSNode* curr = entry.n;
+			const CBSNode* curr = entry.n;
 			size_t cons_hash = 0;
 			while (curr->parent != nullptr)
 			{

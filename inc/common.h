@@ -7,7 +7,6 @@
 #include <fstream>
 #include <iostream>     // std::cout, std::fixed
 #include <iomanip>      // std::setprecision
-// #include <boost/heap/pairing_heap.hpp>
 #include <boost/heap/pairing_heap.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
@@ -47,7 +46,7 @@ struct PathEntry
 	PathEntry(int loc = -1) { location = loc; single = false; }
 };
 
-typedef std::vector<PathEntry> Path;
+typedef vector<PathEntry> Path;
 
 
 bool isSamePath(const Path& p1, const Path& p2);

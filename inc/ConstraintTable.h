@@ -1,6 +1,7 @@
 #pragma once
 #include "common.h"
-#include "ICBSNode.h"
+#include "CBSNode.h"
+
 
 class ConstraintTable
 {
@@ -26,7 +27,7 @@ public:
 	ConstraintTable(const ConstraintTable& other) {copy(other); }
 
 	void copy(const ConstraintTable& other);
-	void build(const ICBSNode& node, int agent); // build the constraint table for the given agent at the give node 
+	void build(const CBSNode& node, int agent); // build the constraint table for the given agent at the give node 
 	void buildCAT(int agent, const vector<Path*>& paths, size_t cat_size); // build the conflict avoidance table
 
 protected:

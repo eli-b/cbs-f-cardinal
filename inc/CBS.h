@@ -4,7 +4,7 @@
 #include "RectangleReasoning.h"
 #include "CorridorReasoning.h"
 
-class ICBSSearch
+class CBS
 {
 public:
 	bool rectangle_reasoning; // using rectangle reasoning
@@ -43,8 +43,8 @@ public:
 
 	int max_num_of_mdds = 10000;
 
-	ICBSNode* dummy_start = nullptr;
-	ICBSNode* goal_node = nullptr;
+	CBSNode* dummy_start = nullptr;
+	CBSNode* goal_node = nullptr;
 
 
 
@@ -56,17 +56,17 @@ public:
 	// Runs the algorithm until the problem is solved or time is exhausted 
 	bool runICBSSearch(double time_limit, int initial_h);
 
-	ICBSSearch(const Instance& instance, double f_w,
+	CBS(const Instance& instance, double f_w,
 		heuristics_type h_type, bool PC, bool sipp, int screen);
-	ICBSSearch(vector<SingleAgentSolver*>& search_engines,
+	CBS(vector<SingleAgentSolver*>& search_engines,
 		const vector<ConstraintTable>& constraints,
 		vector<vector<PathEntry>>& paths_found_initially, double f_w,
 		heuristics_type h_type, bool PC, int cost_upperbound, int screen);
 	void clearSearchEngines();
-	~ICBSSearch();
+	~CBS();
 
 	// Save results
-	void saveResults(const std::string &fileName, const std::string &instanceName) const;
+	void saveResults(const string &fileName, const string &instanceName) const;
 	// void saveLogs(const std::string &fileName) const;
 
 	void clear(); // used for rapid random  restart
@@ -76,14 +76,14 @@ private:
 	CorridorReasoning corridor_helper;
 	
 	// const Instance& instance;
-	typedef boost::heap::pairing_heap< ICBSNode*, boost::heap::compare<ICBSNode::compare_node> > heap_open_t;
-	typedef boost::heap::pairing_heap< ICBSNode*, boost::heap::compare<ICBSNode::secondary_compare_node> > heap_focal_t;
+	typedef pairing_heap< CBSNode*, compare<CBSNode::compare_node> > heap_open_t;
+	typedef pairing_heap< CBSNode*, compare<CBSNode::secondary_compare_node> > heap_focal_t;
 	heap_open_t open_list;
 	heap_focal_t focal_list;
-	list<ICBSNode*> allNodes_table;
+	list<CBSNode*> allNodes_table;
 
-	std::vector<MDDTable> mddTable;
-	std::vector<std::vector<HTable>> hTable;
+	vector<MDDTable> mddTable;
+	vector<vector<HTable> > hTable;
 
 	bool PC; // prioritize conflicts or not
 
@@ -96,17 +96,8 @@ private:
 	const int cost_upperbound = INT_MAX;
 
 
-	// Logs
-	/*
-	vector<int> sum_h_vals; // sum of heuristics for the CT nodes at level t
-	vector<int> sum_f_vals; // sum of f values for the CT nodes at level t
-	vector<int> num_CTnodes; // number of CT nodes at level t that has heuristics
-	vector<int> sum_runtime; // sum of runtime for computing heuristics for the CT nodes at level t
-	list<pair<int, int>> log_min_f; // changes of lowerbound in terms of expanded nodes: <lowerbound, #expanded nodes>
-	*/
-
 	vector<ConstraintTable> initial_constraints;
-	std::clock_t start;
+	clock_t start;
 
 	int num_of_agents;
 
@@ -117,46 +108,46 @@ private:
 	vector < SingleAgentSolver* > search_engines;  // used to find (single) agents' paths and mdd
 
 
-												 // high level search
-	bool findPathForSingleAgent(ICBSNode*  node, int ag, int lower_bound = 0);
-	bool generateChild(ICBSNode* child, ICBSNode* curr);
+	// high level search
+	bool findPathForSingleAgent(CBSNode*  node, int ag, int lower_bound = 0);
+	bool generateChild(CBSNode* child, CBSNode* curr);
 	bool generateRoot(int initial_h);
 
 	//conflicts
-	void findConflicts(ICBSNode& curr);
-	void findConflicts(ICBSNode& curr, int a1, int a2);
-	std::shared_ptr<Conflict> chooseConflict(const ICBSNode &node) const;
-	void classifyConflicts(ICBSNode &parent);
-	void copyConflicts(const std::list<std::shared_ptr<Conflict>>& conflicts,
-		std::list<std::shared_ptr<Conflict>>& copy, int excluded_agent) const;
-	void copyConflicts(const std::list<std::shared_ptr<Conflict>>& conflicts,
-		std::list<std::shared_ptr<Conflict>>& copy, const list<int>& excluded_agent) const;
-	void removeLowPriorityConflicts(std::list<std::shared_ptr<Conflict>>& conflicts) const;
+	void findConflicts(CBSNode& curr);
+	void findConflicts(CBSNode& curr, int a1, int a2);
+	shared_ptr<Conflict> chooseConflict(const CBSNode &node) const;
+	void classifyConflicts(CBSNode &parent);
+	void copyConflicts(const list<shared_ptr<Conflict>>& conflicts,
+		list<shared_ptr<Conflict>>& copy, int excluded_agent) const;
+	void copyConflicts(const list<shared_ptr<Conflict>>& conflicts,
+		list<shared_ptr<Conflict>>& copy, const list<int>& excluded_agent) const;
+	void removeLowPriorityConflicts(list<shared_ptr<Conflict>>& conflicts) const;
 	//bool isCorridorConflict(std::shared_ptr<Conflict>& corridor, const std::shared_ptr<Conflict>& con, bool cardinal, ICBSNode* node);
 
 	// add heuristics for the high-level search
-	int computeHeuristics(ICBSNode& curr);
-	bool buildDependenceGraph(ICBSNode& node);
-	int getEdgeWeight(int a1, int a2, ICBSNode& node, bool cardinal);
+	int computeHeuristics(CBSNode& curr);
+	bool buildDependenceGraph(CBSNode& node);
+	int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
 
 	// build MDD
-	MDD * getMDD(ICBSNode& curr, int id);
+	MDD * getMDD(CBSNode& curr, int id);
 	void releaseMDDMemory(int id);
 
 	//update information
-	inline void updatePaths(ICBSNode* curr);
+	inline void updatePaths(CBSNode* curr);
 	void updateFocalList();
 	inline void releaseClosedListNodes();
 	inline void releaseOpenListNodes();
 	inline void releaseMDDTable();
-	void copyConflictGraph(ICBSNode& child, const ICBSNode& parent);
+	void copyConflictGraph(CBSNode& child, const CBSNode& parent);
 
 	// print and save
 	void printPaths() const;
 	void printResults() const;
-	void printConflicts(const ICBSNode &curr) const;
+	void printConflicts(const CBSNode &curr) const;
 
 	bool validateSolution() const;
-	inline int ICBSSearch::getAgentLocation(int agent_id, size_t timestep) const;
-	inline void pushNode(ICBSNode* node);
+	inline int getAgentLocation(int agent_id, size_t timestep) const;
+	inline void pushNode(CBSNode* node);
 };

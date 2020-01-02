@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "instance.h"
+#include "Instance.h"
 #include "ConstraintTable.h"
 
 class LLNode // low-level node
@@ -75,7 +75,7 @@ public:
 
 	const Instance& instance;
 
-	virtual Path findPath(const ICBSNode& node, const ConstraintTable& initial_constraints,
+	virtual Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
 		const vector<Path*>& paths, int agent, int lower_bound) = 0;
 	virtual string getName() const = 0;
 

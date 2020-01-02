@@ -1,22 +1,22 @@
 #pragma once
-#include "ICBSNode.h"
+#include "CBSNode.h"
 
 
 struct HTableEntry // look-up table entry 
 {
 	int a1{};
 	int a2{};
-	ICBSNode* n{};
+	CBSNode* n{};
 
 	HTableEntry()= default;
-	HTableEntry(int a1, int a2, ICBSNode* n): a1(a1), a2(a2), n(n) {};
+	HTableEntry(int a1, int a2, CBSNode* n): a1(a1), a2(a2), n(n) {};
 
 	struct EqNode
 	{
 		bool operator() (const HTableEntry& h1, const HTableEntry& h2) const
 		{
 			std::set<Constraint> cons1[2], cons2[2];
-			const ICBSNode* curr = h1.n;
+			const CBSNode* curr = h1.n;
 			while (curr->parent != nullptr)
 			{
 			    if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
@@ -72,9 +72,9 @@ struct HTableEntry // look-up table entry
 
 	struct Hasher
 	{
-		std::size_t operator()(const HTableEntry& entry) const
+		size_t operator()(const HTableEntry& entry) const
 		{
-			ICBSNode* curr = entry.n;
+			CBSNode* curr = entry.n;
 			size_t cons1_hash = 0, cons2_hash = 0;
 			while (curr->parent != nullptr)
 			{
@@ -114,4 +114,4 @@ struct HTableEntry // look-up table entry
 
 
 
-typedef boost::unordered_map<HTableEntry, int, HTableEntry::Hasher, HTableEntry::EqNode> HTable;
+typedef unordered_map<HTableEntry, int, HTableEntry::Hasher, HTableEntry::EqNode> HTable;

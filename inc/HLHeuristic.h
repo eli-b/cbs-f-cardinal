@@ -1,13 +1,13 @@
 #pragma once
 #include "common.h"
 
-int minimumVertexCover(const std::vector<int>& CG, int old_mvc, int cols, int num_of_edges);
+int minimumVertexCover(const vector<int>& CG, int old_mvc, int cols, int num_of_edges);
 
-bool KVertexCover(const std::vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
+bool KVertexCover(const vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
 
-int greedyMatching(const std::vector<int>& CG, int cols);
+int greedyMatching(const vector<int>& CG, int cols);
 
-int weightedVertexCover(const std::vector<int>& CG, int N);
-int weightedVertexCover(std::vector<int>& x, int i, int sum, const std::vector<int>& CG, const std::vector<int>& range, int& best_so_far);
+int weightedVertexCover(const vector<int>& CG, int N);
+int weightedVertexCover(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
 
 

@@ -26,8 +26,8 @@ public:
 	}
 
 
-	std::list<MDDNode*> children;
-	std::list<MDDNode*> parents;
+	list<MDDNode*> children;
+	list<MDDNode*> parents;
 	//MDDNode* parent;
 };
 
@@ -36,7 +36,7 @@ public:
 class MDD
 {
 public:
-	std::vector<std::list<MDDNode*>> levels;
+	vector<list<MDDNode*>> levels;
 
 	bool buildMDD(const ConstraintTable& ct,
 		int num_of_levels, const SingleAgentSolver* solver);
@@ -76,9 +76,9 @@ public:
 	}
 
 
-	std::list<SyncMDDNode*> children;
-	std::list<SyncMDDNode*> parents;
-	std::list<const MDDNode*> coexistingNodesFromOtherMdds;
+	list<SyncMDDNode*> children;
+	list<SyncMDDNode*> parents;
+	list<const MDDNode*> coexistingNodesFromOtherMdds;
 
 };
 
@@ -86,7 +86,7 @@ public:
 class SyncMDD
 {
 public:
-	std::vector<std::list<SyncMDDNode*>> levels;
+	vector<list<SyncMDDNode*>> levels;
 
 	SyncMDDNode* find(int location, int level) const;
 	void deleteNode(SyncMDDNode* node, int level);

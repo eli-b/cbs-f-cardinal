@@ -1,7 +1,7 @@
 #include "SIPP.h"
 
 
-void SIPP::updatePath(const LLNode* goal, std::vector<PathEntry> &path)
+void SIPP::updatePath(const LLNode* goal, vector<PathEntry> &path)
 {
 	path.resize(goal->timestep + 1);
 	// num_of_conflicts = goal->num_of_conflicts;
@@ -28,7 +28,7 @@ void SIPP::updatePath(const LLNode* goal, std::vector<PathEntry> &path)
 // Returns a shortest path that satisfies the constraints of the give node  while
 // minimizing the number of internal conflicts (that is conflicts with known_paths for other agents found so far).
 // lowerbound is an underestimation of the length of the path in order to speed up the search.
-Path SIPP::findPath(const ICBSNode& node, const ConstraintTable& initial_constraints,
+Path SIPP::findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
 	const vector<Path*>& paths, int agent, int lowerbound)
 {
 	Path path;
@@ -44,7 +44,7 @@ Path SIPP::findPath(const ICBSNode& node, const ConstraintTable& initial_constra
 	num_expanded = 0;
 	num_generated = 0;
 	Interval interval = reservation_table.get_first_safe_interval(start_location);
-	if (std::get<0>(interval) > 0)
+	if (get<0>(interval) > 0)
 		return path;
 
 	 // generate start and add it to the OPEN list
@@ -79,14 +79,14 @@ Path SIPP::findPath(const ICBSNode& node, const ConstraintTable& initial_constra
         for (int next_location : instance.getNeighbors(curr->location)) // move to neighboring locations
 		{
 			for (auto interval : reservation_table.get_safe_intervals(
-				curr->location, next_location, curr->timestep + 1, std::get<1>(curr->interval) + 1))
+				curr->location, next_location, curr->timestep + 1, get<1>(curr->interval) + 1))
 			{
 				generateChild(interval, curr, next_location, reservation_table, lower_bound);
 			}
 		}  // end for loop that generates successors
 		   
 		// wait at the current location
-		bool found = reservation_table.find_safe_interval(interval, curr->location, std::get<1>(curr->interval));
+		bool found = reservation_table.find_safe_interval(interval, curr->location, get<1>(curr->interval));
 		if (found)
 		{
 			generateChild(interval, curr, curr->location, reservation_table, lower_bound);
@@ -106,7 +106,7 @@ void SIPP::updateFocalList()
 	if (open_head->getFVal() > min_f_val)
 	{
 		int new_min_f_val = (int)open_head->getFVal();
-		int new_lower_bound = std::max(lower_bound, new_min_f_val);
+		int new_lower_bound = max(lower_bound, new_min_f_val);
 		for (auto n : open_list)
 		{
 			if (n->getFVal() > lower_bound && n->getFVal() <= new_lower_bound)

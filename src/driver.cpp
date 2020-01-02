@@ -9,7 +9,7 @@
 */
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
-#include "ICBSSearch.h"
+#include "CBS.h"
 
 
 int main(int argc, char** argv)
@@ -19,18 +19,17 @@ int main(int argc, char** argv)
 	po::options_description desc("Allowed options");
 	desc.add_options()
 		("help", "produce help message")
-		("map,m", po::value<std::string>()->required(), "input file for map")
-		("agents,a", po::value<std::string>()->required(), "input file for agents")
-		("output,o", po::value<std::string>(), "output file for schedule")
+		("map,m", po::value<string>()->required(), "input file for map")
+		("agents,a", po::value<string>()->required(), "input file for agents")
+		("output,o", po::value<string>(), "output file for schedule")
 		("rows", po::value<int>()->default_value(0), "number of rows")
 		("cols", po::value<int>()->default_value(0), "number of columns")
 		("obs", po::value<int>()->default_value(0), "number of obstacles")
-		("warehouseWidth,b", po::value<int>()->default_value(0), "width of working stations on both sides, for generating instacnes")
+		("warehouseWidth", po::value<int>()->default_value(0), "width of working stations on both sides, for generating instacnes")
 		("screen,s", po::value<int>()->default_value(0), "screen option (0: none; 1: results; 2:all)")
 		("seed,d", po::value<int>()->default_value(0), "random seed")
 		("agentNum,k", po::value<int>()->default_value(0), "number of agents")
 		("cutoffTime,t", po::value<double>()->default_value(7200), "cutoff time (seconds)")
-		("MaxMDDs", po::value<int>(), "maximum number of MDDs saved for each pair of agents")
 
 		("PC,p", po::value<bool>()->default_value(true), "conflict prioirtization")
 		("bypass", po::value<bool>()->default_value(true), "Bypass1")
@@ -47,7 +46,7 @@ int main(int argc, char** argv)
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 
 	if (vm.count("help")) {
-		std::cout << desc << std::endl;
+		cout << desc << endl;
 		return 1;
 	}
 
@@ -58,16 +57,6 @@ int main(int argc, char** argv)
 		cerr << "SIPP cannot work together with target reasoning!" << endl;
 		return -1;
 	}
-
-	srand((int)time(0));
-
-	// read the map file and construct its two-dim array
-	Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
-		vm["agentNum"].as<int>(),
-		vm["rows"].as<int>(), vm["cols"].as<int>(), vm["obs"].as<int>(), vm["warehouseWidth"].as<int>());
-
-	// read agents' start and goal locations
-	srand(vm["seed"].as<int>());
 
 	heuristics_type h;
 	if (vm["heuristics"].as<string>() == "NONE")
@@ -80,37 +69,45 @@ int main(int argc, char** argv)
 		h = heuristics_type::WDG;
 	else
 	{
-		std::cout << "WRONG HEURISTICS NAME!" << std::endl;
+		cout << "WRONG HEURISTICS NAME!" << endl;
 		return -1;
 	}
 
+	srand((int)time(0));
+
+	// load the instance
+	Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
+		vm["agentNum"].as<int>(),
+		vm["rows"].as<int>(), vm["cols"].as<int>(), vm["obs"].as<int>(), vm["warehouseWidth"].as<int>());
+
+	srand(vm["seed"].as<int>());
+
 	int runs = vm["restart"].as<int>();
-	assert(runs > 0);
-	ICBSSearch icbs(instance, 1.0, h, vm["PC"].as<bool>(), vm["sipp"].as<bool>(), 
-		vm["screen"].as<int>());
-	icbs.disjoint_splitting = vm["disjointSplitting"].as<bool>();
-	icbs.bypass = vm["bypass"].as<bool>();
-	icbs.rectangle_reasoning = vm["rectangleReasoning"].as<bool>();
-	icbs.corridor_reasoning = vm["corridorReasoning"].as<bool>();
-	icbs.target_reasoning = vm["targetReasoning"].as<bool>();
-	if (vm.count("MaxMDDs"))
-		icbs.max_num_of_mdds = vm["MaxMDDs"].as<int>();
+	
+	// initialize the solver
+	CBS cbs(instance, 1.0, h, vm["PC"].as<bool>(), vm["sipp"].as<bool>(), vm["screen"].as<int>());
+	cbs.disjoint_splitting = vm["disjointSplitting"].as<bool>();
+	cbs.bypass = vm["bypass"].as<bool>();
+	cbs.rectangle_reasoning = vm["rectangleReasoning"].as<bool>();
+	cbs.corridor_reasoning = vm["corridorReasoning"].as<bool>();
+	cbs.target_reasoning = vm["targetReasoning"].as<bool>();
+
 
 	double runtime = 0;
 	int initial_h = 0;
 	for (int i = 0; i < runs; i++)
 	{
-		icbs.clear();
-		icbs.runICBSSearch(vm["cutoffTime"].as<double>(), initial_h);
-		runtime += icbs.runtime;
-		if (icbs.solution_found)
+		cbs.clear();
+		cbs.runICBSSearch(vm["cutoffTime"].as<double>(), initial_h);
+		runtime += cbs.runtime;
+		if (cbs.solution_found)
 			break;
-		initial_h = (int)icbs.min_f_val - icbs.dummy_start->g_val;
+		initial_h = (int)cbs.min_f_val - cbs.dummy_start->g_val;
 	}
-	icbs.runtime = runtime;
+	cbs.runtime = runtime;
 	if (vm.count("output"))
-		icbs.saveResults(vm["output"].as<std::string>(), vm["agents"].as<string>());
-	icbs.clearSearchEngines();
+		cbs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
+	cbs.clearSearchEngines();
 	return 0;
 
 }

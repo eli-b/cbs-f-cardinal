@@ -1,14 +1,14 @@
-#include "ICBSNode.h"
-#include <iostream>
+#include "CBSNode.h"
 
-void ICBSNode::clear()
+
+void CBSNode::clear()
 {
 	conflicts.clear();
 	unknownConf.clear();
 	conflictGraph.clear();
 }
 
-void ICBSNode::printConflictGraph(int num_of_agents) const
+void CBSNode::printConflictGraph(int num_of_agents) const
 {
 	cout << "	Build conflict graph in " << *this << ": ";
 	for (auto e : conflictGraph)
@@ -22,7 +22,7 @@ void ICBSNode::printConflictGraph(int num_of_agents) const
 	cout << endl;
 }
 
-std::ostream& operator<<(std::ostream& os, const ICBSNode& node)
+std::ostream& operator<<(std::ostream& os, const CBSNode& node)
 {
 	os << "Node " << node.time_generated << " (" << node.f_val << " = " << node.g_val << " + " <<
 		node.h_val << " ) with " << node.num_of_collisions << " conflicts and " <<

@@ -1,18 +1,18 @@
 #include "CorridorReasoning.h"
 #include "Conflict.h"
 #include <memory>
-#include "SpaceTimeAstar.h"
+#include "SpaceTimeAStar.h"
 #include "SIPP.h"
 
 
-std::shared_ptr<Conflict> CorridorReasoning::findCorridorConflict(const std::shared_ptr<Conflict>& conflict,
+shared_ptr<Conflict> CorridorReasoning::findCorridorConflict(const shared_ptr<Conflict>& conflict,
 	const vector<Path*>& paths,
-	bool cardinal, const ICBSNode& node)
+	bool cardinal, const CBSNode& node)
 {
     int a[2] = { conflict->a1, conflict->a2 };
     int  agent, loc1, loc2, timestep;
     constraint_type type;
-    std::tie(agent, loc1, loc2, timestep, type) = conflict->constraint1.back();
+    tie(agent, loc1, loc2, timestep, type) = conflict->constraint1.back();
     int curr = -1;
     if (instance.getDegree(loc1) == 2)
     {
@@ -49,12 +49,12 @@ std::shared_ptr<Conflict> CorridorReasoning::findCorridorConflict(const std::sha
         if (!found)
             return nullptr;
     }
-    std::pair<int, int> edge; // one edge in the corridor
+    pair<int, int> edge; // one edge in the corridor
     int k = getCorridorLength(*paths[a[0]], t[0], u[1], edge);
 	int t3, t3_, t4, t4_;
 	if (usingSIPP)
 	{
-		std::pair<int, int> edge_empty = make_pair(-1, -1);
+		pair<int, int> edge_empty = make_pair(-1, -1);
 		ReservationTable rt1(initial_constraints[a[0]]);
 		rt1.build(node, a[0]);
 		t3 = getBypassLengthBySIPP(paths[a[0]]->front().location, u[1], edge_empty, rt1, INT_MAX);
@@ -66,7 +66,7 @@ std::shared_ptr<Conflict> CorridorReasoning::findCorridorConflict(const std::sha
 	}
 	else
 	{
-		std::pair<int, int> edge_empty = make_pair(-1, -1);
+		pair<int, int> edge_empty = make_pair(-1, -1);
 		ConstraintTable ct1(initial_constraints[a[0]]);
 		ct1.build(node, a[0]);
 		t3 = getBypassLengthByAStar(paths[a[0]]->front().location, u[1], edge_empty, ct1, INT_MAX);
@@ -79,7 +79,7 @@ std::shared_ptr<Conflict> CorridorReasoning::findCorridorConflict(const std::sha
    
     if (abs(t3 - t4) <= k && t3_ > t3 && t4_ > t4)
     {
-        std::shared_ptr<Conflict> corridor = std::make_shared<Conflict>();
+        shared_ptr<Conflict> corridor = make_shared<Conflict>();
         corridor->corridorConflict(a[0], a[1], u[1], u[0], t3, t4, t3_, t4_, k);
         if (blocked(*paths[corridor->a1], corridor->constraint1.front()) && 
 			blocked(*paths[corridor->a2], corridor->constraint2.front()))
@@ -90,7 +90,7 @@ std::shared_ptr<Conflict> CorridorReasoning::findCorridorConflict(const std::sha
 }
 
 
-int CorridorReasoning::getEnteringTime(const std::vector<PathEntry>& path, const std::vector<PathEntry>& path2, int t)
+int CorridorReasoning::getEnteringTime(const vector<PathEntry>& path, const vector<PathEntry>& path2, int t)
 {
 	if (t >= (int)path.size())
 		t = (int)path.size() - 1;
@@ -104,7 +104,7 @@ int CorridorReasoning::getEnteringTime(const std::vector<PathEntry>& path, const
 	return t;
 }
 
-int CorridorReasoning::getCorridorLength(const std::vector<PathEntry>& path, int t_start, int loc_end, std::pair<int, int>& edge)
+int CorridorReasoning::getCorridorLength(const vector<PathEntry>& path, int t_start, int loc_end, pair<int, int>& edge)
 {
 	int curr = path[t_start].location;
 	int next;
@@ -125,7 +125,7 @@ int CorridorReasoning::getCorridorLength(const std::vector<PathEntry>& path, int
 		{
 			if (!updateEdge)
 			{
-				edge = std::make_pair(curr, next);
+				edge = make_pair(curr, next);
 				updateEdge = true;
 			}
 			length++;
@@ -200,7 +200,7 @@ int CorridorReasoning::getCorridorLength(const std::vector<PathEntry>& path, int
 
 // run space-time A* to find the length of the shortest path between start and goal without using the blocked edge from either direction.
 // if the length is longer than the upper bound, then give up.
-int CorridorReasoning::getBypassLengthByAStar(int start, int end, std::pair<int, int> blocked,
+int CorridorReasoning::getBypassLengthByAStar(int start, int end, pair<int, int> blocked,
 	const ConstraintTable& constraint_table, int upper_bound)
 {
 	int length = INT_MAX;
@@ -273,7 +273,7 @@ int CorridorReasoning::getBypassLengthByAStar(int start, int end, std::pair<int,
 }
 
 
-int CorridorReasoning::getBypassLengthBySIPP(int start, int end, std::pair<int, int> blocked,
+int CorridorReasoning::getBypassLengthBySIPP(int start, int end, pair<int, int> blocked,
 	ReservationTable& reservation_table, int upper_bound)
 {
 	int length = INT_MAX;
@@ -283,7 +283,7 @@ int CorridorReasoning::getBypassLengthBySIPP(int start, int end, std::pair<int, 
 	unordered_set<SIPPNode*, SIPPNode::NodeHasher, SIPPNode::eqnode> nodes;
 	
 	Interval interval = reservation_table.get_first_safe_interval(start);
-	assert(std::get<0>(interval) == 0);
+	assert(get<0>(interval) == 0);
 	auto root = new SIPPNode(start, 0, instance.getManhattanDistance(start, end), nullptr, 0, interval);
 	root->open_handle = open_list.push(root);  // add root to heap
 	nodes.insert(root);       // add root to hash_table (nodes)
@@ -305,7 +305,7 @@ int CorridorReasoning::getBypassLengthBySIPP(int start, int end, std::pair<int, 
 			}
 
 			for (auto interval : reservation_table.get_safe_intervals(
-				curr->location, next_location, curr->timestep + 1, std::get<1>(curr->interval) + 1))
+				curr->location, next_location, curr->timestep + 1, get<1>(curr->interval) + 1))
 			{
 				int next_timestep = max(curr->timestep + 1, (int)get<0>(interval));
 				int next_g_val = next_timestep;

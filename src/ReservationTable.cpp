@@ -60,7 +60,7 @@ void ReservationTable::buildCAT(int agent, const vector<Path*>& paths)
 int ReservationTable::getNumOfConflictsForStep(int curr_id, int next_id, int next_timestep) const
 {
 	int rst = 0;
-	auto& it = cat.find(next_id);
+	const auto& it = cat.find(next_id);
 	if (it != cat.end())
 	{
 		for (const auto& constraint : it->second)
@@ -69,10 +69,10 @@ int ReservationTable::getNumOfConflictsForStep(int curr_id, int next_id, int nex
 				rst++;
 		}
 	}
-	it = cat.find(getEdgeIndex(curr_id, next_id));
-	if (it != cat.end())
+	const auto& it2 = cat.find(getEdgeIndex(curr_id, next_id));
+	if (it2 != cat.end())
 	{
-		for (const auto& constraint : it->second)
+		for (const auto& constraint : it2->second)
 		{
 			if (constraint.first <= next_timestep && next_timestep < constraint.second)
 				rst++;
@@ -94,24 +94,24 @@ void ReservationTable::insert2RT(int location, size_t t_min, size_t t_max)
     }
     for (auto it = rt[location].begin(); it != rt[location].end();)
     {
-        if (t_min >= std::get<1>(*it))
+        if (t_min >= get<1>(*it))
 			++it; 
-        else if (t_max <= std::get<0>(*it))
+        else if (t_max <= get<0>(*it))
             break;
-       else  if (std::get<0>(*it) < t_min && std::get<1>(*it) <= t_max)
+       else  if (get<0>(*it) < t_min && get<1>(*it) <= t_max)
         {
-            (*it) = make_tuple(std::get<0>(*it), t_min, 0);
+            (*it) = make_tuple(get<0>(*it), t_min, 0);
 			++it;
         }
-        else if (t_min <= std::get<0>(*it) && t_max < std::get<1>(*it))
+        else if (t_min <= get<0>(*it) && t_max < get<1>(*it))
         {
-            (*it) = make_tuple(t_max, std::get<1>(*it), 0);
+            (*it) = make_tuple(t_max, get<1>(*it), 0);
             break;
         }
-        else if (std::get<0>(*it) < t_min && t_max < std::get<1>(*it))
+        else if (get<0>(*it) < t_min && t_max < get<1>(*it))
         {
-            rt[location].insert(it, make_tuple(std::get<0>(*it), t_min, 0));
-            (*it) = make_tuple(t_max, std::get<1>(*it), 0);
+            rt[location].insert(it, make_tuple(get<0>(*it), t_min, 0));
+            (*it) = make_tuple(t_max, get<1>(*it), 0);
             break;
         }
         else // constraint_min <= get<0>(*it) && get<1> <= constraint_max
@@ -136,32 +136,32 @@ void ReservationTable::insertSoftConstraint2RT(int location, size_t t_min, size_
     }
     for (auto it = rt[location].begin(); it != rt[location].end(); it++)
     {
-        if (t_min >= std::get<1>(*it))
+        if (t_min >= get<1>(*it))
             continue;
-        else if (t_max <= std::get<0>(*it))
+        else if (t_max <= get<0>(*it))
             break;
 
-        int conflicts = std::get<2>(*it);
+        int conflicts = get<2>(*it);
 
-        if (std::get<0>(*it) < t_min && std::get<1>(*it) <= t_max)
+        if (get<0>(*it) < t_min && get<1>(*it) <= t_max)
         {
-            rt[location].insert(it, make_tuple(std::get<0>(*it), t_min, conflicts));
-            (*it) = make_tuple(t_min, std::get<1>(*it), conflicts + 1);
+            rt[location].insert(it, make_tuple(get<0>(*it), t_min, conflicts));
+            (*it) = make_tuple(t_min, get<1>(*it), conflicts + 1);
         }
-        else if (t_min <= std::get<0>(*it) && t_max < std::get<1>(*it))
+        else if (t_min <= get<0>(*it) && t_max < get<1>(*it))
         {
-            rt[location].insert(it, make_tuple(std::get<0>(*it), t_max, conflicts + 1));
-            (*it) = make_tuple(t_max, std::get<1>(*it), conflicts);
+            rt[location].insert(it, make_tuple(get<0>(*it), t_max, conflicts + 1));
+            (*it) = make_tuple(t_max, get<1>(*it), conflicts);
         }
-        else if (std::get<0>(*it) < t_min && t_max < std::get<1>(*it))
+        else if (get<0>(*it) < t_min && t_max < get<1>(*it))
         {
-            rt[location].insert(it, make_tuple(std::get<0>(*it), t_min, conflicts));
+            rt[location].insert(it, make_tuple(get<0>(*it), t_min, conflicts));
             rt[location].insert(it, make_tuple(t_min, t_max, conflicts + 1));
-            (*it) = make_tuple(t_max, std::get<1>(*it), conflicts);
+            (*it) = make_tuple(t_max, get<1>(*it), conflicts);
         }
         else // constraint_min <= get<0>(*it) && get<1> <= constraint_max
         {
-            (*it) = make_tuple(std::get<0>(*it), std::get<1>(*it), conflicts + 1);
+            (*it) = make_tuple(get<0>(*it), get<1>(*it), conflicts + 1);
         }
     }
 }
@@ -177,9 +177,9 @@ void ReservationTable::mergeIntervals(list<Interval >& intervals)
 	++curr;
 	while (curr != intervals.end())
 	{
-		if (std::get<1>(*prev) == std::get<0>(*curr) && std::get<2>(*prev) == std::get<2>(*curr))
+		if (get<1>(*prev) == get<0>(*curr) && get<2>(*prev) == get<2>(*curr))
 		{
-			*prev = make_tuple(std::get<0>(*prev), std::get<1>(*curr), std::get<2>(*prev));
+			*prev = make_tuple(get<0>(*prev), get<1>(*curr), get<2>(*prev));
 			curr = intervals.erase(curr);
 		}
 		else
@@ -196,7 +196,7 @@ void ReservationTable::updateRT(int location)
 {
 	if (rt.find(location) == rt.end())
 	{
-		auto& it = ct.find(location);
+		const auto& it = ct.find(location);
 		if (it != ct.end())
 		{
 			for (auto time_range : it->second)
@@ -215,12 +215,12 @@ void ReservationTable::updateRT(int location)
 			}
 		}
 
-		it = cat.find(location);
-		if (it != cat.end())
+		const auto& it2 = cat.find(location);
+		if (it2 != cat.end())
 		{
-			for (auto time_range : it->second)
+			for (auto time_range : it2->second)
 				insertSoftConstraint2RT(location, time_range.first, time_range.second);
-			cat.erase(it);
+			cat.erase(it2);
 			mergeIntervals(rt[location]);
 		}
 	}
@@ -245,9 +245,9 @@ list<Interval> ReservationTable::get_safe_intervals(int location, size_t lower_b
 
     for(auto interval : rt[location])
     {
-        if (lower_bound >= std::get<1>(interval))
+        if (lower_bound >= get<1>(interval))
             continue;
-        else if (upper_bound <= std::get<0>(interval))
+        else if (upper_bound <= get<0>(interval))
             break;
         else
         {
@@ -269,13 +269,13 @@ list<Interval> ReservationTable::get_safe_intervals(int from, int to, size_t low
 	auto it2 = safe_edge_intervals.begin();
 	while (it1 != safe_vertex_intervals.end() && it2 != safe_edge_intervals.end())
 	{
-		int t_min = max(std::get<0>(*it1), std::get<0>(*it2));
-		int t_max = min(std::get<1>(*it1), std::get<1>(*it2));
+		int t_min = max(get<0>(*it1), get<0>(*it2));
+		int t_max = min(get<1>(*it1), get<1>(*it2));
 		if (t_min < t_max)
-			safe_intervals.emplace_back(t_min, t_max, std::get<2>(*it1) + std::get<2>(*it2));
-		if (t_max == std::get<1>(*it1))
+			safe_intervals.emplace_back(t_min, t_max, get<2>(*it1) + get<2>(*it2));
+		if (t_max == get<1>(*it1))
 			++it1;
-		if (t_max == std::get<1>(*it2))
+		if (t_max == get<1>(*it2))
 			++it2;
 	}
 	mergeIntervals(safe_intervals);
@@ -330,7 +330,7 @@ void ReservationTable::print() const
         cout << "loc=" << entry.first << ":";
         for (const auto& interval : entry.second)
         {
-            cout << "[" << std::get<0>(interval) << "," << std::get<1>(interval) << "],";
+            cout << "[" << get<0>(interval) << "," << get<1>(interval) << "],";
         }
     }
     cout << endl;

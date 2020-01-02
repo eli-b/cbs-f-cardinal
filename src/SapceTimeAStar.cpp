@@ -1,7 +1,7 @@
 #include "SpaceTimeAStar.h"
 
 
-void SpaceTimeAStar::updatePath(const LLNode* goal, std::vector<PathEntry> &path)
+void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry> &path)
 {
 	path.resize(goal->g_val + 1);
 	const LLNode* curr = goal;
@@ -17,7 +17,7 @@ void SpaceTimeAStar::updatePath(const LLNode* goal, std::vector<PathEntry> &path
 // Returns a shortest path that satisfies the constraints of the give node  while
 // minimizing the number of internal conflicts (that is conflicts with known_paths for other agents found so far).
 // lowerbound is an underestimation of the length of the path in order to speed up the search.
-Path SpaceTimeAStar::findPath(const ICBSNode& node, const ConstraintTable& initial_constraints,
+Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
 	const vector<Path*>& paths, int agent, int lowerbound)
 {
 	Path path;
@@ -182,7 +182,7 @@ void SpaceTimeAStar::updateFocalList()
 	if (open_head->getFVal() > min_f_val)
 	{
 		int new_min_f_val = (int)open_head->getFVal();
-		int new_lower_bound = std::max(lower_bound, new_min_f_val);
+		int new_lower_bound = max(lower_bound, new_min_f_val);
 		for (auto n : open_list)
 		{
 			if (n->getFVal() > lower_bound && n->getFVal() <= new_lower_bound)

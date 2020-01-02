@@ -10,7 +10,7 @@ public:
 	
 	shared_ptr<Conflict> findCorridorConflict(const shared_ptr<Conflict>& conflict,
 		const vector<Path*>& paths,
-		bool cardinal, const ICBSNode& node);
+		bool cardinal, const CBSNode& node);
 
 private:
 	const Instance& instance;

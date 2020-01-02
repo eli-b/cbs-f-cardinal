@@ -1,8 +1,6 @@
 ﻿#pragma once
 #include "SingleAgentSolver.h"
 
-// using boost::heap::pairing_heap;
-// using boost::heap::compare;
 
 class AStarNode: public LLNode
 {
@@ -10,8 +8,8 @@ public:
 
 
 	// define a typedefs for handles to the heaps (allow up to quickly update a node in the heap)
-	typedef boost::heap::pairing_heap< AStarNode*, compare<LLNode::compare_node> >::handle_type open_handle_t;
-	typedef boost::heap::pairing_heap< AStarNode*, compare<LLNode::secondary_compare_node> >::handle_type focal_handle_t;
+	typedef pairing_heap< AStarNode*, compare<LLNode::compare_node> >::handle_type open_handle_t;
+	typedef pairing_heap< AStarNode*, compare<LLNode::secondary_compare_node> >::handle_type focal_handle_t;
 	open_handle_t open_handle;
 	focal_handle_t focal_handle;
 
@@ -38,7 +36,7 @@ public:
 	// The following is used by for generating the hash value of a nodes
 	struct NodeHasher
 	{
-		std::size_t operator()(const AStarNode* n) const
+		size_t operator()(const AStarNode* n) const
 		{
 			size_t loc_hash = std::hash<int>()(n->location);
 			size_t timestep_hash = std::hash<int>()(n->timestep);
@@ -67,7 +65,7 @@ public:
 	// Returns a shortest path that satisfies the constraints of the give node  while
 	// minimizing the number of internal conflicts (that is conflicts with known_paths for other agents found so far).
 	// lowerbound is an underestimation of the length of the path in order to speed up the search.
-	Path findPath(const ICBSNode& node, const ConstraintTable& initial_constraints,
+	Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
 						const vector<Path*>& paths, int agent, int lower_bound);
 
 	string getName() const { return "AStar"; }
@@ -90,7 +88,7 @@ private:
 	hashtable_t allNodes_table;
 
 	// Updates the path datamember
-	void updatePath(const LLNode* goal, std::vector<PathEntry> &path);
+	void updatePath(const LLNode* goal, vector<PathEntry> &path);
 	void updateFocalList();
 	inline AStarNode* popNode();
 	inline void pushNode(AStarNode* node);

@@ -67,7 +67,7 @@ void ConstraintTable::copy(const ConstraintTable& other)
 
 
 // build the constraint table for the given agent at the give node 
-void ConstraintTable::build(const ICBSNode& node, int agent)
+void ConstraintTable::build(const CBSNode& node, int agent)
 {
 	auto curr = &node;
 	while (curr->parent != nullptr)
@@ -126,12 +126,12 @@ void ConstraintTable::build(const ICBSNode& node, int agent)
 					if (x1 == x2)
 					{
 						if (y1 < y2)
-							for (int i = 0; i <= std::min(y2 - y1, t); i++)
+							for (int i = 0; i <= min(y2 - y1, t); i++)
 							{
 								insert2CT(x1 * num_col + y2 - i, t - i, t - i + 1);
 							}
 						else
-							for (int i = 0; i <= std::min(y1 - y2, t); i++)
+							for (int i = 0; i <= min(y1 - y2, t); i++)
 							{
 								insert2CT(x1 * num_col + y2 + i, t - i, t - i + 1);
 							}
@@ -139,12 +139,12 @@ void ConstraintTable::build(const ICBSNode& node, int agent)
 					else // y1== y2
 					{
 						if (x1 < x2)
-							for (int i = 0; i <= std::min(x2 - x1, t); i++)
+							for (int i = 0; i <= min(x2 - x1, t); i++)
 							{
 								insert2CT((x2 - i) * num_col + y1, t - i, t - i + 1);
 							}
 						else
-							for (int i = 0; i <= std::min(x1 - x2, t); i++)
+							for (int i = 0; i <= min(x1 - x2, t); i++)
 							{
 								insert2CT((x2 + i) * num_col + y1, t - i, t - i + 1);
 							}
