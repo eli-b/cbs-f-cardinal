@@ -15,5 +15,3 @@ Variants of Conflict-Based Search.
 3. Add bypassing -- done with BP1. Do we need BP2 in https://docs.wixstatic.com/ugd/749b4b_6c85984d14ff4379b3a4400aab955b7b.pdf?
 
 4. Add random restart -- done with the random permutation of the orders of agents that plan paths at the root node.
-
-5. Add Cardinal Rectangle Reasoning, Rectangle Reasoning and the improved version of Rectangle Reasoning with MDDs.
