@@ -6,8 +6,8 @@ class SIPPNode: public LLNode
 {
 public:
 	// define a typedefs for handles to the heaps (allow up to quickly update a node in the heap)
-	typedef boost::heap::fibonacci_heap< SIPPNode*, compare<SIPPNode::compare_node> >::handle_type open_handle_t;
-	typedef boost::heap::fibonacci_heap< SIPPNode*, compare<SIPPNode::secondary_compare_node> >::handle_type focal_handle_t;
+	typedef boost::heap::pairing_heap< SIPPNode*, compare<SIPPNode::compare_node> >::handle_type open_handle_t;
+	typedef boost::heap::pairing_heap< SIPPNode*, compare<SIPPNode::secondary_compare_node> >::handle_type focal_handle_t;
 	open_handle_t open_handle;
 	focal_handle_t focal_handle;
 
@@ -76,8 +76,8 @@ public:
 
 private:
 	// define typedefs and handles for heap
-	typedef boost::heap::fibonacci_heap< SIPPNode*, boost::heap::compare<LLNode::compare_node> > heap_open_t;
-	typedef boost::heap::fibonacci_heap< SIPPNode*, boost::heap::compare<LLNode::secondary_compare_node> > heap_focal_t;
+	typedef boost::heap::pairing_heap< SIPPNode*, boost::heap::compare<LLNode::compare_node> > heap_open_t;
+	typedef boost::heap::pairing_heap< SIPPNode*, boost::heap::compare<LLNode::secondary_compare_node> > heap_focal_t;
 	heap_open_t open_list;
 	heap_focal_t focal_list;
 

@@ -19,8 +19,6 @@ public:
 		// returns true if n1 > n2 (note -- this gives us *min*-heap).
 		bool operator()(const LLNode* n1, const LLNode* n2) const
 		{
-			if (n1->g_val + n1->h_val == n2->g_val + n2->h_val)
-				return n1->g_val <= n2->g_val;  // break ties towards larger g_vals
 			return n1->g_val + n1->h_val >= n2->g_val + n2->h_val;
 		}
 	};  // used by OPEN (heap) to compare nodes (top of the heap has min f-val, and then highest g-val)

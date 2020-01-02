@@ -7,11 +7,12 @@
 #include <fstream>
 #include <iostream>     // std::cout, std::fixed
 #include <iomanip>      // std::setprecision
-#include <boost/heap/fibonacci_heap.hpp>
+// #include <boost/heap/pairing_heap.hpp>
+#include <boost/heap/pairing_heap.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
 
-using boost::heap::fibonacci_heap;
+using boost::heap::pairing_heap;
 using boost::heap::compare;
 using boost::unordered_map;
 using boost::unordered_set;

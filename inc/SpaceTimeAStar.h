@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "SingleAgentSolver.h"
 
-// using boost::heap::fibonacci_heap;
+// using boost::heap::pairing_heap;
 // using boost::heap::compare;
 
 class AStarNode: public LLNode
@@ -10,8 +10,8 @@ public:
 
 
 	// define a typedefs for handles to the heaps (allow up to quickly update a node in the heap)
-	typedef boost::heap::fibonacci_heap< AStarNode*, compare<LLNode::compare_node> >::handle_type open_handle_t;
-	typedef boost::heap::fibonacci_heap< AStarNode*, compare<LLNode::secondary_compare_node> >::handle_type focal_handle_t;
+	typedef boost::heap::pairing_heap< AStarNode*, compare<LLNode::compare_node> >::handle_type open_handle_t;
+	typedef boost::heap::pairing_heap< AStarNode*, compare<LLNode::secondary_compare_node> >::handle_type focal_handle_t;
 	open_handle_t open_handle;
 	focal_handle_t focal_handle;
 
@@ -77,8 +77,8 @@ public:
 
 private:
 	// define typedefs and handles for heap
-	typedef boost::heap::fibonacci_heap< AStarNode*, boost::heap::compare<AStarNode::compare_node> > heap_open_t;
-	typedef boost::heap::fibonacci_heap< AStarNode*, boost::heap::compare<AStarNode::secondary_compare_node> > heap_focal_t;
+	typedef pairing_heap< AStarNode*, compare<AStarNode::compare_node> > heap_open_t;
+	typedef pairing_heap< AStarNode*, compare<AStarNode::secondary_compare_node> > heap_focal_t;
 	heap_open_t open_list;
 	heap_focal_t focal_list;
 
@@ -86,7 +86,7 @@ private:
 	int lower_bound; // Threshold for FOCAL
 
 	// define typedef for hash_map
-	typedef boost::unordered_set<AStarNode*, AStarNode::NodeHasher, AStarNode::eqnode> hashtable_t;
+	typedef unordered_set<AStarNode*, AStarNode::NodeHasher, AStarNode::eqnode> hashtable_t;
 	hashtable_t allNodes_table;
 
 	// Updates the path datamember

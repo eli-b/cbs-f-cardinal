@@ -142,8 +142,8 @@ int CorridorReasoning::getCorridorLength(const std::vector<PathEntry>& path, int
 {
 	int length = INT_MAX;
 	// generate a heap that can save nodes (and a open_handle)
-	boost::heap::fibonacci_heap< AStarNode*, boost::heap::compare<AStarNode::compare_node> > heap;
-	// boost::heap::fibonacci_heap< AStarNode*, boost::heap::compare<AStarNode::compare_node> >::handle_type open_handle;
+	boost::heap::pairing_heap< AStarNode*, boost::heap::compare<AStarNode::compare_node> > heap;
+	// boost::heap::pairing_heap< AStarNode*, boost::heap::compare<AStarNode::compare_node> >::handle_type open_handle;
 	unordered_set<AStarNode*, AStarNode::NodeHasher, AStarNode::eqnode> nodes;
 
 	auto root = new AStarNode(start, 0, getMahattanDistance(start, end, num_col), nullptr, 0);
@@ -205,8 +205,8 @@ int CorridorReasoning::getBypassLengthByAStar(int start, int end, std::pair<int,
 {
 	int length = INT_MAX;
 	// generate a heap that can save nodes (and a open_handle)
-	boost::heap::fibonacci_heap< AStarNode*, boost::heap::compare<AStarNode::compare_node> > open_list;
-	// boost::heap::fibonacci_heap< AStarNode*, boost::heap::compare<LLNode::compare_node> >::handle_type open_handle;
+	pairing_heap< AStarNode*, compare<AStarNode::compare_node> > open_list;
+	// boost::heap::pairing_heap< AStarNode*, boost::heap::compare<LLNode::compare_node> >::handle_type open_handle;
 	unordered_set<AStarNode*, AStarNode::NodeHasher, AStarNode::eqnode> nodes;
 	auto root = new AStarNode(start, 0, instance.getManhattanDistance(start, end), nullptr, 0);
 	root->open_handle = open_list.push(root);  // add root to heap
@@ -278,8 +278,8 @@ int CorridorReasoning::getBypassLengthBySIPP(int start, int end, std::pair<int, 
 {
 	int length = INT_MAX;
 	// generate a heap that can save nodes (and a open_handle)
-	boost::heap::fibonacci_heap< SIPPNode*, boost::heap::compare<SIPPNode::compare_node> > open_list;
-	// boost::heap::fibonacci_heap< AStarNode*, boost::heap::compare<LLNode::compare_node> >::handle_type open_handle;
+	pairing_heap< SIPPNode*, compare<SIPPNode::compare_node> > open_list;
+	// boost::heap::pairing_heap< AStarNode*, boost::heap::compare<LLNode::compare_node> >::handle_type open_handle;
 	unordered_set<SIPPNode*, SIPPNode::NodeHasher, SIPPNode::eqnode> nodes;
 	
 	Interval interval = reservation_table.get_first_safe_interval(start);

@@ -32,7 +32,7 @@ void SingleAgentSolver::compute_heuristics()
 	my_heuristic.resize(instance.map_size, INT_MAX);
 
 	// generate a heap that can save nodes (and a open_handle)
-	boost::heap::fibonacci_heap< Node, boost::heap::compare<Node::compare_node> > heap;
+	boost::heap::pairing_heap< Node, boost::heap::compare<Node::compare_node> > heap;
 
 	Node root(goal_location, 0);
 	my_heuristic[goal_location] = 0;
