@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 		("corridorReasoning", po::value<bool>()->default_value(false), "Using corridor reasoning")
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
 		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
-		("sipp", po::value<bool>()->default_value(true), "using sipp as the single agent solver")
+		("sipp", po::value<bool>()->default_value(false), "using sipp as the single agent solver")
 		;
 
 	po::variables_map vm;

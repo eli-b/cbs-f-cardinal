@@ -1132,7 +1132,6 @@ inline int CBS::getAgentLocation(int agent_id, size_t timestep) const
 void CBS::clear()
 {
 	releaseNodes();
-	heuristic_helper.clear();
 	paths.clear();
 	paths_found_initially.clear();
 	dummy_start = nullptr;
