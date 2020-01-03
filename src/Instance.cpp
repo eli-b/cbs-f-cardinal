@@ -66,6 +66,7 @@ int Instance::randomWalk(int curr, int steps) const
 
 void Instance::generateRandomAgents(int warehouse_width)
 {
+	cout << "Generate " << num_of_agents << " random start and goal locations " << endl;
 	vector<bool> starts(map_size, false);
 	vector<bool> goals(map_size, false);
 	start_locations.resize(num_of_agents);
@@ -133,7 +134,6 @@ void Instance::generateRandomAgents(int warehouse_width)
 			k++;
 		}
 	}
-	saveAgents();
 }
 
 bool Instance::validMove(int curr, int next) const
@@ -319,6 +319,11 @@ void Instance::saveMap() const
 {
 	ofstream myfile;
 	myfile.open(map_fname);
+	if (!myfile.is_open())
+	{
+		cout << "Fail to save the map to " << map_fname << endl;
+		return;
+	}
 	myfile << num_of_rows << "," << num_of_cols << endl;
 	for (int i = 0; i < num_of_rows; i++)
 	{
@@ -425,6 +430,11 @@ void Instance::saveAgents() const
 {
   ofstream myfile;
   myfile.open(agent_fname);
+  if (!myfile.is_open())
+  {
+	  cout << "Fail to save the agents to " << agent_fname << endl;
+	  return;
+  }
   myfile << num_of_agents << endl;
   for (int i = 0; i < num_of_agents; i++)
     myfile << getRowCoordinate(start_locations[i]) << "," << getColCoordinate(start_locations[i]) << ","

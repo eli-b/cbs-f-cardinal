@@ -12,12 +12,13 @@ int CBSHeuristic::computeHeuristics(CBSNode& curr, double time_limit)
 		return 0;
 	}
 	// create conflict graph
-	clock_t t = clock();
+	start_time = clock();
+	this->time_limit = time_limit;
 	vector<int> CG(num_of_agents * num_of_agents, 0);
 	int num_of_CGedges = 0;
 	if (type == heuristics_type::DG || type == heuristics_type::WDG)
 	{
-		bool succeed = buildDependenceGraph(curr, time_limit);
+		bool succeed = buildDependenceGraph(curr);
 		if (!succeed)
 			return -1;
 		for (int i = 0; i < num_of_agents; i++)
@@ -51,13 +52,12 @@ int CBSHeuristic::computeHeuristics(CBSNode& curr, double time_limit)
 			}
 		}
 	}
-	runtime_build_dependency_graph += (double)(clock() - t) / CLOCKS_PER_SEC;
+	runtime_build_dependency_graph += (double)(clock() - start_time) / CLOCKS_PER_SEC;
 
-	t = clock();
 	int rst;
 	if (type == heuristics_type::WDG)
 	{
-		rst = weightedVertexCover(CG, num_of_agents);
+		rst = weightedVertexCover(CG);
 	}
 	else
 	{
@@ -67,13 +67,13 @@ int CBSHeuristic::computeHeuristics(CBSNode& curr, double time_limit)
 		else
 			rst = minimumVertexCover(CG, curr.parent->h_val, num_of_agents, num_of_CGedges);
 	}
-	runtime_solve_MVC += (double)(clock() - t) / CLOCKS_PER_SEC;
+	runtime_solve_MVC += (double)(clock() - start_time) / CLOCKS_PER_SEC - runtime_build_dependency_graph;
 
 	return rst;
 }
 
 
-int CBSHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal, double time_limit)
+int CBSHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
 {
 	HTableEntry newEntry(a1, a2, &node);
 	if (type != heuristics_type::CG)
@@ -137,8 +137,9 @@ int CBSHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal, do
 		solver.rectangle_reasoning = rectangle_reasoning;
 		solver.corridor_reasoning = corridor_reasoning;
 		solver.target_reasoning = target_reasoning;
-		solver.runICBSSearch(time_limit, max(rst, 0));
-		if (solver.runtime >= time_limit) // time out
+		double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+		solver.runICBSSearch(time_limit - runtime, max(rst, 0));
+		if (solver.runtime >= time_limit - runtime) // time out
 			rst = (int)solver.min_f_val - cost_shortestPath; // using lowerbound to approximate
 		else if (solver.solution_cost  < 0) // no solution
 			rst = solver.solution_cost;
@@ -152,7 +153,7 @@ int CBSHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal, do
 
 
 
-bool CBSHeuristic::buildDependenceGraph(CBSNode& node, double time_limit)
+bool CBSHeuristic::buildDependenceGraph(CBSNode& node)
 {
 	// extract all constraints
 	/*vector<list<Constraint>> constraints = initial_constraints;
@@ -204,7 +205,7 @@ bool CBSHeuristic::buildDependenceGraph(CBSNode& node, double time_limit)
 			}
 			else if (node.conflictGraph.find(idx) == node.conflictGraph.end())
 			{
-				int w = getEdgeWeight(a1, a2, node, true, time_limit - runtime);
+				int w = getEdgeWeight(a1, a2, node, true);
 				if (w < 0) // no solution
 					return false;
 
@@ -215,7 +216,7 @@ bool CBSHeuristic::buildDependenceGraph(CBSNode& node, double time_limit)
 		{
 			if (node.conflictGraph.find(idx) == node.conflictGraph.end())
 			{
-				int w = getEdgeWeight(a1, a2, node, false, time_limit - runtime);
+				int w = getEdgeWeight(a1, a2, node, false);
 				if (w < 0) //no solution
 					return false;
 				node.conflictGraph[idx] = w;
@@ -266,6 +267,9 @@ int CBSHeuristic::minimumVertexCover(const std::vector<int>& CG, int old_mvc, in
 // Whether there exists a k-vertex cover solution
 bool CBSHeuristic::KVertexCover(const std::vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols)
 {
+	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+	if (runtime > time_limit)
+		return true; // run out of time
 	if (num_of_CGedges == 0)
 		return true;
 	else if (num_of_CGedges > k * num_of_CGnodes - k)
@@ -339,41 +343,44 @@ int CBSHeuristic::greedyMatching(const std::vector<int>& CG,  int cols)
 
 // branch and bound
 // enumerate all possible assignments and return the best one
-int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG, int N)
+int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 {
 	int rst = 0;
-	std::vector<bool> done(N, false);
-	for (int i = 0; i < N; i++)
+	std::vector<bool> done(num_of_agents, false);
+	for (int i = 0; i < num_of_agents; i++)
 	{
 		if (done[i])
 			continue;
 		std::vector<int> range;
 		std::vector<int> indices;
-		range.reserve(N);
-		indices.reserve(N);
+		range.reserve(num_of_agents);
+		indices.reserve(num_of_agents);
 		int num = 0;
 		std::queue<int> Q;
 		Q.push(i);
 		done[i] = true;
 		while (!Q.empty())
 		{
+			double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+			if (runtime > time_limit)
+				return -1; // run out of time
 			int j = Q.front(); Q.pop();
 			range.push_back(0);
 			indices.push_back(j);
-			for (int k = 0; k < N; k++)
+			for (int k = 0; k < num_of_agents; k++)
 			{
-				if (CG[j * N + k] > 0)
+				if (CG[j * num_of_agents + k] > 0)
 				{
-					range[num] = std::max(range[num], CG[j * N + k]);
+					range[num] = std::max(range[num], CG[j * num_of_agents + k]);
 					if (!done[k])
 					{
 						Q.push(k);
 						done[k] = true;
 					}
 				}		
-				else if (CG[k * N + j] > 0)
+				else if (CG[k * num_of_agents + j] > 0)
 				{
-					range[num] = std::max(range[num], CG[k * N + j]);
+					range[num] = std::max(range[num], CG[k * num_of_agents + j]);
 					if (!done[k])
 					{
 						Q.push(k);
@@ -387,7 +394,7 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG, int N)
 			continue;
 		else if (num == 2) // only one edge
 		{
-			rst += std::max(CG[indices[0] * N + indices[1]], CG[indices[1] * N + indices[0]]); // add edge weight
+			rst += std::max(CG[indices[0] * num_of_agents + indices[1]], CG[indices[1] * num_of_agents + indices[0]]); // add edge weight
 			continue;
 		}
 		std::vector<int> x(num);
@@ -396,7 +403,7 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG, int N)
 		{
 			for (int k = j + 1; k < num; k++)
 			{
-				G[j * num + k] = std::max(CG[indices[j] * N + indices[k]], CG[indices[k] * N + indices[j]]);
+				G[j * num + k] = std::max(CG[indices[j] * num_of_agents + indices[k]], CG[indices[k] * num_of_agents + indices[j]]);
 			}
 		}
 		int best_so_far = INT_MAX;

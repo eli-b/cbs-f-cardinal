@@ -1,5 +1,14 @@
 #include "common.h"
 
+std::ostream& operator<<(std::ostream& os, const Path& path)
+{
+	for (const auto& state : path)
+	{
+		os << state.location << "(" << state.single << "),";
+	}
+	return os;
+}
+
 
 bool isSamePath(const Path& p1, const Path& p2)
 {

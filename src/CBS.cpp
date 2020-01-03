@@ -225,13 +225,13 @@ void CBS::classifyConflicts(CBSNode &node)
 		bool cardinal1 = false, cardinal2 = false;
 		if (timestep >= (int)paths[a1]->size())
 			cardinal1 = true;
-		else if (!paths[a1]->at(0).single)
+		else //if (!paths[a1]->at(0).single)
 		{
 			mdd_helper.findSingletons(node, a1, *paths[a1]);
 		}
 		if (timestep >= (int)paths[a2]->size())
 			cardinal2 = true;
-		else if (!paths[a2]->at(0).single)
+		else //if (!paths[a2]->at(0).single)
 		{
 			mdd_helper.findSingletons(node, a2, *paths[a2]);
 		}
@@ -429,8 +429,7 @@ bool CBS::generateChild(CBSNode*  node, CBSNode* parent)
 				}
 				if (getAgentLocation(ag, t) == x)
 				{
-					int lowerbound = (int)paths[ag]->size() - 1;
-					if (!findPathForSingleAgent(node, ag, lowerbound))
+					if (!findPathForSingleAgent(node, ag, (int)paths[ag]->size() - 1))
 					{
 						runtime_generate_child += (double)(clock() - t1) / CLOCKS_PER_SEC;
 						return false;
@@ -454,8 +453,7 @@ bool CBS::generateChild(CBSNode*  node, CBSNode* parent)
 			if (prev == x || curr == y ||
 				(prev == y && curr == x))
 			{
-				int lowerbound = (int)paths[ag]->size() - 1;
-				if (!findPathForSingleAgent(node, ag, lowerbound))
+				if (!findPathForSingleAgent(node, ag, (int)paths[ag]->size() - 1))
 				{
 					runtime_generate_child += (double)(clock() - t1) / CLOCKS_PER_SEC;
 					return false;
@@ -469,7 +467,8 @@ bool CBS::generateChild(CBSNode*  node, CBSNode* parent)
 		int lowerbound;
 		if (parent->conflict->t >= (int)paths[agent]->size()) //conflict happens after agent reaches its goal
 			lowerbound = parent->conflict->t + 1;
-		else if (parent->conflict->p == conflict_priority::CARDINAL && 
+		else
+		if (parent->conflict->p == conflict_priority::CARDINAL && 
 			parent->conflict->type != conflict_type::CORRIDOR)
 			lowerbound = (int)paths[agent]->size();
 		else
@@ -736,7 +735,13 @@ bool CBS::runICBSSearch(double time_limit, int initial_h)
 			curr->h_computed = true;
 			runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
 			int h = heuristic_helper.computeHeuristics(*curr, time_limit - runtime);
-
+			runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
+			if (runtime > time_limit)
+			{  // timeout
+				solution_cost = -1;
+				solution_found = false;
+				break;
+			}
 			if (h < 0) // no solution, so prune this node
 			{
 				curr->clear();
@@ -927,7 +932,7 @@ CBS::CBS(vector<SingleAgentSolver*>& search_engines,
 	PC(PC), screen(screen), focal_w(f_w), cost_upperbound(cost_upperbound),
 	initial_constraints(initial_constraints), paths_found_initially(paths_found_initially),
 	search_engines(search_engines), 
-	mdd_helper(initial_constraints, search_engines),
+	mdd_helper(initial_constraints, search_engines, search_engines.size()),
 	rectangle_helper(search_engines[0]->instance),
 	corridor_helper(search_engines[0]->instance, initial_constraints, search_engines[0]->getName() == "SIPP"),
 	heuristic_helper(h_type, search_engines.size(), paths, search_engines, initial_constraints, mdd_helper)
@@ -939,7 +944,7 @@ CBS::CBS(const Instance& instance, double f_w, heuristics_type h_type,
 	bool PC, bool sipp, int screen) :
 	PC(PC), screen(screen), focal_w(f_w),
 	num_of_agents(instance.getDefaultNumberOfAgents()),
-	mdd_helper(initial_constraints, search_engines),
+	mdd_helper(initial_constraints, search_engines, instance.getDefaultNumberOfAgents()),
 	rectangle_helper(instance),
 	corridor_helper(instance, initial_constraints, sipp),
 	heuristic_helper(h_type, instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper)
@@ -971,9 +976,6 @@ bool CBS::generateRoot(int initial_h)
 	dummy_start = new CBSNode();
 	dummy_start->g_val = 0;
 	paths.resize(num_of_agents, nullptr);
-	mdd_helper.init(num_of_agents, rectangle_reasoning || 
-		heuristic_helper.type == heuristics_type::DG || 
-		heuristic_helper.type == heuristics_type::WDG);
 
 	// initialize paths_found_initially
 	if (paths_found_initially.empty())
@@ -999,7 +1001,6 @@ bool CBS::generateRoot(int initial_h)
 				cout << "No path exists for agent " << i << endl;
 				return false;
 			}
-
 			paths[i] = &paths_found_initially[i];
 			dummy_start->makespan = max(dummy_start->makespan, paths_found_initially[i].size() - 1);
 			dummy_start->g_val += (int)paths_found_initially[i].size() - 1;
@@ -1040,8 +1041,10 @@ bool CBS::generateRoot(int initial_h)
 	return true;
 }
 
-inline void CBS::releaseClosedListNodes()
+inline void CBS::releaseNodes()
 {
+	open_list.clear();
+	focal_list.clear();
 	for (auto node : allNodes_table)
 		delete node;
 	allNodes_table.clear();
@@ -1061,7 +1064,8 @@ inline void CBS::releaseClosedListNodes()
 
 CBS::~CBS()
 {
-	releaseClosedListNodes();
+	releaseNodes();
+	mdd_helper.clear();
 }
 
 void CBS::clearSearchEngines()
@@ -1127,10 +1131,7 @@ inline int CBS::getAgentLocation(int agent_id, size_t timestep) const
 // used for rapid random  restart
 void CBS::clear()
 {
-	releaseClosedListNodes();
-	mdd_helper.clear();
-	open_list.clear();
-	focal_list.clear();
+	releaseNodes();
 	heuristic_helper.clear();
 	paths.clear();
 	paths_found_initially.clear();

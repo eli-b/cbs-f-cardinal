@@ -157,6 +157,9 @@ private:
 	int num_of_agents;
 	vector<vector<HTable> > lookupTable;
 
+	double time_limit;
+	double start_time;
+
 	bool rectangle_reasoning; // using rectangle reasoning
 	bool corridor_reasoning; // using corridor reasoning
 	bool target_reasoning; // using target reasoning
@@ -171,14 +174,14 @@ private:
 	// Match and prune MDD according to another MDD.
 	bool SyncMDDs(const MDD &mdd1, const MDD& mdd2);
 
-	int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal, double time_limit);
+	int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
 	int minimumVertexCover(const vector<int>& CG, int old_mvc, int cols, int num_of_edges);
-	bool buildDependenceGraph(CBSNode& node, double time_limit);
+	bool buildDependenceGraph(CBSNode& node);
 	bool KVertexCover(const vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
 
 	int greedyMatching(const vector<int>& CG, int cols);
 
-	int weightedVertexCover(const vector<int>& CG, int N);
+	int weightedVertexCover(const vector<int>& CG);
 	int weightedVertexCover(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
 };
 

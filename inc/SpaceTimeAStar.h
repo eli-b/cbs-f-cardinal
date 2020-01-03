@@ -92,6 +92,6 @@ private:
 	void updateFocalList();
 	inline AStarNode* popNode();
 	inline void pushNode(AStarNode* node);
-	void releaseClosedListNodes();
+	void releaseNodes();
 
 };

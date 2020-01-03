@@ -96,6 +96,6 @@ private:
 	inline SIPPNode* popNode();
 	inline void pushNode(SIPPNode* node);
 	void updateFocalList();
-	void releaseClosedListNodes();
+	void releaseNodes();
 };
 

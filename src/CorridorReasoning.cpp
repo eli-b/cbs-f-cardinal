@@ -259,12 +259,13 @@ int CorridorReasoning::getBypassLengthByAStar(int start, int end, pair<int, int>
 					{
 						existing_next->g_val = next_g_val;
 						existing_next->timestep = next_timestep;
-						open_list.update(existing_next->open_handle);
+						open_list.increase(existing_next->open_handle);
 					}
 				}
 			}
 		}
 	}
+	open_list.clear();
 	for (auto node: nodes)
 	{
 		delete node;
@@ -333,6 +334,7 @@ int CorridorReasoning::getBypassLengthBySIPP(int start, int end, pair<int, int> 
 			}
 		}
 	}
+	open_list.clear();
 	for (auto node : nodes)
 	{
 		delete node;

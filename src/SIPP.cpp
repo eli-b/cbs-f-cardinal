@@ -13,10 +13,10 @@ void SIPP::updatePath(const LLNode* goal, vector<PathEntry> &path)
 		int t = prev->timestep + 1;
 		while (t < curr->timestep)
 		{
-			path[t] = prev->location; // wait at prev location
+			path[t].location = prev->location; // wait at prev location
 			t++;
 		}
-		path[curr->timestep] = curr->location; // move to curr location
+		path[curr->timestep].location = curr->location; // move to curr location
 		curr = prev;
 	}
 	assert(curr->timestep == 0);
@@ -94,9 +94,7 @@ Path SIPP::findPath(const CBSNode& node, const ConstraintTable& initial_constrai
 	}  // end while loop
 	  
 	  // no path found
-	releaseClosedListNodes();
-	open_list.clear();
-	focal_list.clear();
+	releaseNodes();
 	return path;
 }
 
@@ -138,8 +136,10 @@ inline void SIPP::pushNode(SIPPNode* node)
 }
 
 
-void SIPP::releaseClosedListNodes()
+void SIPP::releaseNodes()
 {
+	open_list.clear();
+	focal_list.clear();
 	for (auto node: allNodes_table)
 		delete node;
 	allNodes_table.clear();

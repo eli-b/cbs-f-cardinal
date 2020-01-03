@@ -251,6 +251,21 @@ MDD::~MDD()
 	clear();
 }
 
+std::ostream& operator<<(std::ostream& os, const MDD& mdd)
+{
+	for (const auto& level : mdd.levels)
+	{
+		cout << "L" << level.front()->level << ": ";
+		for (const auto& node : level)
+		{
+			cout << node->location << ",";
+		}
+		cout << endl;
+	}
+	return os;
+}
+
+
 
 SyncMDD::SyncMDD(const MDD & cpy) // deep copy of a MDD
 {
@@ -332,17 +347,14 @@ SyncMDD::~SyncMDD()
 
 MDD * MDDTable::getMDD(CBSNode& node, int id, size_t mdd_levels)
 {
-	if (!lookupTable.empty())
+	ConstraintsHasher c(id, &node);
+	auto got = lookupTable[c.a].find(c);
+	if (got != lookupTable[c.a].end())
 	{
-		ConstraintsHasher c(id, &node);
-		auto got = lookupTable[c.a].find(c);
-		if (got != lookupTable[c.a].end())
-		{
-			assert(got->second->levels.size() == mdd_levels);
-			return got->second;
-		}
-		releaseMDDMemory(id);
+		assert(got->second->levels.size() == mdd_levels);
+		return got->second;
 	}
+	releaseMDDMemory(id);
 
 	clock_t t = clock();
 	MDD * mdd = new MDD();
@@ -363,7 +375,7 @@ void MDDTable::findSingletons(CBSNode& node, int agent, Path& path)
 {
 	auto mdd = getMDD(node, agent, path.size());
 	for (size_t i = 0; i < mdd->levels.size(); i++)
-		path[i].single = mdd->levels[i].size() == 1;
+		path[i].single = (mdd->levels[i].size() == 1);
 	if (lookupTable.empty())
 		delete mdd;
 }

@@ -51,6 +51,7 @@ public:
 	~MDD();
 };
 
+std::ostream& operator<<(std::ostream& os, const MDD& mdd);
 
 class SyncMDDNode
 {
@@ -105,15 +106,14 @@ public:
 	uint64_t num_released_mdds = 0; // number of released MDDs ( to save memory)
 
 	MDDTable(const vector<ConstraintTable>& initial_constraints,
-						const vector<SingleAgentSolver*>& search_engines):
-		initial_constraints(initial_constraints), search_engines(search_engines) {}
+						const vector<SingleAgentSolver*>& search_engines,
+						int number_of_agents):
+		initial_constraints(initial_constraints), search_engines(search_engines)
+	{
+		lookupTable.resize(number_of_agents);
+	}
 	~MDDTable() { clear(); }
 
-	void init(int number_of_agents, bool storeMDDs) 
-	{
-		if (storeMDDs)
-			lookupTable.resize(number_of_agents);
-	}
 
 	MDD * getMDD(CBSNode& node, int agent, size_t mdd_levels);
 	void findSingletons(CBSNode& node, int agent, Path& path);

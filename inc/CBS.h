@@ -127,8 +127,7 @@ private:
 	//update information
 	inline void updatePaths(CBSNode* curr);
 	void updateFocalList();
-	inline void releaseClosedListNodes();
-	//inline void releaseOpenListNodes();
+	inline void releaseNodes();
 	//inline void releaseMDDTable();
 	// void copyConflictGraph(CBSNode& child, const CBSNode& parent);
 

@@ -7,7 +7,8 @@ void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry> &path)
 	const LLNode* curr = goal;
 	while (curr != nullptr) 
 	{
-		path[curr->g_val] = curr->location;
+		path[curr->g_val].location = curr->location;
+		path[curr->g_val].single = false;
 		curr = curr->parent;
 	}
 }
@@ -149,9 +150,7 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 		}  // end for loop that generates successors
 	}  // end while loop
 	  
-	releaseClosedListNodes();
-	open_list.clear();
-	focal_list.clear();
+	releaseNodes();
 	return path;
 }
 
@@ -194,8 +193,10 @@ void SpaceTimeAStar::updateFocalList()
 }
 
 
-void SpaceTimeAStar::releaseClosedListNodes()
+void SpaceTimeAStar::releaseNodes()
 {
+	open_list.clear();
+	focal_list.clear();
 	for (auto node: allNodes_table)
 		delete node;
 	allNodes_table.clear();

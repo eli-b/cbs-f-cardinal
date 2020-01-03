@@ -41,13 +41,13 @@ enum split_strategy { NON_DISJOINT, RANDOM, SINGLETONS, WIDTH, DISJOINT3, SPLIT_
 
 struct PathEntry
 {
-	int location;
-	bool single;
-	PathEntry(int loc = -1) { location = loc; single = false; }
+	int location = -1;
+	bool single = false;
+	// PathEntry(int loc = -1) { location = loc; single = false; }
 };
 
 typedef vector<PathEntry> Path;
-
+std::ostream& operator<<(std::ostream& os, const Path& path);
 
 bool isSamePath(const Path& p1, const Path& p2);
 
