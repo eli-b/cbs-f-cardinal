@@ -15,7 +15,6 @@ public:
 			level = parent->level + 1;
 			parents.push_back(parent);
 		}
-		//parent = NULL;
 	}
 	int location;
 	int level;
@@ -28,7 +27,6 @@ public:
 
 	list<MDDNode*> children;
 	list<MDDNode*> parents;
-	//MDDNode* parent;
 };
 
 
@@ -97,7 +95,36 @@ public:
 };
 
 
-// Match and prune MDD according to another MDD.
-bool SyncMDDs(const MDD &mdd1, const MDD& mdd2);
 
-typedef unordered_map<ConstraintsHasher, MDD*, ConstraintsHasher::Hasher, ConstraintsHasher::EqNode> MDDTable;
+
+
+class MDDTable
+{
+public:
+	double runtime_build_MDDs = 0;
+	uint64_t num_released_mdds = 0;
+
+	MDDTable(const vector<ConstraintTable>& initial_constraints,
+						const vector<SingleAgentSolver*>& search_engines):
+		initial_constraints(initial_constraints), search_engines(search_engines) {}
+	~MDDTable() { clear(); }
+
+	void init(int number_of_agents, bool storeMDDs) 
+	{
+		if (storeMDDs)
+			lookupTable.resize(number_of_agents);
+	}
+
+	MDD * getMDD(CBSNode& node, int agent, size_t mdd_levels);
+	void findSingletons(CBSNode& node, int agent, Path& path);
+	void clear();
+private:
+	int max_num_of_mdds = 10000;
+
+	vector<unordered_map<ConstraintsHasher, MDD*, 
+		ConstraintsHasher::Hasher, ConstraintsHasher::EqNode> >lookupTable;
+
+	const vector<ConstraintTable>& initial_constraints;
+	const vector<SingleAgentSolver*>& search_engines;
+	void releaseMDDMemory(int id);
+};

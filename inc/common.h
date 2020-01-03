@@ -37,7 +37,7 @@ using std::string;
 #define MAX_TIMESTEP INT_MAX
 
 enum split_strategy { NON_DISJOINT, RANDOM, SINGLETONS, WIDTH, DISJOINT3, SPLIT_COUNT };
-enum heuristics_type { NONE, CG, DG, WDG, STRATEGY_COUNT };
+
 
 struct PathEntry
 {

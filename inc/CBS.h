@@ -1,6 +1,5 @@
 #pragma once
-#include "HLHeuristic.h"
-#include "HTable.h"
+#include "CBSHeuristic.h"
 #include "RectangleReasoning.h"
 #include "CorridorReasoning.h"
 
@@ -19,8 +18,8 @@ public:
 	double runtime_build_CAT = 0; // runtime of building conflict avoidance table
 	double runtime_build_MDDs = 0; // runtime of building MDDs
 	double runtime_path_finding = 0; // runtime of finding paths for single agents
-	double runtime_build_dependency_graph = 0;
-	double runtime_solve_MVC = 0;
+	// double runtime_build_dependency_graph = 0;
+	// double runtime_solve_MVC = 0;
 	double runtime_detect_conflicts = 0;
 	double runtime_classify_conflicts = 0;
 	double runtime_preprocessing = 0; // runtime of building heuristic table for the low level
@@ -30,9 +29,6 @@ public:
 	uint64_t num_target = 0;
 	uint64_t num_standard = 0;
 
-	uint64_t num_merge_MDDs = 0;
-	uint64_t num_solve_2agent_problems = 0;
-	uint64_t num_memoization = 0; // number of times when memeorization helps
 	uint64_t num_adopt_bypass = 0; // number of times when adopting bypasses
 
 	uint64_t HL_num_expanded = 0;
@@ -40,8 +36,6 @@ public:
 	uint64_t LL_num_expanded = 0;
 	uint64_t LL_num_generated = 0;
 
-
-	int max_num_of_mdds = 10000;
 
 	CBSNode* dummy_start = nullptr;
 	CBSNode* goal_node = nullptr;
@@ -60,7 +54,7 @@ public:
 		heuristics_type h_type, bool PC, bool sipp, int screen);
 	CBS(vector<SingleAgentSolver*>& search_engines,
 		const vector<ConstraintTable>& constraints,
-		vector<vector<PathEntry>>& paths_found_initially, double f_w,
+		vector<Path>& paths_found_initially, double f_w,
 		heuristics_type h_type, bool PC, int cost_upperbound, int screen);
 	void clearSearchEngines();
 	~CBS();
@@ -72,25 +66,26 @@ public:
 	void clear(); // used for rapid random  restart
 
 private:
+	MDDTable mdd_helper;
 	RectangleReasoning rectangle_helper;
 	CorridorReasoning corridor_helper;
-	
-	// const Instance& instance;
-	typedef pairing_heap< CBSNode*, compare<CBSNode::compare_node> > heap_open_t;
-	typedef pairing_heap< CBSNode*, compare<CBSNode::secondary_compare_node> > heap_focal_t;
-	heap_open_t open_list;
-	heap_focal_t focal_list;
+	CBSHeuristic heuristic_helper;
+
+
+
+	pairing_heap< CBSNode*, compare<CBSNode::compare_node> > open_list;
+	pairing_heap< CBSNode*, compare<CBSNode::secondary_compare_node> > focal_list;
 	list<CBSNode*> allNodes_table;
 
-	vector<MDDTable> mddTable;
-	vector<vector<HTable> > hTable;
+	// vector<MDDTable> mddTable;
+
 
 	bool PC; // prioritize conflicts or not
 
 	string getSolverName() const;
 
 	int screen;
-	heuristics_type h_type;
+	
 	double time_limit;
 	double focal_w = 1.0;
 	const int cost_upperbound = INT_MAX;
@@ -104,7 +99,7 @@ private:
 
 	vector<Path*> paths;
 	vector<Path> paths_found_initially;  // contain initial paths found
-	vector<MDD*> mdds_initially;  // contain initial paths found
+	// vector<MDD*> mdds_initially;  // contain initial paths found
 	vector < SingleAgentSolver* > search_engines;  // used to find (single) agents' paths and mdd
 
 
@@ -118,29 +113,27 @@ private:
 	void findConflicts(CBSNode& curr, int a1, int a2);
 	shared_ptr<Conflict> chooseConflict(const CBSNode &node) const;
 	void classifyConflicts(CBSNode &parent);
-	void copyConflicts(const list<shared_ptr<Conflict>>& conflicts,
-		list<shared_ptr<Conflict>>& copy, int excluded_agent) const;
+	// void copyConflicts(const list<shared_ptr<Conflict>>& conflicts,
+	// 	list<shared_ptr<Conflict>>& copy, int excluded_agent) const;
 	void copyConflicts(const list<shared_ptr<Conflict>>& conflicts,
 		list<shared_ptr<Conflict>>& copy, const list<int>& excluded_agent) const;
 	void removeLowPriorityConflicts(list<shared_ptr<Conflict>>& conflicts) const;
 	//bool isCorridorConflict(std::shared_ptr<Conflict>& corridor, const std::shared_ptr<Conflict>& con, bool cardinal, ICBSNode* node);
 
 	// add heuristics for the high-level search
-	int computeHeuristics(CBSNode& curr);
-	bool buildDependenceGraph(CBSNode& node);
-	int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
+	//int computeHeuristics(CBSNode& curr);
+	//bool buildDependenceGraph(CBSNode& node);
+	//int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
 
-	// build MDD
-	MDD * getMDD(CBSNode& curr, int id);
-	void releaseMDDMemory(int id);
+
 
 	//update information
 	inline void updatePaths(CBSNode* curr);
 	void updateFocalList();
 	inline void releaseClosedListNodes();
-	inline void releaseOpenListNodes();
-	inline void releaseMDDTable();
-	void copyConflictGraph(CBSNode& child, const CBSNode& parent);
+	//inline void releaseOpenListNodes();
+	//inline void releaseMDDTable();
+	// void copyConflictGraph(CBSNode& child, const CBSNode& parent);
 
 	// print and save
 	void printPaths() const;

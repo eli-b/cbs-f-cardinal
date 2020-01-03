@@ -328,89 +328,81 @@ SyncMDD::~SyncMDD()
 }
 
 
-bool SyncMDDs(const MDD &mdd, const MDD& other) // assume mdd.levels <= other.levels
+
+
+MDD * MDDTable::getMDD(CBSNode& node, int id, size_t mdd_levels)
 {
-	if (other.levels.size() <= 1) // Either of the MDDs was already completely pruned already
-		return false;
-	
-	SyncMDD copy(mdd);
-	if (copy.levels.size() < other.levels.size())
+	if (!lookupTable.empty())
 	{
-		size_t i = copy.levels.size();
-		copy.levels.resize(other.levels.size());
-		for (; i < copy.levels.size(); i++)
+		ConstraintsHasher c(id, &node);
+		auto got = lookupTable[c.a].find(c);
+		if (got != lookupTable[c.a].end())
 		{
-			SyncMDDNode* parent = copy.levels[i - 1].front();
-			auto node = new SyncMDDNode(parent->location, parent);
-			parent->children.push_back(node);
-			copy.levels[i].push_back(node);
-			
+			assert(got->second->levels.size() == mdd_levels);
+			return got->second;
+		}
+		releaseMDDMemory(id);
+	}
+
+	clock_t t = clock();
+	MDD * mdd = new MDD();
+	ConstraintTable ct(initial_constraints[id]);
+	ct.build(node, id);
+	mdd->buildMDD(ct, mdd_levels, search_engines[id]);
+	if (!lookupTable.empty())
+	{
+		ConstraintsHasher c(id, &node);
+		lookupTable[c.a][c] = mdd;
+	}
+	runtime_build_MDDs += (double)(clock() - t) / CLOCKS_PER_SEC;
+	return mdd;
+}
+
+
+void MDDTable::findSingletons(CBSNode& node, int agent, Path& path)
+{
+	auto mdd = getMDD(node, agent, path.size());
+	for (size_t i = 0; i < mdd->levels.size(); i++)
+		path[i].single = mdd->levels[i].size() == 1;
+	if (lookupTable.empty())
+		delete mdd;
+}
+
+
+void MDDTable::releaseMDDMemory(int id)
+{
+	if (id < 0 || lookupTable.empty() || (int)lookupTable[id].size() < max_num_of_mdds)
+		return;
+	int minLength = INT_MAX;
+	for (auto mdd : lookupTable[id])
+	{
+		if ((int)mdd.second->levels.size() < minLength)
+			minLength = mdd.second->levels.size();
+	}
+	for (auto mdd = lookupTable[id].begin(); mdd != lookupTable[id].end();)
+	{
+		if ((int)mdd->second->levels.size() == minLength)
+		{
+			delete mdd->second;
+			mdd = lookupTable[id].erase(mdd);
+			num_released_mdds++;
+		}
+		else
+		{
+			mdd++;
 		}
 	}
-	// Cheaply find the coexisting nodes on level zero - all nodes coexist because agent starting points never collide
-	copy.levels[0].front()->coexistingNodesFromOtherMdds.push_back(other.levels[0].front());
+}
 
-	// what if level.size() = 1?
-	for (size_t i = 1; i < copy.levels.size(); i++)
+
+void MDDTable::clear()
+{
+	for (auto& mdds : lookupTable)
 	{
-		for (auto node = copy.levels[i].begin(); node != copy.levels[i].end();)
+		for (auto mdd : mdds)
 		{
-			// Go over all the node's parents and test their coexisting nodes' children for co-existance with this node
-			for(auto parent = (*node)->parents.begin(); parent != (*node)->parents.end(); parent++)
-			{
-				//bool validParent = false;
-				for (const MDDNode* parentCoexistingNode : (*parent)->coexistingNodesFromOtherMdds)
-				{
-					for (const MDDNode* childOfParentCoexistingNode : parentCoexistingNode->children)
-					{
-						if((*node)->location == childOfParentCoexistingNode->location) // vertex conflict
-							continue;
-						else if ((*node)->location == parentCoexistingNode->location && (*parent)->location == childOfParentCoexistingNode->location) // edge conflict
-							continue;
-						//validParent = true;
-
-						auto it = (*node)->coexistingNodesFromOtherMdds.cbegin();
-						for (; it != (*node)->coexistingNodesFromOtherMdds.cend(); ++it)
-						{
-							if (*it == childOfParentCoexistingNode)
-								break;
-						}
-						if (it == (*node)->coexistingNodesFromOtherMdds.cend())
-						{
-							(*node)->coexistingNodesFromOtherMdds.push_back(childOfParentCoexistingNode);
-						}
-					}
-				}
-				//if (!validParent)
-				//{
-				//	// delete the edge, and continue up the levels if necessary
-				//	SyncMDDNode* p = *parent;
-				//	parent = (*node)->parents.erase(parent);
-				//	p->children.remove((*node));
-				//	if (p->children.empty())
-				//		copy.deleteNode(p);
-				//}
-				//else
-				//{
-				//	parent++;
-				//}
-			}
-			if ((*node)->coexistingNodesFromOtherMdds.empty())
-			{
-				// delete the node, and continue up the levels if necessary
-				SyncMDDNode* p = *node;
-				node++;
-				copy.deleteNode(p, i);
-			}
-			else
-				node++;
-		}
-		if (copy.levels[i].empty())
-		{
-			copy.clear();
-			return false;
+			delete mdd.second;
 		}
 	}
-	copy.clear();
-	return true;
+	lookupTable.clear();
 }

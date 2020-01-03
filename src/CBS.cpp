@@ -5,7 +5,6 @@
 #include "SIPP.h"
 #include "SpaceTimeAStar.h"
 
-#define MAX_RUNTIME4PAIR 6000
 
 // takes the paths_found_initially and UPDATE all (constrained) paths found for agents from curr to start
 // also, do the same for ll_min_f_vals and paths_costs (since its already "on the way").
@@ -28,306 +27,11 @@ inline void CBS::updatePaths(CBSNode* curr)
 		curr = curr->parent;
 	}
 }
-/*
-// return the minimal length of the path
-int ICBSSearch::collectConstraints(ICBSNode* curr, int agent_id, std::vector <std::list< std::pair<int, int> > >& cons_vec)
-{
-std::clock_t t1 = std::clock();
-// extract all constraints on agent_id
-int minLength = 0;
-list < Constraint > constraints;
-int max_timestep = -1;
-while (curr != dummy_start)
-{
-if (curr->agent_id == agent_id)
-{
-for (Constraint constraint : curr->constraints)
-{
-constraints.push_back(constraint);
-if (get<2>(constraint) > max_timestep) // calc constraints' max_timestep
-max_timestep = get<2>(constraint);
-if(get<2>(constraint) > minLength && get<0>(constraint) < 0) // this is a path length constraint
-minLength = get<2>(constraint);
-else if (get<2>(constraint) >= minLength &&
-get<0>(constraint) == paths[agent_id]->back().location && get<1>(constraint) < 0) // or this is a vertex constraint at the goal location
-minLength = get<2>(constraint) + 1;
-}
-}
-curr = curr->parent;
-}
-for (Constraint constraint : initial_constraints[agent_id])
-{
-constraints.push_back(constraint);
-if (get<2>(constraint) > max_timestep) // calc constraints' max_timestep
-max_timestep = get<2>(constraint);
-if (get<2>(constraint) > minLength && get<0>(constraint) < 0) // this is a path length constraint
-minLength = get<2>(constraint);
-else if (get<2>(constraint) >= minLength &&
-get<0>(constraint) == paths[agent_id]->back().location && get<1>(constraint) < 0) // or this is a vertex constraint at the goal location
-minLength = get<2>(constraint) + 1;
-}
-
-// initialize a constraint vector of length max_timestep+1. Each entry is an empty list< pair<int,int> > (loc1,loc2)
-//std::vector <std::list< std::pair<int, int> > > cons_vec;
-cons_vec.resize(max_timestep + 1);
-
-for (auto & constraint : constraints)
-{
-if (get<0>(constraint) < 0) // barrier constraint
-{
-int x1 = (-get<0>(constraint) - 1) / ml->cols, y1 = (-get<0>(constraint) - 1) % ml->cols;
-int x2 = get<1>(constraint) / ml->cols, y2 = get<1>(constraint) % ml->cols;
-if (x1 == x2)
-{
-if (y1 < y2)
-for (int i = 0; i <= y2 - y1; i++)
-cons_vec[get<2>(constraint) - i].push_back(make_pair(x1 *  ml->cols + y2 - i, -1));
-else
-for (int i = 0; i <= y1 - y2; i++)
-cons_vec[get<2>(constraint) - i].push_back(make_pair(x1 *  ml->cols + y2 + i, -1));
-}
-else // y1== y2
-{
-if (x1 < x2)
-for (int i = 0; i <= x2 - x1; i++)
-cons_vec[get<2>(constraint) - i].push_back(make_pair((x2 - i) *  ml->cols + y1, -1));
-else
-for (int i = 0; i <= x1 - x2; i++)
-cons_vec[get<2>(constraint) - i].push_back(make_pair((x2 + i) *  ml->cols + y1, -1));
-}
-}
-else
-(cons_vec)[get<2>(constraint)].push_back(make_pair(get<0>(constraint), get<1>(constraint)));
-}
-runtime_updatecons += (double)(std::clock() - t1) * 1000.0 / CLOCKS_PER_SEC;
-return minLength;
-
-}
-*/
-
-
-int CBS::computeHeuristics(CBSNode& curr)
-{
-	if (h_type == heuristics_type::NONE)
-	{
-		return 0;
-	}
-	// create conflict graph
-	clock_t t = clock();
-	vector<int> CG(num_of_agents * num_of_agents, 0);
-	int num_of_CGedges = 0;
-	if (h_type == heuristics_type::DG || h_type == heuristics_type::WDG)
-	{
-		bool succeed = buildDependenceGraph(curr);
-		if (!succeed)
-			return -1;
-		for (int i = 0; i < num_of_agents; i++)
-		{
-			for (int j = i + 1; j < num_of_agents; j++)
-			{
-				auto got = curr.conflictGraph.find(i * num_of_agents + j);
-				if (got != curr.conflictGraph.end() && got->second > 0)
-				{
-					CG[i * num_of_agents + j] = got->second;
-					CG[j * num_of_agents + i] = got->second;
-					num_of_CGedges++;
-				}
-			}
-		}
-	}
-	else
-	{
-		for (const auto& conflict : curr.conflicts)
-		{
-			if (conflict->p == conflict_priority::CARDINAL)
-			{
-				int a1 = conflict->a1;
-				int a2 = conflict->a2;
-				if (!CG[a1 * num_of_agents + a2])
-				{
-					CG[a1 * num_of_agents + a2] = true;
-					CG[a2 * num_of_agents + a1] = true;
-					num_of_CGedges++;
-				}
-			}
-		}
-	}
-	runtime_build_dependency_graph += (double)(clock() - t) / CLOCKS_PER_SEC;
-
-	t = clock();
-	int rst;
-	if (h_type == heuristics_type::WDG)
-	{
-		rst = weightedVertexCover(CG, num_of_agents);
-	}
-	else
-	{
-		// Minimum Vertex Cover
-		if (curr.parent == nullptr) // root node of CBS tree
-			rst = minimumVertexCover(CG, -1, num_of_agents, num_of_CGedges);
-		else
-			rst = minimumVertexCover(CG, curr.parent->h_val, num_of_agents, num_of_CGedges);
-	}
-	runtime_solve_MVC += (double)(clock() - t) / CLOCKS_PER_SEC;
-
-	return rst;
-}
-
-int CBS::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
-{
-	HTableEntry newEntry(a1, a2, &node);
-	if (h_type != heuristics_type::CG)
-	{
-		HTable::const_iterator got = hTable[a1][a2].find(newEntry);
-
-		if (got != hTable[a1][a2].end())
-		{
-			num_memoization++;
-			return got->second;
-		}
-
-	}
-
-	int cost_shortestPath = (int)paths[a1]->size() + (int)paths[a2]->size() - 2;
-	runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
-	int scr = 0;
-	if (screen > 2)
-	{
-		scr = 2;
-		cout << "Agents " << a1 << " and " << a2 << " in node " << node.time_generated << " : ";
-	}
-	int rst = 0;
-	if (cardinal)
-		rst = 1;
-	else if (h_type == heuristics_type::DG || h_type == heuristics_type::WDG)
-	{
-		// get mdds
-
-		const MDD* mdd1 = getMDD(node, a1);
-		const MDD* mdd2 = getMDD(node, a2);
-
-		if (mdd1->levels.size() > mdd2->levels.size()) // swap
-		{
-			const MDD* temp = mdd1;
-			mdd1 = mdd2;
-			mdd2 = temp;
-		}
-		if (!SyncMDDs(*mdd1, *mdd2))
-			rst = 1;
-		else
-			rst = 0;
-		num_merge_MDDs++;
-	}
-	if (h_type == heuristics_type::WDG && rst > 0)
-	{
-		vector<SingleAgentSolver*> engines(2);
-		engines[0] = search_engines[a1];
-		engines[1] = search_engines[a2];
-		vector<vector<PathEntry>> initial_paths(2);
-		initial_paths[0] = *paths[a1];
-		initial_paths[1] = *paths[a2];
-		double cutoffTime = min(MAX_RUNTIME4PAIR * 1.0, time_limit - runtime);
-		int upperbound = (int)initial_paths[0].size() + (int)initial_paths[1].size() + 10;
-		vector<ConstraintTable> constraints{
-			ConstraintTable(initial_constraints[a1]),
-			ConstraintTable(initial_constraints[a2])};
-		constraints[0].build(node, a1);
-		constraints[1].build(node, a2);
-		CBS solver(engines, constraints, initial_paths, 1.0, heuristics_type::CG, true, upperbound, scr);
-		solver.disjoint_splitting = disjoint_splitting;
-		solver.bypass = false; // I guess that bypassing does not help two-agent path finding???
-		solver.rectangle_reasoning = rectangle_reasoning;
-		solver.corridor_reasoning = corridor_reasoning;
-		solver.target_reasoning = target_reasoning;
-		solver.runICBSSearch(cutoffTime, max(rst, 0));
-		if (solver.runtime >= cutoffTime) // time out
-			rst = (int)solver.min_f_val - cost_shortestPath; // using lowerbound to approximate
-		else if (solver.solution_cost  < 0) // no solution
-			rst = solver.solution_cost;
-		else
-			rst = solver.solution_cost - cost_shortestPath;
-		num_solve_2agent_problems++;
-	}
-	hTable[a1][a2][newEntry] = rst;
-	return rst;
-}
-
-bool CBS::buildDependenceGraph(CBSNode& node)
-{
-	// extract all constraints
-	/*vector<list<Constraint>> constraints = initial_constraints;
-	ICBSNode* curr = &node;
-	while (curr != dummy_start)
-	{
-	if (get<3>(curr->constraints.front()) == constraint_type::LENGTH)
-	{
-	if (get<0>(curr->constraints.front()) >=0)
-	{
-	}
-	}
-	else
-	{
-	constraints[curr->agent_id].insert(constraints[curr->agent_id].end(),
-	curr->constraints.begin(), curr->constraints.end());
-	}
-	for (const auto& constraint : curr->constraints)
-	{
-	constraints[curr->agent_id].push_back(constraint);
-	}
-	curr = curr->parent;
-	}
-
-	if (screen == 2)
-	{
-	for (size_t i = 0; i < constraints.size(); i++)
-	{
-	if (constraints[i].empty())
-	continue;
-	std::cout << "Constraints for agent " << i << ":";
-	for (auto constraint: constraints[i])
-	std::cout << constraint;
-	std::cout <<std::endl;
-	}
-	}*/
-
-	for (const auto& conflict : node.conflicts)
-	{
-		int a1 = min(conflict->a1, conflict->a2);
-		int a2 = max(conflict->a1, conflict->a2);
-		int idx = a1 * num_of_agents + a2;
-		if (conflict->p == conflict_priority::CARDINAL)
-		{
-			if (h_type == heuristics_type::DG)
-			{
-				node.conflictGraph[idx] = 1;
-			}
-			else if (node.conflictGraph.find(idx) == node.conflictGraph.end())
-			{
-				int w = getEdgeWeight(a1, a2, node, true);
-				if (w < 0) // no solution
-					return false;
-
-				node.conflictGraph[idx] = w;
-			}
-		}
-		else
-		{
-			if (node.conflictGraph.find(idx) == node.conflictGraph.end())
-			{
-				int w = getEdgeWeight(a1, a2, node, false);
-				if (w < 0) //no solution
-					return false;
-				node.conflictGraph[idx] = w;
-			}
-		}
-	}
-	return true;
-}
 
 
 // deep copy of all conflicts except ones that involve the particular agent
 // used for copying conflicts from the parent node to the child nodes
-void CBS::copyConflicts(const list<shared_ptr<Conflict>>& conflicts,
+/*void CBS::copyConflicts(const list<shared_ptr<Conflict>>& conflicts,
 	list<shared_ptr<Conflict>>& copy, int excluded_agent) const
 {
 	for (const auto & conflict : conflicts)
@@ -337,7 +41,7 @@ void CBS::copyConflicts(const list<shared_ptr<Conflict>>& conflicts,
 			copy.push_back(conflict);
 		}
 	}
-}
+}*/
 
 void CBS::copyConflicts(const list<shared_ptr<Conflict >>& conflicts,
 	list<shared_ptr<Conflict>>& copy, const list<int>& excluded_agents) const
@@ -473,41 +177,6 @@ void CBS::findConflicts(CBSNode& curr)
 	runtime_detect_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
 }
 
-MDD * CBS::getMDD(CBSNode& node, int id)
-{
-	if (!mddTable.empty())
-	{
-		ConstraintsHasher c(id, &node);
-		auto got = mddTable[c.a].find(c);
-		if (got != mddTable[c.a].end())
-		{
-			if (got->second->levels.size() != paths[id]->size())
-			{
-				auto existing_node = got->first;
-				auto existing_mdd = got->second;
-				cout << *existing_node.n << endl << existing_mdd->levels.size();
-				cout << endl;
-			}
-			assert(got->second->levels.size() == paths[id]->size());
-			return got->second;
-		}
-		releaseMDDMemory(id);
-	}
-
-	clock_t t = clock();
-	MDD * mdd = new MDD();
-	ConstraintTable ct(initial_constraints[id]);
-	ct.build(node, id);
-	mdd->buildMDD(ct, paths[id]->size(), search_engines[id]);
-	if (!mddTable.empty())
-	{
-		ConstraintsHasher c(id, &node);
-		mddTable[c.a][c] = mdd;
-	}
-	runtime_build_MDDs += (double)(clock() - t) / CLOCKS_PER_SEC;
-	return mdd;
-}
-
 
 shared_ptr<Conflict> CBS::chooseConflict(const CBSNode &node) const
 {
@@ -539,18 +208,18 @@ shared_ptr<Conflict> CBS::chooseConflict(const CBSNode &node) const
 
 
 
-void CBS::classifyConflicts(CBSNode &parent)
+void CBS::classifyConflicts(CBSNode &node)
 {
 	time_t t = clock();
 	// Classify all conflicts in unknownConf
-	while (!parent.unknownConf.empty())
+	while (!node.unknownConf.empty())
 	{
-		shared_ptr<Conflict> con = parent.unknownConf.front();
+		shared_ptr<Conflict> con = node.unknownConf.front();
 		int a1 = con->a1, a2 = con->a2;
 		int a, loc1, loc2, timestep;
 		constraint_type type;
 		tie(a, loc1, loc2, timestep, type) = con->constraint1.back();
-		parent.unknownConf.pop_front();
+		node.unknownConf.pop_front();
 
 
 		bool cardinal1 = false, cardinal2 = false;
@@ -558,21 +227,13 @@ void CBS::classifyConflicts(CBSNode &parent)
 			cardinal1 = true;
 		else if (!paths[a1]->at(0).single)
 		{
-			MDD* mdd = getMDD(parent, a1);
-			for (size_t i = 0; i < mdd->levels.size(); i++)
-				paths[a1]->at(i).single = mdd->levels[i].size() == 1;
-			if (mddTable.empty())
-				delete mdd;
+			mdd_helper.findSingletons(node, a1, *paths[a1]);
 		}
 		if (timestep >= (int)paths[a2]->size())
 			cardinal2 = true;
 		else if (!paths[a2]->at(0).single)
 		{
-			MDD* mdd = getMDD(parent, a2);
-			for (size_t i = 0; i < mdd->levels.size(); i++)
-				paths[a2]->at(i).single = mdd->levels[i].size() == 1;
-			if (mddTable.empty())
-				delete mdd;
+			mdd_helper.findSingletons(node, a2, *paths[a2]);
 		}
 
 		if (type == constraint_type::EDGE) // Edge conflict
@@ -601,26 +262,26 @@ void CBS::classifyConflicts(CBSNode &parent)
 			con->p = conflict_priority::NON;
 		}
 
-		if (con->p == conflict_priority::CARDINAL && h_type == heuristics_type::NONE)
+		if (con->p == conflict_priority::CARDINAL && heuristic_helper.type == heuristics_type::NONE)
 		{
-			parent.conflicts.push_back(con);
+			node.conflicts.push_back(con);
 			return;
 		}
 
 		if (con->type == conflict_type::TARGET)
 		{
-			parent.conflicts.push_back(con);
+			node.conflicts.push_back(con);
 			continue;
 		}
 
 		// Corridor reasoning
 		if (corridor_reasoning)
 		{
-			auto corridor = corridor_helper.findCorridorConflict(con, paths, cardinal1 && cardinal2, parent);
+			auto corridor = corridor_helper.findCorridorConflict(con, paths, cardinal1 && cardinal2, node);
 			if (corridor != nullptr)
 			{
 				corridor->p = con->p;
-				parent.conflicts.push_back(corridor);
+				node.conflicts.push_back(corridor);
 				continue;
 			}
 		}
@@ -628,7 +289,7 @@ void CBS::classifyConflicts(CBSNode &parent)
 		if (con->type == conflict_type::STANDARD &&
 			((int)paths[con->a1]->size() <= con->t || (int)paths[con->a2]->size() <= con->t)) //conflict happens after agent reaches its goal
 		{
-			parent.conflicts.push_back(con);
+			node.conflicts.push_back(con);
 			continue;
 		}
 
@@ -636,21 +297,20 @@ void CBS::classifyConflicts(CBSNode &parent)
 		if (rectangle_reasoning // rectangle reasoning
 			&& type == constraint_type::VERTEX) // vertex conflict
 		{
-			auto mdd1 = getMDD(parent, a1);
-			auto mdd2 = getMDD(parent, a2);
-
+			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
+			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
 			auto rectangle = rectangle_helper.findRectangleConflict(paths, timestep, a1, a2, mdd1, mdd2);
 			if (rectangle != nullptr)
 			{
-				parent.conflicts.push_back(rectangle);
+				node.conflicts.push_back(rectangle);
 				continue;
 			}
 		}
-		parent.conflicts.push_back(con);
+		node.conflicts.push_back(con);
 	}
 
 	// remove conflicts that cannot be chosen, to save some memory
-	removeLowPriorityConflicts(parent.conflicts);
+	removeLowPriorityConflicts(node.conflicts);
 
 	runtime_classify_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
 }
@@ -849,7 +509,7 @@ bool CBS::generateChild(CBSNode*  node, CBSNode* parent)
 
 	findConflicts(*node);
 
-	copyConflictGraph(*node, *node->parent);
+	heuristic_helper.copyConflictGraph(*node, *node->parent);
 
 	assert(!node->paths.empty());
 	runtime_generate_child += (double)(clock() - t1) / CLOCKS_PER_SEC;
@@ -867,23 +527,7 @@ inline void CBS::pushNode(CBSNode* node)
 	allNodes_table.push_back(node);
 }
 
-void CBS::copyConflictGraph(CBSNode& child, const CBSNode& parent)
-{
-	//copy conflict graph
-	if (h_type == heuristics_type::DG || h_type == heuristics_type::WDG)
-	{
-		unordered_set<int> changed;
-		for (const auto& p : child.paths) {
-			changed.insert(p.first);
-		}
-		for (auto e : parent.conflictGraph) {
-			if (changed.find(e.first / num_of_agents) == changed.end() &&
-				changed.find(e.first % num_of_agents) == changed.end())
-				child.conflictGraph[e.first] = e.second;
-		}
 
-	}
-}
 
 void CBS::printPaths() const
 {
@@ -963,7 +607,9 @@ void CBS::saveResults(const string &fileName, const string &instanceName) const
 		addHeads.close();
 	}
 	ofstream stats(fileName, std::ios::app);
-	stats << runtime << "," << HL_num_expanded << "," << HL_num_generated << "," << LL_num_expanded << "," << LL_num_generated << "," <<
+	stats << runtime << "," << 
+		HL_num_expanded << "," << HL_num_generated << "," << 
+		LL_num_expanded << "," << LL_num_generated << "," <<
 
 		solution_cost << "," << min_f_val << "," << dummy_start->g_val << "," << dummy_start->f_val << "," <<
 
@@ -971,8 +617,11 @@ void CBS::saveResults(const string &fileName, const string &instanceName) const
 
 		num_standard << "," << num_rectangle << "," << num_corridor << "," << num_target << "," <<
 
-		num_merge_MDDs << "," << num_solve_2agent_problems << "," << num_memoization << "," <<
-		runtime_build_dependency_graph << "," << runtime_solve_MVC << "," <<
+		heuristic_helper.num_merge_MDDs << "," << 
+		heuristic_helper.num_solve_2agent_problems << "," << 
+		heuristic_helper.num_memoization << "," <<
+		heuristic_helper.runtime_build_dependency_graph << "," << 
+		heuristic_helper.runtime_solve_MVC << "," <<
 
 		runtime_detect_conflicts << "," << runtime_classify_conflicts << "," <<
 		runtime_build_MDDs << "," << runtime_build_CT << "," << runtime_build_CAT << "," <<
@@ -1000,7 +649,7 @@ string CBS::getSolverName() const
 	string name;
 	if (disjoint_splitting)
 		name += "Disjoint ";
-	switch (h_type)
+	switch (heuristic_helper.type)
 	{
 	case heuristics_type::NONE:
 		if (PC)
@@ -1085,7 +734,8 @@ bool CBS::runICBSSearch(double time_limit, int initial_h)
 		if (!curr->h_computed) // heuristics has not been computed yet
 		{
 			curr->h_computed = true;
-			int h = computeHeuristics(*curr);
+			runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
+			int h = heuristic_helper.computeHeuristics(*curr, time_limit - runtime);
 
 			if (h < 0) // no solution, so prune this node
 			{
@@ -1096,7 +746,7 @@ bool CBS::runICBSSearch(double time_limit, int initial_h)
 			curr->h_val = max(h, curr->h_val); // use consistent h values
 			curr->f_val = curr->g_val + curr->h_val;
 
-			if (screen == 2 && h_type != heuristics_type::NONE)
+			if (screen == 2)
 				curr->printConflictGraph(num_of_agents);
 
 			if (curr->f_val > focal_list_threshold)
@@ -1267,30 +917,6 @@ bool CBS::runICBSSearch(double time_limit, int initial_h)
 	return solution_found;
 }
 
-void CBS::releaseMDDMemory(int id)
-{
-	if (id < 0 || mddTable.empty() || (int)mddTable[id].size() < max_num_of_mdds)
-		return;
-	int minLength = INT_MAX;
-	for (auto mdd : mddTable[id])
-	{
-		if ((int)mdd.second->levels.size() < minLength)
-			minLength = mdd.second->levels.size();
-	}
-	for (MDDTable::iterator mdd = mddTable[id].begin(); mdd != mddTable[id].end();)
-	{
-		if ((int)mdd->second->levels.size() == minLength)
-		{
-			delete mdd->second;
-			mdd = mddTable[id].erase(mdd);
-			// num_released_mdds++;
-		}
-		else
-		{
-			mdd++;
-		}
-	}
-}
 
 
 CBS::CBS(vector<SingleAgentSolver*>& search_engines,
@@ -1298,27 +924,31 @@ CBS::CBS(vector<SingleAgentSolver*>& search_engines,
 	vector<Path>& paths_found_initially, double f_w,
 	heuristics_type h_type, bool PC,
 	int cost_upperbound, int screen) :
-	PC(PC), screen(screen), h_type(h_type), focal_w(f_w), cost_upperbound(cost_upperbound),
+	PC(PC), screen(screen), focal_w(f_w), cost_upperbound(cost_upperbound),
 	initial_constraints(initial_constraints), paths_found_initially(paths_found_initially),
 	search_engines(search_engines), 
+	mdd_helper(initial_constraints, search_engines),
 	rectangle_helper(search_engines[0]->instance),
-	corridor_helper(search_engines[0]->instance, initial_constraints, search_engines[0]->getName() == "SIPP")
+	corridor_helper(search_engines[0]->instance, initial_constraints, search_engines[0]->getName() == "SIPP"),
+	heuristic_helper(h_type, search_engines.size(), paths, search_engines, initial_constraints, mdd_helper)
 {
 	num_of_agents = search_engines.size();
 }
 
 CBS::CBS(const Instance& instance, double f_w, heuristics_type h_type,
 	bool PC, bool sipp, int screen) :
-	PC(PC), screen(screen), h_type(h_type), focal_w(f_w),
+	PC(PC), screen(screen), focal_w(f_w),
 	num_of_agents(instance.getDefaultNumberOfAgents()),
+	mdd_helper(initial_constraints, search_engines),
 	rectangle_helper(instance),
-	corridor_helper(instance, initial_constraints, sipp)
+	corridor_helper(instance, initial_constraints, sipp),
+	heuristic_helper(h_type, instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper)
 {
 	clock_t t = clock();
 	initial_constraints.resize(num_of_agents, 
 		ConstraintTable(instance.num_of_cols, instance.map_size));
 
-	search_engines = vector < SingleAgentSolver* >(num_of_agents);
+	search_engines.resize(num_of_agents);
 	for (int i = 0; i < num_of_agents; i++)
 	{
 		if (sipp)
@@ -1341,14 +971,10 @@ bool CBS::generateRoot(int initial_h)
 	dummy_start = new CBSNode();
 	dummy_start->g_val = 0;
 	paths.resize(num_of_agents, nullptr);
-	hTable.resize(num_of_agents);
-	for (int i = 0; i < num_of_agents; i++)
-	{
-		hTable[i].resize(num_of_agents);
-	}
+	mdd_helper.init(num_of_agents, rectangle_reasoning || 
+		heuristic_helper.type == heuristics_type::DG || 
+		heuristic_helper.type == heuristics_type::WDG);
 
-	if (rectangle_reasoning || h_type == heuristics_type::DG || h_type == heuristics_type::WDG)
-		mddTable.resize(num_of_agents);
 	// initialize paths_found_initially
 	if (paths_found_initially.empty())
 	{
@@ -1421,22 +1047,9 @@ inline void CBS::releaseClosedListNodes()
 	allNodes_table.clear();
 }
 
-inline void CBS::releaseMDDTable()
-{
-	if (!mddTable.empty())
-	{
-		for (int i = 0; i < num_of_agents; i++)
-		{
-			for (auto mdd : mddTable[i])
-			{
-				delete mdd.second;
-			}
-		}
-	}
-	mddTable.clear();
-}
 
-inline void CBS::releaseOpenListNodes()
+
+/*inline void CBS::releaseOpenListNodes()
 {
 	while (!open_list.empty())
 	{
@@ -1444,18 +1057,18 @@ inline void CBS::releaseOpenListNodes()
 		open_list.pop();
 		delete curr;
 	}
-}
+}*/
 
 CBS::~CBS()
 {
 	releaseClosedListNodes();
-	releaseMDDTable();
 }
 
 void CBS::clearSearchEngines()
 {
 	for (auto s : search_engines)
 		delete s;
+	search_engines.clear();
 }
 
 
@@ -1515,10 +1128,10 @@ inline int CBS::getAgentLocation(int agent_id, size_t timestep) const
 void CBS::clear()
 {
 	releaseClosedListNodes();
-	releaseMDDTable();
+	mdd_helper.clear();
 	open_list.clear();
 	focal_list.clear();
-	hTable.clear();
+	heuristic_helper.clear();
 	paths.clear();
 	paths_found_initially.clear();
 	dummy_start = nullptr;

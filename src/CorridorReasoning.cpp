@@ -269,6 +269,7 @@ int CorridorReasoning::getBypassLengthByAStar(int start, int end, pair<int, int>
 	{
 		delete node;
 	}
+	nodes.clear();
 	return length;
 }
 
@@ -336,6 +337,7 @@ int CorridorReasoning::getBypassLengthBySIPP(int start, int end, pair<int, int> 
 	{
 		delete node;
 	}
+	nodes.clear();
 	return length;
 }
 

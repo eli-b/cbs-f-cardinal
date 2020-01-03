@@ -10,6 +10,8 @@ void CBSNode::clear()
 
 void CBSNode::printConflictGraph(int num_of_agents) const
 {
+	if (conflictGraph.empty())
+		return;
 	cout << "	Build conflict graph in " << *this << ": ";
 	for (auto e : conflictGraph)
 	{
