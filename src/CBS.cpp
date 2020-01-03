@@ -624,7 +624,7 @@ void CBS::saveResults(const string &fileName, const string &instanceName) const
 		heuristic_helper.runtime_solve_MVC << "," <<
 
 		runtime_detect_conflicts << "," << runtime_classify_conflicts << "," <<
-		runtime_build_MDDs << "," << runtime_build_CT << "," << runtime_build_CAT << "," <<
+		mdd_helper.runtime_build_MDDs << "," << runtime_build_CT << "," << runtime_build_CAT << "," <<
 		runtime_path_finding << "," << runtime_generate_child << "," <<
 
 		runtime_preprocessing << "," << getSolverName() << "," << instanceName << endl;

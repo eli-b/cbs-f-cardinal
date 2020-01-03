@@ -405,4 +405,6 @@ void MDDTable::clear()
 		}
 	}
 	lookupTable.clear();
+	runtime_build_MDDs = 0;
+	num_released_mdds = 0;
 }
