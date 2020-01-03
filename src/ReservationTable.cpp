@@ -57,7 +57,7 @@ void ReservationTable::buildCAT(int agent, const vector<Path*>& paths)
 	}
 }
 
-int ReservationTable::getNumOfConflictsForStep(int curr_id, int next_id, int next_timestep) const
+int ReservationTable::getNumOfConflictsForStep(size_t curr_id, size_t next_id, size_t next_timestep) const
 {
 	int rst = 0;
 	const auto& it = cat.find(next_id);
@@ -65,7 +65,7 @@ int ReservationTable::getNumOfConflictsForStep(int curr_id, int next_id, int nex
 	{
 		for (const auto& constraint : it->second)
 		{
-			if (constraint.first <= next_timestep && next_timestep < constraint.second)
+			if (constraint.first <= (int)next_timestep && (int)next_timestep < constraint.second)
 				rst++;
 		}
 	}
@@ -81,7 +81,7 @@ int ReservationTable::getNumOfConflictsForStep(int curr_id, int next_id, int nex
 	return rst;
 }
 
-void ReservationTable::insert2RT(int location, size_t t_min, size_t t_max)
+void ReservationTable::insert2RT(size_t location, size_t t_min, size_t t_max)
 {
     if (rt.find(location) == rt.end())
     {
@@ -122,7 +122,7 @@ void ReservationTable::insert2RT(int location, size_t t_min, size_t t_max)
 }
 
 
-void ReservationTable::insertSoftConstraint2RT(int location, size_t t_min, size_t t_max)
+void ReservationTable::insertSoftConstraint2RT(size_t location, size_t t_min, size_t t_max)
 {
     if (rt.find(location) == rt.end())
     {
@@ -192,7 +192,7 @@ void ReservationTable::mergeIntervals(list<Interval >& intervals)
 
 
 // update RT at the gvien location
-void ReservationTable::updateRT(int location)
+void ReservationTable::updateRT(size_t location)
 {
 	if (rt.find(location) == rt.end())
 	{
@@ -227,7 +227,7 @@ void ReservationTable::updateRT(int location)
 }
 
 // [lower_bound, upper_bound)
-list<Interval> ReservationTable::get_safe_intervals(int location, size_t lower_bound, size_t upper_bound)
+list<Interval> ReservationTable::get_safe_intervals(size_t location, size_t lower_bound, size_t upper_bound)
 {
     list<Interval> safe_intervals;
     if (lower_bound >= upper_bound)
@@ -259,7 +259,7 @@ list<Interval> ReservationTable::get_safe_intervals(int location, size_t lower_b
 }
 
 // [lower_bound, upper_bound)
-list<Interval> ReservationTable::get_safe_intervals(int from, int to, size_t lower_bound, size_t upper_bound)
+list<Interval> ReservationTable::get_safe_intervals(size_t from, size_t to, size_t lower_bound, size_t upper_bound)
 {
 	list<Interval> safe_vertex_intervals = get_safe_intervals(to, lower_bound, upper_bound);
 	list<Interval> safe_edge_intervals = get_safe_intervals(getEdgeIndex(from, to), lower_bound, upper_bound);
@@ -269,8 +269,8 @@ list<Interval> ReservationTable::get_safe_intervals(int from, int to, size_t low
 	auto it2 = safe_edge_intervals.begin();
 	while (it1 != safe_vertex_intervals.end() && it2 != safe_edge_intervals.end())
 	{
-		int t_min = max(get<0>(*it1), get<0>(*it2));
-		int t_max = min(get<1>(*it1), get<1>(*it2));
+		auto t_min = max(get<0>(*it1), get<0>(*it2));
+		auto t_max = min(get<1>(*it1), get<1>(*it2));
 		if (t_min < t_max)
 			safe_intervals.emplace_back(t_min, t_max, get<2>(*it1) + get<2>(*it2));
 		if (t_max == get<1>(*it1))
@@ -282,7 +282,7 @@ list<Interval> ReservationTable::get_safe_intervals(int from, int to, size_t low
 	return safe_intervals;
 }
 
-Interval ReservationTable::get_first_safe_interval(int location)
+Interval ReservationTable::get_first_safe_interval(size_t location)
 {
 	updateRT(location);
     const auto& it = rt.find(location);
@@ -293,7 +293,7 @@ Interval ReservationTable::get_first_safe_interval(int location)
 }
 
 // find a safe interval with t_min as given
-bool ReservationTable::find_safe_interval(Interval& interval, int location, int t_min)
+bool ReservationTable::find_safe_interval(Interval& interval, size_t location, size_t t_min)
 {
 	if (t_min >= MAX_TIMESTEP)
 		return false;

@@ -932,7 +932,7 @@ CBS::CBS(vector<SingleAgentSolver*>& search_engines,
 	PC(PC), screen(screen), focal_w(f_w), cost_upperbound(cost_upperbound),
 	initial_constraints(initial_constraints), paths_found_initially(paths_found_initially),
 	search_engines(search_engines), 
-	mdd_helper(initial_constraints, search_engines, search_engines.size()),
+	mdd_helper(initial_constraints, search_engines),
 	rectangle_helper(search_engines[0]->instance),
 	corridor_helper(search_engines[0]->instance, initial_constraints, search_engines[0]->getName() == "SIPP"),
 	heuristic_helper(h_type, search_engines.size(), paths, search_engines, initial_constraints, mdd_helper)
@@ -944,7 +944,7 @@ CBS::CBS(const Instance& instance, double f_w, heuristics_type h_type,
 	bool PC, bool sipp, int screen) :
 	PC(PC), screen(screen), focal_w(f_w),
 	num_of_agents(instance.getDefaultNumberOfAgents()),
-	mdd_helper(initial_constraints, search_engines, instance.getDefaultNumberOfAgents()),
+	mdd_helper(initial_constraints, search_engines),
 	rectangle_helper(instance),
 	corridor_helper(instance, initial_constraints, sipp),
 	heuristic_helper(h_type, instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper)
@@ -976,6 +976,9 @@ bool CBS::generateRoot(int initial_h)
 	dummy_start = new CBSNode();
 	dummy_start->g_val = 0;
 	paths.resize(num_of_agents, nullptr);
+
+	mdd_helper.init(num_of_agents);
+	heuristic_helper.init();
 
 	// initialize paths_found_initially
 	if (paths_found_initially.empty())
@@ -1131,6 +1134,8 @@ inline int CBS::getAgentLocation(int agent_id, size_t timestep) const
 // used for rapid random  restart
 void CBS::clear()
 {
+	mdd_helper.clear();
+	heuristic_helper.clear();
 	releaseNodes();
 	paths.clear();
 	paths_found_initially.clear();

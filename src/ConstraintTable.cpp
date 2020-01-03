@@ -1,12 +1,13 @@
 #include "ConstraintTable.h"
 
-void ConstraintTable::insert2CT(int from, int to, int t_min, int t_max)
+void ConstraintTable::insert2CT(size_t from, size_t to, int t_min, int t_max)
 {
 	insert2CT(getEdgeIndex(from, to), t_min, t_max);
 }
 
-void ConstraintTable::insert2CT(int loc, int t_min, int t_max)
+void ConstraintTable::insert2CT(size_t loc, int t_min, int t_max)
 {
+	assert(loc >= 0);
 	ct[loc].emplace_back(t_min, t_max);
 	if (t_max < MAX_TIMESTEP && t_max > latest_timestep)
 	{
@@ -15,7 +16,7 @@ void ConstraintTable::insert2CT(int loc, int t_min, int t_max)
 }
 
 
-void ConstraintTable::insertLandmark(int loc, int t)
+void ConstraintTable::insertLandmark(size_t loc, int t)
 {
 	auto it = landmarks.find(t);
 	if (it == landmarks.end())
@@ -25,8 +26,9 @@ void ConstraintTable::insertLandmark(int loc, int t)
 }
 
 
-bool ConstraintTable::constrained(int loc, int t) const
+bool ConstraintTable::constrained(size_t loc, int t) const
 {
+	assert(loc >= 0);
 	if (loc < map_size)
 	{
 		const auto& it = landmarks.find(t);
@@ -47,7 +49,7 @@ bool ConstraintTable::constrained(int loc, int t) const
 	return false;
 }
 
-bool ConstraintTable::constrained(int curr_loc, int next_loc, int next_t) const
+bool ConstraintTable::constrained(size_t curr_loc, size_t next_loc, int next_t) const
 {
     return constrained(getEdgeIndex(curr_loc, next_loc), next_t);
 }
@@ -216,7 +218,7 @@ void ConstraintTable::buildCAT(int agent, const vector<Path*>& paths, size_t cat
 	}
 }
 
-int ConstraintTable::getNumOfConflictsForStep(int curr_id, int next_id, int next_timestep) const
+int ConstraintTable::getNumOfConflictsForStep(size_t curr_id, size_t next_id, int next_timestep) const
 {
 	if (map_size < map_size_threshold)
 	{

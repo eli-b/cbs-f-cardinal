@@ -136,7 +136,9 @@ public:
 							vector<SingleAgentSolver*>& search_engines,
 							const vector<ConstraintTable>& initial_constraints,
 							MDDTable& mdd_helper) : type(type), num_of_agents(num_of_agents),
-		paths(paths), search_engines(search_engines), initial_constraints(initial_constraints), mdd_helper(mdd_helper)
+		paths(paths), search_engines(search_engines), initial_constraints(initial_constraints), mdd_helper(mdd_helper) {}
+	
+	void init()
 	{
 		if (type != heuristics_type::NONE)
 		{

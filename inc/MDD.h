@@ -106,9 +106,10 @@ public:
 	uint64_t num_released_mdds = 0; // number of released MDDs ( to save memory)
 
 	MDDTable(const vector<ConstraintTable>& initial_constraints,
-						const vector<SingleAgentSolver*>& search_engines,
-						int number_of_agents):
-		initial_constraints(initial_constraints), search_engines(search_engines)
+						const vector<SingleAgentSolver*>& search_engines):
+		initial_constraints(initial_constraints), search_engines(search_engines) {}
+	
+	void init(int number_of_agents)
 	{
 		lookupTable.resize(number_of_agents);
 	}
