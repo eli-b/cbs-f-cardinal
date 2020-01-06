@@ -155,7 +155,7 @@ public:
 	void clear() { lookupTable.clear(); }
 
 private:
-	int screen;
+	int screen = 0;
 	int num_of_agents;
 	vector<vector<HTable> > lookupTable;
 

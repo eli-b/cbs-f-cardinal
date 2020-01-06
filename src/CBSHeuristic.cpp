@@ -90,10 +90,8 @@ int CBSHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
 
 	int cost_shortestPath = (int)paths[a1]->size() + (int)paths[a2]->size() - 2;
 	// runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
-	int scr = 0;
 	if (screen > 2)
 	{
-		scr = 2;
 		cout << "Agents " << a1 << " and " << a2 << " in node " << node.time_generated << " : ";
 	}
 	int rst = 0;
@@ -131,7 +129,7 @@ int CBSHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
 			ConstraintTable(initial_constraints[a2]) };
 		constraints[0].build(node, a1);
 		constraints[1].build(node, a2);
-		CBS solver(engines, constraints, initial_paths, 1.0, heuristics_type::CG, true, upperbound, scr);
+		CBS solver(engines, constraints, initial_paths, 1.0, heuristics_type::CG, true, upperbound, screen);
 		solver.disjoint_splitting = disjoint_splitting;
 		solver.bypass = false; // I guess that bypassing does not help two-agent path finding???
 		solver.rectangle_reasoning = rectangle_reasoning;
@@ -197,7 +195,7 @@ bool CBSHeuristic::buildDependenceGraph(CBSNode& node)
 		int a2 = max(conflict->a1, conflict->a2);
 		int idx = a1 * num_of_agents + a2;
 		double runtime = (double)(clock() - t) / CLOCKS_PER_SEC;
-		if (conflict->p == conflict_priority::CARDINAL)
+		if (conflict->p == conflict_priority::CARDINAL && conflict->type != conflict_type::CORRIDOR)
 		{
 			if (type == heuristics_type::DG)
 			{
