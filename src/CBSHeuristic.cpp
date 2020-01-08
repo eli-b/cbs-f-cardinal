@@ -68,7 +68,7 @@ int CBSHeuristic::computeHeuristics(CBSNode& curr, double time_limit)
 		else
 			rst = minimumVertexCover(CG, curr.parent->h_val, num_of_agents, num_of_CGedges);
 	}
-	runtime_solve_MVC += (double)(clock() - t) / CLOCKS_PER_SEC - runtime_build_dependency_graph;
+	runtime_solve_MVC += (double)(clock() - t) / CLOCKS_PER_SEC;
 
 	return rst;
 }
