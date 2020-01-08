@@ -12,7 +12,6 @@ public:
 
 private:
 	const Instance& instance;
-
 	shared_ptr<Conflict> findRectangleConflictByRM(const vector<Path*>& paths, int timestep,
 		int a1, int a2, const MDD* mdd1, const MDD* mdd2);
 	shared_ptr<Conflict> findRectangleConflictByGR(const vector<Path*>& paths, int timestep,

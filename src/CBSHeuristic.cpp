@@ -53,7 +53,8 @@ int CBSHeuristic::computeHeuristics(CBSNode& curr, double time_limit)
 		}
 	}
 	runtime_build_dependency_graph += (double)(clock() - start_time) / CLOCKS_PER_SEC;
-
+	
+	auto t = clock();
 	int rst;
 	if (type == heuristics_type::WDG)
 	{
@@ -67,7 +68,7 @@ int CBSHeuristic::computeHeuristics(CBSNode& curr, double time_limit)
 		else
 			rst = minimumVertexCover(CG, curr.parent->h_val, num_of_agents, num_of_CGedges);
 	}
-	runtime_solve_MVC += (double)(clock() - start_time) / CLOCKS_PER_SEC - runtime_build_dependency_graph;
+	runtime_solve_MVC += (double)(clock() - t) / CLOCKS_PER_SEC - runtime_build_dependency_graph;
 
 	return rst;
 }
@@ -195,7 +196,7 @@ bool CBSHeuristic::buildDependenceGraph(CBSNode& node)
 		int a2 = max(conflict->a1, conflict->a2);
 		int idx = a1 * num_of_agents + a2;
 		double runtime = (double)(clock() - t) / CLOCKS_PER_SEC;
-		if (conflict->p == conflict_priority::CARDINAL && conflict->type != conflict_type::CORRIDOR)
+		if (conflict->p == conflict_priority::CARDINAL)
 		{
 			if (type == heuristics_type::DG)
 			{

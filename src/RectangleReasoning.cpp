@@ -125,17 +125,19 @@ shared_ptr<Conflict> RectangleReasoning::findRectangleConflictByRM(const vector<
 							Rg_t, mdd1, mdd2, constraint1, constraint2);
                         if (succ && blocked(*paths[a1], constraint1) && blocked(*paths[a2], constraint2))
                         {
-							auto new_rectangle = shared_ptr<Conflict>(new Conflict());
-							new_rectangle->rectangleConflict(a1, a2, Rs, Rg, Rg_t, constraint1, constraint2);
-                            if (new_type == 2)
-								new_rectangle->p = conflict_priority::CARDINAL;
-                            else if (new_type == 1) // && !findRectangleConflict(parent.parent, *conflict))
-								new_rectangle->p = conflict_priority::SEMI;
+							type = new_type;
+							area = new_area;
+							rectangle = shared_ptr<Conflict>(new Conflict());
+							rectangle->rectangleConflict(a1, a2, Rs, Rg, Rg_t, constraint1, constraint2);
+                            if (type == 2)
+							{
+								rectangle->p = conflict_priority::CARDINAL;
+								return rectangle;
+							}
+                            else if (type == 1) // && !findRectangleConflict(parent.parent, *conflict))
+								rectangle->p = conflict_priority::SEMI;
                             else //if (type == 0 && !findRectangleConflict(parent.parent, *conflict))
-								new_rectangle->p = conflict_priority::NON;
-                            type = new_type;
-                            area = new_area;
-							rectangle = new_rectangle;
+								rectangle->p = conflict_priority::NON;
                         }
                     }
                 }
