@@ -189,13 +189,15 @@ bool CBSHeuristic::buildDependenceGraph(CBSNode& node)
 	std::cout <<std::endl;
 	}
 	}*/
-	clock_t t = clock();
+
 	for (const auto& conflict : node.conflicts)
 	{
 		int a1 = min(conflict->a1, conflict->a2);
 		int a2 = max(conflict->a1, conflict->a2);
 		int idx = a1 * num_of_agents + a2;
-		double runtime = (double)(clock() - t) / CLOCKS_PER_SEC;
+		double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+		if (runtime > time_limit)
+			return false; // run out of time
 		if (conflict->p == conflict_priority::CARDINAL)
 		{
 			if (type == heuristics_type::DG)
