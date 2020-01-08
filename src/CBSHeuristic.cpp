@@ -360,9 +360,6 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 		done[i] = true;
 		while (!Q.empty())
 		{
-			double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-			if (runtime > time_limit)
-				return -1; // run out of time
 			int j = Q.front(); Q.pop();
 			range.push_back(0);
 			indices.push_back(j);
@@ -407,6 +404,9 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 		}
 		int best_so_far = INT_MAX;
 		rst += weightedVertexCover(x, 0, 0, G, range, best_so_far);
+		double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+		if (runtime > time_limit)
+			return -1; // run out of time
 	}
 
 	//test
@@ -433,6 +433,9 @@ int CBSHeuristic::weightedVertexCover(std::vector<int>& x, int i, int sum, const
 {
 	if (sum >= best_so_far)
 		return INT_MAX;
+	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+	if (runtime > time_limit)
+		return -1; // run out of time
 	else if (i == (int)x.size())
 	{
 		best_so_far = sum;
