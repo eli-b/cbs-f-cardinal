@@ -27,9 +27,12 @@ public:
     void print() const;
 
 private:
-	unordered_map<size_t, list<Interval > > rt; // location -> [t_min, t_max), num_of_collisions
 
-	unordered_map< size_t, list<pair<size_t, int> > > cat; // conflict avoidance table cat:  location -> time range, or edge -> time range
+	// Safe Interval Table (SIT)
+	unordered_map<size_t, list<Interval > > sit; // location/edge -> [t_min, t_max), num_of_collisions
+
+	// Conflict Avoidance Table (CAT)
+	unordered_map< size_t, list<pair<int, int> > > cat; //  location/edge -> time range
 
     void insert2RT(size_t location, size_t t_min, size_t t_max);
     void insertSoftConstraint2RT(size_t location, size_t t_min, size_t t_max);

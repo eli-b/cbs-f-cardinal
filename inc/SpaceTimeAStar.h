@@ -5,8 +5,6 @@
 class AStarNode: public LLNode
 {
 public:
-
-
 	// define a typedefs for handles to the heaps (allow up to quickly update a node in the heap)
 	typedef pairing_heap< AStarNode*, compare<LLNode::compare_node> >::handle_type open_handle_t;
 	typedef pairing_heap< AStarNode*, compare<LLNode::secondary_compare_node> >::handle_type focal_handle_t;
