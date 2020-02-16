@@ -18,6 +18,7 @@ public:
 	}
 	int location;
 	int level;
+  int cost; // minimum cost of path traversing this MDD node
 
 	bool operator == (const MDDNode & node) const
 	{
@@ -29,10 +30,11 @@ public:
 	list<MDDNode*> parents;
 };
 
-
-
 class MDD
 {
+private:
+ const SingleAgentSolver* solver;
+
 public:
 	vector<list<MDDNode*>> levels;
 
@@ -45,6 +47,9 @@ public:
 	void deleteNode(MDDNode* node);
 	void clear();
 	// bool isConstrained(int curr_id, int next_id, int next_timestep, const std::vector< std::list< std::pair<int, int> > >& cons) const;
+
+  void increaseBy(const ConstraintTable&ct, int dLevel, SingleAgentSolver* solver);
+  MDDNode* goalAt(int level);
 
 	MDD()= default;;
 	MDD(const MDD & cpy);
@@ -95,10 +100,6 @@ public:
 	~SyncMDD();
 };
 
-
-
-
-
 class MDDTable
 {
 public:
@@ -129,3 +130,5 @@ private:
 	const vector<SingleAgentSolver*>& search_engines;
 	void releaseMDDMemory(int id);
 };
+
+unordered_map<int, MDDNode*> collectMDDlevel(MDD* mdd, int i);

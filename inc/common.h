@@ -1,3 +1,4 @@
+
 #pragma once
 #include <tuple>
 #include <list>
@@ -64,3 +65,4 @@ bool isSamePath(const Path& p1, const Path& p2);
         return h1 ^ h2 ^ h3;
     }
 };*/
+
