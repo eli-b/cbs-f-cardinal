@@ -10,7 +10,6 @@ typedef std::pair<MDDNode*, MDDNode*> node_pair;
 typedef std::pair<node_pair, node_pair> edge_pair;
 
 class ConstraintPropagation{
-
 private:
   // TODO ownership?
   // std::vector<MDD*> mdds;

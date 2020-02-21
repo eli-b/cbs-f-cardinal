@@ -28,6 +28,10 @@ public:
 
   std::pair<con_vec, con_vec> gen_constraints();
 
+  int final_len_0;
+  int final_len_1;
+
+
 };
 
 #endif

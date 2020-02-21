@@ -234,6 +234,7 @@ MDD::MDD(const MDD & cpy) // deep copy
 				if (child == nullptr)
 				{
 					child = new MDDNode((*cpyChild)->location, (*node));
+          child->cost = (*cpyChild)->cost;
 					levels[child->level].push_back(child);
 					(*node)->children.push_back(child);
 				}
@@ -246,6 +247,8 @@ MDD::MDD(const MDD & cpy) // deep copy
 		}
 		
 	}
+
+  solver = cpy.solver;
 }
 
 MDD::~MDD()
