@@ -168,7 +168,7 @@ void ReservationTable::insertSoftConstraint2RT(size_t location, size_t t_min, si
 
 
 //merge successive safe intervals with the same number of conflicts.
-void ReservationTable::mergeIntervals(list<Interval >& intervals)
+void ReservationTable::mergeIntervals(list<Interval >& intervals) const
 {
 	if (intervals.empty())
 		return;
@@ -191,8 +191,8 @@ void ReservationTable::mergeIntervals(list<Interval >& intervals)
 }
 
 
-// update RT at the gvien location
-void ReservationTable::updateRT(size_t location)
+// update SIT at the gvien location
+void ReservationTable::updateSIT(size_t location)
 {
 	if (sit.find(location) == sit.end())
 	{
@@ -233,7 +233,7 @@ list<Interval> ReservationTable::get_safe_intervals(size_t location, size_t lowe
     if (lower_bound >= upper_bound)
         return rst;
 
-	updateRT(location);
+	updateSIT(location);
 	
 	const auto& it = sit.find(location);
 
@@ -284,7 +284,7 @@ list<Interval> ReservationTable::get_safe_intervals(size_t from, size_t to, size
 
 Interval ReservationTable::get_first_safe_interval(size_t location)
 {
-	updateRT(location);
+	updateSIT(location);
     const auto& it = sit.find(location);
     if (it == sit.end())
 		return Interval(0, MAX_TIMESTEP, 0);
@@ -297,7 +297,7 @@ bool ReservationTable::find_safe_interval(Interval& interval, size_t location, s
 {
 	if (t_min >= MAX_TIMESTEP)
 		return false;
-	updateRT(location);
+	updateSIT(location);
 	const auto& it = sit.find(location);
     if (it == sit.end())
     {

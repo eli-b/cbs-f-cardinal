@@ -31,7 +31,8 @@ public:
 	void buildCAT(int agent, const vector<Path*>& paths, size_t cat_size); // build the conflict avoidance table
 
 protected:
-	unordered_map<size_t, list<pair<int, int> > > ct; // csontraint table: location -> time range, or edge -> time range
+    // Constraint Table (CT)
+	unordered_map<size_t, list<pair<int, int> > > ct; // location -> time range, or edge -> time range
 
 	unordered_map<size_t, size_t> landmarks; // <timestep, location>: the agent must be at the given location at the given timestep
 
