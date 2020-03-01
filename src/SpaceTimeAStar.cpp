@@ -71,7 +71,7 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
         for (int next_location : next_locations)
 		{
 			int next_timestep = curr->timestep + 1;
-            if ((int)node.makespan + 1 <= curr->timestep) // TODO: BUGS!!!
+			if (max((int)node.makespan + 1, constraint_table.latest_timestep) <= curr->timestep)
             {
                 if (next_location == curr->location)
                 {

@@ -2,8 +2,8 @@
 #include "common.h"
 
 
-enum conflict_type { TARGET, CORRIDOR, RECTANGLE, STANDARD, TYPE_COUNT };
-enum conflict_priority { CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
+enum conflict_type { TARGET, CORRIDOR, RECTANGLE, STANDARD, TYPE_COUNT, MUTEX };
+enum conflict_priority { MUTEX_CARDINAL, CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
 enum constraint_type { LEQLENGTH, GLENGTH, RANGE, BARRIER, VERTEX, EDGE, 
 											POSITIVE_VERTEX, POSITIVE_EDGE, CONSTRAINT_COUNT };
 
@@ -92,10 +92,19 @@ public:
 	}
 
 
+  void mutexConflict(int a1, int a2){
+    constraint1.clear();
+    constraint2.clear();
+		this->a1 = a1;
+		this->a2 = a2;
+		type = conflict_type::MUTEX;
+    p = conflict_priority::MUTEX_CARDINAL;
+    // TODO add constraints from mutex reasoning
+  }
+
 
 };
 
 std::ostream& operator<<(std::ostream& os, const Conflict& conflict);
 
 bool operator < (const Conflict& conflict1, const Conflict& conflict2);
-

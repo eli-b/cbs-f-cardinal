@@ -274,6 +274,20 @@ void CBS::classifyConflicts(CBSNode &node)
 			continue;
 		}
 
+    if (mutex_reasoning){
+      // TODO mutex reasoning is per agent pair, don't do duplicated work...
+			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
+			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
+
+      auto mutex_conflict = mutex_helper.findMutexConflict(a1, a2, node, mdd1, mdd2);
+
+			if (mutex_conflict != nullptr)
+        {
+          node.conflicts.push_back(mutex_conflict);
+          continue;
+        }
+    }
+
 		// Corridor reasoning
 		if (corridor_reasoning)
 		{
@@ -292,7 +306,6 @@ void CBS::classifyConflicts(CBSNode &node)
 			node.conflicts.push_back(con);
 			continue;
 		}
-
 
 		if (rectangle_reasoning // rectangle reasoning
 			&& type == constraint_type::VERTEX) // vertex conflict
@@ -674,6 +687,8 @@ string CBS::getSolverName() const
 		name += "+C";
 	if (target_reasoning)
 		name += "+T";
+  if (mutex_reasoning)
+    name += "+MP";
 	if (bypass)
 		name += "+BP";
 	name += " with " + search_engines[0]->getName();
@@ -934,10 +949,12 @@ CBS::CBS(vector<SingleAgentSolver*>& search_engines,
 	search_engines(search_engines), 
 	mdd_helper(initial_constraints, search_engines),
 	rectangle_helper(search_engines[0]->instance),
+	mutex_helper(search_engines[0]->instance),
 	corridor_helper(search_engines[0]->instance, initial_constraints, search_engines[0]->getName() == "SIPP"),
 	heuristic_helper(h_type, search_engines.size(), paths, search_engines, initial_constraints, mdd_helper)
 {
 	num_of_agents = search_engines.size();
+  mutex_helper.search_engines = search_engines;
 }
 
 CBS::CBS(const Instance& instance, double f_w, heuristics_type h_type,
@@ -946,6 +963,7 @@ CBS::CBS(const Instance& instance, double f_w, heuristics_type h_type,
 	num_of_agents(instance.getDefaultNumberOfAgents()),
 	mdd_helper(initial_constraints, search_engines),
 	rectangle_helper(instance),
+	mutex_helper(instance),
 	corridor_helper(instance, initial_constraints, sipp),
 	heuristic_helper(h_type, instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper)
 {
@@ -964,6 +982,8 @@ CBS::CBS(const Instance& instance, double f_w, heuristics_type h_type,
 		initial_constraints[i].goal_location = search_engines[i]->goal_location;
 	}
 	runtime_preprocessing = (double)(clock() - t) / CLOCKS_PER_SEC;
+
+  mutex_helper.search_engines = search_engines;
 
 	if (screen >= 2) // print start and goals
 	{

@@ -37,6 +37,7 @@ int main(int argc, char** argv)
 		("disjointSplitting", po::value<bool>()->default_value(true), "disjoint splitting")
 		("rectangleReasoning", po::value<bool>()->default_value(false), "Using rectangle reasoning")
 		("corridorReasoning", po::value<bool>()->default_value(false), "Using corridor reasoning")
+		("mutexReasoning", po::value<bool>()->default_value(false), "Using mutex reasoning")
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
 		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
 		("sipp", po::value<bool>()->default_value(false), "using sipp as the single agent solver")
@@ -90,6 +91,7 @@ int main(int argc, char** argv)
 	cbs.bypass = vm["bypass"].as<bool>();
 	cbs.rectangle_reasoning = vm["rectangleReasoning"].as<bool>();
 	cbs.corridor_reasoning = vm["corridorReasoning"].as<bool>();
+  cbs.mutex_reasoning = vm["mutexReasoning"].as<bool>();
 	cbs.target_reasoning = vm["targetReasoning"].as<bool>();
 
 
@@ -107,7 +109,7 @@ int main(int argc, char** argv)
 	cbs.runtime = runtime;
 	if (vm.count("output"))
 		cbs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
-	cbs.clearSearchEngines();
+	// cbs.clearSearchEngines();
 	return 0;
 
 }

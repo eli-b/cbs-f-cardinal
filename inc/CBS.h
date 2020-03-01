@@ -2,6 +2,7 @@
 #include "CBSHeuristic.h"
 #include "RectangleReasoning.h"
 #include "CorridorReasoning.h"
+#include "MutexReasoning.h"
 
 class CBS
 {
@@ -10,6 +11,7 @@ public:
 	bool corridor_reasoning; // using corridor reasoning
 	bool target_reasoning; // using target reasoning
 	bool disjoint_splitting; // disjoint splittting
+  bool mutex_reasoning; // using mutex reasoning
 	bool bypass; // using Bypass1
 
 	double runtime = 0;
@@ -66,6 +68,7 @@ private:
 	MDDTable mdd_helper;
 	RectangleReasoning rectangle_helper;
 	CorridorReasoning corridor_helper;
+  MutexReasoning mutex_helper;
 	CBSHeuristic heuristic_helper;
 
 
