@@ -262,31 +262,34 @@ void CBS::classifyConflicts(CBSNode &node)
 			con->p = conflict_priority::NON;
 		}
 
-		if (con->p == conflict_priority::CARDINAL && heuristic_helper.type == heuristics_type::NONE)
+		if (con->p == conflict_priority::CARDINAL && heuristic_helper.type == heuristics_type::ZERO)
 		{
 			node.conflicts.push_back(con);
 			return;
 		}
 
+		// Mutex reasoning
+		if (mutex_reasoning)
+		{
+			// TODO mutex reasoning is per agent pair, don't do duplicated work...
+			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
+			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
+
+			auto mutex_conflict = mutex_helper.findMutexConflict(a1, a2, node, mdd1, mdd2);
+
+			if (mutex_conflict != nullptr)
+			{
+				node.conflicts.push_back(mutex_conflict);
+				continue;
+			}
+		}
+
+		// Target Reasoning
 		if (con->type == conflict_type::TARGET)
 		{
 			node.conflicts.push_back(con);
 			continue;
 		}
-
-    if (mutex_reasoning){
-      // TODO mutex reasoning is per agent pair, don't do duplicated work...
-			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
-			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
-
-      auto mutex_conflict = mutex_helper.findMutexConflict(a1, a2, node, mdd1, mdd2);
-
-			if (mutex_conflict != nullptr)
-        {
-          node.conflicts.push_back(mutex_conflict);
-          continue;
-        }
-    }
 
 		// Corridor reasoning
 		if (corridor_reasoning)
@@ -307,7 +310,8 @@ void CBS::classifyConflicts(CBSNode &node)
 			continue;
 		}
 
-		if (rectangle_reasoning // rectangle reasoning
+		// Rectangle reasoning
+		if (rectangle_reasoning 
 			&& type == constraint_type::VERTEX) // vertex conflict
 		{
 			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
@@ -321,6 +325,8 @@ void CBS::classifyConflicts(CBSNode &node)
 		}
 		node.conflicts.push_back(con);
 	}
+
+
 
 	// remove conflicts that cannot be chosen, to save some memory
 	removeLowPriorityConflicts(node.conflicts);
@@ -663,7 +669,7 @@ string CBS::getSolverName() const
 		name += "Disjoint ";
 	switch (heuristic_helper.type)
 	{
-	case heuristics_type::NONE:
+	case heuristics_type::ZERO:
 		if (PC)
 			name += "ICBS";
 		else
@@ -695,7 +701,7 @@ string CBS::getSolverName() const
 	return name;
 }
 
-bool CBS::runICBSSearch(double time_limit, int initial_h)
+bool CBS::solve(double time_limit, int initial_h)
 {
 	this->time_limit = time_limit;
 	if (screen > 0) // 1 or 2

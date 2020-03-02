@@ -55,9 +55,8 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 		auto* curr = popNode();
 
 		// check if the popped node is a goal
-        if (curr->location == goal_location && 
-			curr->timestep >= max(constraint_table.length_min, holding_time) &&
-			(curr->parent == nullptr || curr->parent->location != goal_location))
+        if (curr->location == goal_location && !curr->wait_at_goal &&
+			curr->timestep >= max(constraint_table.length_min, holding_time))
         {
             updatePath(curr, path);
             break;
@@ -95,17 +94,15 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 			// generate (maybe temporary) node
 			auto next = new AStarNode(next_location, next_g_val, next_h_val,	
 															curr, next_timestep, next_internal_conflicts, false);
+			if (next_location == goal_location && curr->location == goal_location)
+				next->wait_at_goal = true;
 
 			// try to retrieve it from the hash table
 			auto it = allNodes_table.find(next);
-            if (it == allNodes_table.end() ||
-                (next_location == goal_location && constraint_table.length_min > 0))
+            if (it == allNodes_table.end())
 			{
 				pushNode(next);
-				if (it == allNodes_table.end())
-					allNodes_table.insert(next); 
-				else
-					goal_nodes.push_back(next);
+				allNodes_table.insert(next);
 				continue;
             } 
 			// update existing node's if needed (only in the open_list)
@@ -200,8 +197,5 @@ void SpaceTimeAStar::releaseNodes()
 	for (auto node: allNodes_table)
 		delete node;
 	allNodes_table.clear();
-	for (auto node : goal_nodes)
-		delete node;
-	goal_nodes.clear();
 }
 

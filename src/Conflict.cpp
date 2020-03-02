@@ -87,6 +87,10 @@ bool operator < (const Conflict& conflict1, const Conflict& conflict2) // return
         return false;
     else if (conflict1.type != conflict_type::CORRIDOR && conflict2.type == conflict_type::CORRIDOR)
         return true;
+	else if (conflict1.type == conflict_type::RECTANGLE && conflict2.type != conflict_type::RECTANGLE)
+		return false;
+	else if (conflict1.type != conflict_type::RECTANGLE && conflict2.type == conflict_type::RECTANGLE)
+		return true;
 	else return (conflict2.t < conflict1.t);
 }
 

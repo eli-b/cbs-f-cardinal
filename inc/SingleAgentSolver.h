@@ -95,9 +95,6 @@ public:
 
 
 protected:
-	// int agent;
-	list<LLNode*> goal_nodes; // used to store duplicate goal nodes for the search
-
 	void compute_heuristics();
 };
 

@@ -19,21 +19,28 @@ int main(int argc, char** argv)
 	po::options_description desc("Allowed options");
 	desc.add_options()
 		("help", "produce help message")
+
+		// params for the input instance and experiment settings
 		("map,m", po::value<string>()->required(), "input file for map")
 		("agents,a", po::value<string>()->required(), "input file for agents")
 		("output,o", po::value<string>(), "output file for schedule")
+		("agentNum,k", po::value<int>()->default_value(0), "number of agents")
+		("cutoffTime,t", po::value<double>()->default_value(7200), "cutoff time (seconds)")
+		("screen,s", po::value<int>()->default_value(0), "screen option (0: none; 1: results; 2:all)")
+		("seed,d", po::value<int>()->default_value(0), "random seed")
+
+		// params for instance generators
 		("rows", po::value<int>()->default_value(0), "number of rows")
 		("cols", po::value<int>()->default_value(0), "number of columns")
 		("obs", po::value<int>()->default_value(0), "number of obstacles")
 		("warehouseWidth", po::value<int>()->default_value(0), "width of working stations on both sides, for generating instacnes")
-		("screen,s", po::value<int>()->default_value(0), "screen option (0: none; 1: results; 2:all)")
-		("seed,d", po::value<int>()->default_value(0), "random seed")
-		("agentNum,k", po::value<int>()->default_value(0), "number of agents")
-		("cutoffTime,t", po::value<double>()->default_value(7200), "cutoff time (seconds)")
 
-		("PC,p", po::value<bool>()->default_value(true), "conflict prioirtization")
+		// params for CBS
+		("heuristics", po::value<string>()->default_value("Zero"), "heuristics for the high-level search (Zero, CG,DG, WDG)")
+		("prioritizingConflicts", po::value<bool>()->default_value(true), "conflict prioirtization. If true, conflictSelection is used as a tie-breaking rule.")
+		("conflictSelection", po::value<string>()->default_value("Earliest"), 
+				"conflict selection (Random\n Earliest,\n Conflicts: most conflicts with others\n MConstraints\: most constraints\n FConstraints: fewest constraints\n Width: thinest MDDs\n Singletons: most singletons)")
 		("bypass", po::value<bool>()->default_value(true), "Bypass1")
-		("heuristics,h", po::value<string>()->default_value("NONE"), "heuristics for the high-level search (NONE, CG,DG, WDG)")
 		("disjointSplitting", po::value<bool>()->default_value(true), "disjoint splitting")
 		("rectangleReasoning", po::value<bool>()->default_value(false), "Using rectangle reasoning")
 		("corridorReasoning", po::value<bool>()->default_value(false), "Using corridor reasoning")
@@ -53,6 +60,7 @@ int main(int argc, char** argv)
 
 	po::notify(vm);
 
+	// check the consistence of params
 	if (vm["sipp"].as<bool>() && vm["targetReasoning"].as<bool>())
 	{
 		cerr << "SIPP cannot work together with target reasoning!" << endl;
@@ -60,8 +68,8 @@ int main(int argc, char** argv)
 	}
 
 	heuristics_type h;
-	if (vm["heuristics"].as<string>() == "NONE")
-		h = heuristics_type::NONE;
+	if (vm["heuristics"].as<string>() == "Zero")
+		h = heuristics_type::ZERO;
 	else if (vm["heuristics"].as<string>() == "CG")
 		h = heuristics_type::CG;
 	else if (vm["heuristics"].as<string>() == "DG")
@@ -91,16 +99,15 @@ int main(int argc, char** argv)
 	cbs.bypass = vm["bypass"].as<bool>();
 	cbs.rectangle_reasoning = vm["rectangleReasoning"].as<bool>();
 	cbs.corridor_reasoning = vm["corridorReasoning"].as<bool>();
-  cbs.mutex_reasoning = vm["mutexReasoning"].as<bool>();
 	cbs.target_reasoning = vm["targetReasoning"].as<bool>();
-
+	cbs.mutex_reasoning = vm["mutexReasoning"].as<bool>();
 
 	double runtime = 0;
 	int initial_h = 0;
 	for (int i = 0; i < runs; i++)
 	{
 		cbs.clear();
-		cbs.runICBSSearch(vm["cutoffTime"].as<double>(), initial_h);
+		cbs.solve(vm["cutoffTime"].as<double>(), initial_h);
 		runtime += cbs.runtime;
 		if (cbs.solution_found)
 			break;

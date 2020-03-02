@@ -47,7 +47,7 @@ public:
 	double focal_list_threshold;
 
 	// Runs the algorithm until the problem is solved or time is exhausted 
-	bool runICBSSearch(double time_limit, int initial_h);
+	bool solve(double time_limit, int initial_h);
 
 	CBS(const Instance& instance, double f_w,
 		heuristics_type h_type, bool PC, bool sipp, int screen);

@@ -7,7 +7,7 @@
 
 int CBSHeuristic::computeHeuristics(CBSNode& curr, double time_limit)
 {
-	if (type == heuristics_type::NONE)
+	if (type == heuristics_type::ZERO)
 	{
 		return 0;
 	}
@@ -137,7 +137,7 @@ int CBSHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
 		solver.corridor_reasoning = corridor_reasoning;
 		solver.target_reasoning = target_reasoning;
 		double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-		solver.runICBSSearch(time_limit - runtime, max(rst, 0));
+		solver.solve(time_limit - runtime, max(rst, 0));
 		if (solver.runtime >= time_limit - runtime) // time out
 			rst = (int)solver.min_f_val - cost_shortestPath; // using lowerbound to approximate
 		else if (solver.solution_cost  < 0) // no solution

@@ -2,10 +2,11 @@
 #include "common.h"
 
 
-enum conflict_type { TARGET, CORRIDOR, RECTANGLE, STANDARD, TYPE_COUNT, MUTEX };
+enum conflict_type { TARGET, CORRIDOR, RECTANGLE, STANDARD, MUTEX, TYPE_COUNT };
 enum conflict_priority { MUTEX_CARDINAL, CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
 enum constraint_type { LEQLENGTH, GLENGTH, RANGE, BARRIER, VERTEX, EDGE, 
 											POSITIVE_VERTEX, POSITIVE_EDGE, CONSTRAINT_COUNT };
+enum conflict_selection_rule {RANDOM, EARLIEST, CONFLICTS, MCONSTRAINTS, FCONSTRAINTS, WIDTH, SINGLETONS};
 
 typedef std::tuple<int, int, int, int, constraint_type> Constraint;
 // <agent, loc, -1, t, VERTEX>
@@ -92,15 +93,16 @@ public:
 	}
 
 
-  void mutexConflict(int a1, int a2){
-    constraint1.clear();
-    constraint2.clear();
+	void mutexConflict(int a1, int a2)
+	{
+		constraint1.clear();
+		constraint2.clear();
 		this->a1 = a1;
 		this->a2 = a2;
 		type = conflict_type::MUTEX;
-    p = conflict_priority::MUTEX_CARDINAL;
-    // TODO add constraints from mutex reasoning
-  }
+		p = conflict_priority::MUTEX_CARDINAL;
+		// TODO add constraints from mutex reasoning
+	}
 
 
 };

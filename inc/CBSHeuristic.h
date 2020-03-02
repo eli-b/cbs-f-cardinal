@@ -1,6 +1,8 @@
 #pragma once
 #include "MDD.h"
 
+enum heuristics_type { ZERO, CG, DG, WDG, STRATEGY_COUNT };
+
 
 struct HTableEntry // look-up table entry 
 {
@@ -116,8 +118,6 @@ struct HTableEntry // look-up table entry
 
 typedef unordered_map<HTableEntry, int, HTableEntry::Hasher, HTableEntry::EqNode> HTable;
 
-enum heuristics_type { NONE, CG, DG, WDG, STRATEGY_COUNT };
-
 
 class CBSHeuristic
 {
@@ -140,7 +140,7 @@ public:
 	
 	void init()
 	{
-		if (type != heuristics_type::NONE)
+		if (type != heuristics_type::ZERO)
 		{
 			lookupTable.resize(num_of_agents);
 			for (int i = 0; i < num_of_agents; i++)
