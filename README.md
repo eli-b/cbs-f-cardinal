@@ -31,6 +31,8 @@ Variants of Conflict-Based Search.
     * Most conflicts
     * Most constraints
     * Least constraints
+    * Width
+    * Singletons
     * Prioitized Conflicts (PC) with tie-breaking (*choose one*)
       * Random
       * Earliest
