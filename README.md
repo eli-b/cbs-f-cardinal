@@ -17,8 +17,6 @@ Variants of Conflict-Based Search.
 
 4. Fix the bug in random restart.
 
-5. When mutex reasoning is on, replace merging MMDs with mutex propagation and turn off merging MMDs for WDG.
-
 
 ## Parameters:
  1. Heuristics (*choose one*)
