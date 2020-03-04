@@ -69,6 +69,8 @@ std::pair<con_vec, con_vec> IPMutexPropagation::gen_constraints(){
         }
         // cout << "inreasing a0 " << inc_0 << endl;
         // cout << init_len_0 + max(inc_0 - 1, 0) + max(inc_len - 1, 0) - 1 << " " << init_len_1 + max(inc_len - 1, 0) - 1 << endl;
+        final_len_0 = init_len_0 + max(inc_0 - 1, 0) + max(inc_len - 1, 0) - 1;
+        final_len_1 = init_len_1 + max(inc_len - 1, 0) - 1;
         return cp.generate_constraints(init_len_0 + max(inc_0 - 1, 0) + max(inc_len - 1, 0) - 1,
                                        init_len_1 + max(inc_len - 1, 0) - 1);
 
@@ -81,6 +83,8 @@ std::pair<con_vec, con_vec> IPMutexPropagation::gen_constraints(){
           MDD_1->increaseBy(cons_1, 1, search_engine_1);
         }
         // cout << "inreasing a1 " << inc_1 << endl;
+        final_len_0 = init_len_0 + max(inc_len - 1, 0) - 1;
+        final_len_1 = init_len_1 + max(inc_1 - 1, 0) + max(inc_len - 1, 0) - 1;
         return cp.generate_constraints(init_len_0 + max(inc_len - 1, 0) - 1,
                                        init_len_1 + max(inc_1 - 1, 0) + max(inc_len - 1, 0) - 1);
 
