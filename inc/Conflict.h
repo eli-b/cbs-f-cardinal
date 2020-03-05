@@ -3,16 +3,16 @@
 
 
 enum conflict_type { TARGET, CORRIDOR, RECTANGLE, STANDARD, MUTEX, TYPE_COUNT };
-enum conflict_priority { MUTEX_CARDINAL, CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
+enum conflict_priority { CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
 enum constraint_type { LEQLENGTH, GLENGTH, RANGE, BARRIER, VERTEX, EDGE, 
-											POSITIVE_VERTEX, POSITIVE_EDGE, CONSTRAINT_COUNT };
-enum conflict_selection_rule {RANDOM, EARLIEST, CONFLICTS, MCONSTRAINTS, FCONSTRAINTS, WIDTH, SINGLETONS};
+											POSITIVE_VERTEX, POSITIVE_EDGE, POSITIVE_BARRIER, CONSTRAINT_COUNT };
+enum conflict_selection {RANDOM, EARLIEST, CONFLICTS, MCONSTRAINTS, FCONSTRAINTS, WIDTH, SINGLETONS};
 
 typedef std::tuple<int, int, int, int, constraint_type> Constraint;
 // <agent, loc, -1, t, VERTEX>
 // <agent, loc, -1, t, POSITIVE_VERTEX>
 // <agent, from, to, t, EDGE> 
-// <agent, B1, B2, t, RECTANGLE>
+// <agent, B1, B2, t, BARRIER>
 // <agent, loc, t1, t2, CORRIDOR> 
 // <agent, loc, -1, t, LEQLENGTH>: path of agent_id should be of length at most t, and any other agent cannot be at loc at or after timestep t
 // <agent, loc, -1, t, GLENGTH>: path of agent_id should be of length at least t + 1
@@ -100,7 +100,7 @@ public:
 		this->a1 = a1;
 		this->a2 = a2;
 		type = conflict_type::MUTEX;
-		p = conflict_priority::MUTEX_CARDINAL;
+		p = conflict_priority::CARDINAL;
 		// TODO add constraints from mutex reasoning
 	}
 

@@ -15,7 +15,6 @@ void ConstraintTable::insert2CT(size_t loc, int t_min, int t_max)
 	}
 }
 
-
 void ConstraintTable::insertLandmark(size_t loc, int t)
 {
 	auto it = landmarks.find(t);
@@ -25,6 +24,40 @@ void ConstraintTable::insertLandmark(size_t loc, int t)
 		assert(it->second == loc);		
 }
 
+// return the location-time pairs on the barrier in an increasing order of their timesteps
+list<pair<int, int> > ConstraintTable::decodeBarrier(int x, int y, int t)
+{
+	list<pair<int, int> > rst;
+	int x1 = x / num_col, y1 = x % num_col;
+	int x2 = y / num_col, y2 = y % num_col;
+	if (x1 == x2)
+	{
+		if (y1 < y2)
+			for (int i = min(y2 - y1, t); i>= 0; i--)
+			{
+				rst.emplace_back(x1 * num_col + y2 - i, t - i);
+			}
+		else
+			for (int i = min(y1 - y2, t); i >= 0; i--)
+			{
+				rst.emplace_back(x1 * num_col + y2 + i, t - i);
+			}
+	}
+	else // y1== y2
+	{
+		if (x1 < x2)
+			for (int i = min(x2 - x1, t); i>= 0; i--)
+			{
+				rst.emplace_back((x2 - i) * num_col + y1, t - i);
+			}
+		else
+			for (int i = min(x1 - x2, t); i>= 0; i--)
+			{
+				rst.emplace_back((x2 + i) * num_col + y1, t - i);
+			}
+	}
+	return rst;
+}
 
 bool ConstraintTable::constrained(size_t loc, int t) const
 {
@@ -112,59 +145,53 @@ void ConstraintTable::build(const CBSNode& node, int agent)
 				insert2CT(y, x, t, t + 1);
 			}
 		}
-		else if (a == agent) // the rest types of constraints only affect agent a
+		else if (type == constraint_type::RANGE) // time range constraint
+		{
+			assert(curr->constraints.size() == 1);
+			if (a == agent)
+			{
+				insert2CT(x, y, t + 1); // the agent cannot stay at x from timestep y to timestep t.
+			}
+		}
+		else if (type == constraint_type::GLENGTH)
+		{
+			assert(curr->constraints.size() == 1);
+			if (a == agent) // path of agent_id should be of length at least t + 1
+				length_min = max(length_min, t + 1);
+		}
+		else if (type == constraint_type::VERTEX)
+		{
+			assert(curr->constraints.size() == 1);
+			if (a == agent)
+				insert2CT(x, t, t + 1);
+		}
+		else if (type == constraint_type::EDGE)
+		{
+			assert(curr->constraints.size() == 1);
+			if (a == agent)
+				insert2CT(x, y, t, t + 1);
+		}
+		else // (positive) barrier constraints
 		{
 			for (auto constraint : curr->constraints)
 			{
 				tie(a, x, y, t, type) = constraint;
-				if (type == constraint_type::RANGE) // time range constraint
+				if (a == agent)
 				{
-					insert2CT(x, y, t + 1); // the agent cannot stay at x from timestep y to timestep t.
-				}
-				else if (type == constraint_type::BARRIER) // barrier constraint
-				{
-					int x1 = x / num_col, y1 = x % num_col;
-					int x2 = y / num_col, y2 = y % num_col;
-					if (x1 == x2)
+					if (type == constraint_type::BARRIER) // barrier constraint
 					{
-						if (y1 < y2)
-							for (int i = 0; i <= min(y2 - y1, t); i++)
-							{
-								insert2CT(x1 * num_col + y2 - i, t - i, t - i + 1);
-							}
-						else
-							for (int i = 0; i <= min(y1 - y2, t); i++)
-							{
-								insert2CT(x1 * num_col + y2 + i, t - i, t - i + 1);
-							}
+						auto states = decodeBarrier(x, y, t);
+						for (const auto& state : states)
+						{
+							insert2CT(state.first, state.second, state.second + 1);
+						}
 					}
-					else // y1== y2
+					else 
 					{
-						if (x1 < x2)
-							for (int i = 0; i <= min(x2 - x1, t); i++)
-							{
-								insert2CT((x2 - i) * num_col + y1, t - i, t - i + 1);
-							}
-						else
-							for (int i = 0; i <= min(x1 - x2, t); i++)
-							{
-								insert2CT((x2 + i) * num_col + y1, t - i, t - i + 1);
-							}
+						assert(type == constraint_type::POSITIVE_BARRIER); // positive barrier constraint
+						auto states = decodeBarrier(x, y, t);
+						positive_constraint_sets.push_back(states);
 					}
-				}
-				else if (type == constraint_type::GLENGTH)
-				{
-					// path of agent_id should be of length at least t + 1
-					length_min = max(length_min, t + 1);
-				}
-				else if (type == constraint_type::VERTEX)
-				{
-					insert2CT(x, t, t + 1);
-				}
-				else // edge
-				{
-					assert(type == constraint_type::EDGE);
-					insert2CT(x, y, t, t + 1);
 				}
 			}
 		}
@@ -315,7 +342,7 @@ int ConstraintTable::getNumOfConflictsForStep(size_t curr_id, size_t next_id, in
 // return the earliest timestep that the agent can hold its goal location
 int ConstraintTable::getHoldingTime()
 {
-	int rst = 0;
+	int rst = length_min;
 	auto it = ct.find(goal_location);
 	if (it != ct.end())
 	{
@@ -328,4 +355,28 @@ int ConstraintTable::getHoldingTime()
 			rst = max(rst, (int)landmark.first + 1);
 	}
 	return rst;
+}
+
+
+// return false if one of the positive constraints can never be satisfied, otherwise return true.
+bool ConstraintTable::updateUnsatisfiedPositiveConstraintSet(const list<int>& old_set, list<int>& new_set, int location, int timestep) const
+{
+	for (auto i : old_set)
+	{
+		new_set.push_back(i);
+		if (positive_constraint_sets[i].front().second <= timestep && timestep <= positive_constraint_sets[i].back().second)
+		{
+			for (const auto& state : positive_constraint_sets[i])
+			{
+				if (state.second == timestep && state.first == location)
+				{
+					new_set.pop_back();
+					break;
+				}
+			}
+		}
+		else if (positive_constraint_sets[i].back().second < timestep)
+			return false;
+	}
+	return true;
 }

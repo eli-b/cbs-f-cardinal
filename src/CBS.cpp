@@ -311,7 +311,7 @@ void CBS::classifyConflicts(CBSNode &node)
 		}
 
 		// Rectangle reasoning
-		if (rectangle_reasoning 
+		if (rectangle_helper.strategy != rectangle_strategy::NONE
 			&& type == constraint_type::VERTEX) // vertex conflict
 		{
 			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
@@ -374,18 +374,14 @@ bool CBS::findPathForSingleAgent(CBSNode*  node, int ag, int lowerbound)
 	// updateReservationTable(cat, ag, *node);
 	// find a path
 	Path new_path = search_engines[ag]->findPath(*node, initial_constraints[ag], paths, ag, lowerbound);
-	LL_num_expanded += search_engines[ag]->num_expanded;
-	LL_num_generated += search_engines[ag]->num_generated;
+	num_LL_expanded += search_engines[ag]->num_expanded;
+	num_LL_generated += search_engines[ag]->num_generated;
 	runtime_build_CT += search_engines[ag]->runtime_build_CT;
 	runtime_build_CAT += search_engines[ag]->runtime_build_CAT;
 	runtime_path_finding += (double)(clock() - t) / CLOCKS_PER_SEC;
 	if (!new_path.empty())
 	{
-		if (isSamePath(*paths[ag], new_path))
-		{
-			cerr << "Should not find the same path!" << endl;
-			exit(-1);
-		}
+		assert(!isSamePath(*paths[ag], new_path));
 		node->paths.emplace_back(ag, new_path);
 		node->g_val = node->g_val - (int)paths[ag]->size() + (int)new_path.size();
 		paths[ag] = &node->paths.back().second;
@@ -538,8 +534,8 @@ inline void CBS::pushNode(CBSNode* node)
 {
 	// update handles
 	node->open_handle = open_list.push(node);
-	HL_num_generated++;
-	node->time_generated = HL_num_generated;
+	num_HL_generated++;
+	node->time_generated = num_HL_generated;
 	if (node->f_val <= focal_list_threshold)
 		node->focal_handle = focal_list.push(node);
 	allNodes_table.push_back(node);
@@ -599,7 +595,7 @@ void CBS::printResults() const
 		cout << "Nodesout,";
 
 	cout << solution_cost << "," << runtime << "," <<
-		HL_num_expanded << "," << LL_num_expanded << "," << // HL_num_generated << "," << LL_num_generated << "," <<
+		num_HL_expanded << "," << num_LL_expanded << "," << // HL_num_generated << "," << LL_num_generated << "," <<
 		min_f_val << "," << dummy_start->g_val << "," << dummy_start->f_val << "," <<
 		endl;
 }
@@ -626,14 +622,14 @@ void CBS::saveResults(const string &fileName, const string &instanceName) const
 	}
 	ofstream stats(fileName, std::ios::app);
 	stats << runtime << "," << 
-		HL_num_expanded << "," << HL_num_generated << "," << 
-		LL_num_expanded << "," << LL_num_generated << "," <<
+		num_HL_expanded << "," << num_HL_generated << "," <<
+		num_LL_expanded << "," << num_LL_generated << "," <<
 
 		solution_cost << "," << min_f_val << "," << dummy_start->g_val << "," << dummy_start->f_val << "," <<
 
 		num_adopt_bypass << "," <<
 
-		num_standard << "," << num_rectangle << "," << num_corridor << "," << num_target << "," <<
+		num_standard_conflicts << "," << num_rectangle_conflicts << "," << num_corridor_conflicts << "," << num_target_conflicts << "," <<
 
 		heuristic_helper.num_merge_MDDs << "," << 
 		heuristic_helper.num_solve_2agent_problems << "," << 
@@ -687,23 +683,24 @@ string CBS::getSolverName() const
 	case STRATEGY_COUNT:
 		break;
 	}
-	if (rectangle_reasoning)
+	if (rectangle_helper.strategy != rectangle_strategy::NONE)
 		name += "+R";
 	if (corridor_reasoning)
 		name += "+C";
 	if (target_reasoning)
 		name += "+T";
-  if (mutex_reasoning)
-    name += "+MP";
+	if (mutex_reasoning)
+		name += "+MP";
 	if (bypass)
 		name += "+BP";
 	name += " with " + search_engines[0]->getName();
 	return name;
 }
 
-bool CBS::solve(double time_limit, int initial_h)
+bool CBS::solve(double time_limit, int min_f_val)
 {
 	this->time_limit = time_limit;
+	this->min_f_val = min_f_val;
 	if (screen > 0) // 1 or 2
 	{
 		string name = getSolverName();
@@ -713,7 +710,7 @@ bool CBS::solve(double time_limit, int initial_h)
 	// set timer
 	start = clock();
 
-	generateRoot(initial_h);
+	generateRoot();
 
 	while (!open_list.empty() && !solution_found)
 	{
@@ -787,8 +784,8 @@ bool CBS::solve(double time_limit, int initial_h)
 		}
 
 		//Expand the node
-		HL_num_expanded++;
-		curr->time_expanded = HL_num_expanded;
+		num_HL_expanded++;
+		curr->time_expanded = num_HL_expanded;
 		bool foundBypass = true;
 		while (foundBypass)
 		{
@@ -837,6 +834,15 @@ bool CBS::solve(double time_limit, int initial_h)
 			{
 				child[0]->constraints = curr->conflict->constraint1;
 				child[1]->constraints = curr->conflict->constraint2;
+				if (curr->conflict->type == conflict_type::RECTANGLE && rectangle_helper.strategy == rectangle_strategy::DISJOINT)
+				{
+					int i = (bool)(rand() % 2);
+					for (const auto constraint : child[1 - i]->constraints)
+					{
+						child[i]->constraints.emplace_back(get<0>(constraint), get<1>(constraint), get<2>(constraint), get<3>(constraint), 
+																							constraint_type::POSITIVE_BARRIER);
+					}
+				}
 			}
 
 			if (screen > 1)
@@ -918,13 +924,13 @@ bool CBS::solve(double time_limit, int initial_h)
 					}
 				}
 				if (curr->conflict->type == conflict_type::CORRIDOR)
-					num_corridor++;
+					num_corridor_conflicts++;
 				else if (curr->conflict->type == conflict_type::STANDARD)
-					num_standard++;
+					num_standard_conflicts++;
 				else if (curr->conflict->type == conflict_type::RECTANGLE)
-					num_rectangle++;
+					num_rectangle_conflicts++;
 				else if (curr->conflict->type == conflict_type::TARGET)
-					num_target++;
+					num_target_conflicts++;
 				curr->clear();
 			}
 		}
@@ -947,31 +953,29 @@ bool CBS::solve(double time_limit, int initial_h)
 
 CBS::CBS(vector<SingleAgentSolver*>& search_engines,
 	const vector<ConstraintTable>& initial_constraints,
-	vector<Path>& paths_found_initially, double f_w,
-	heuristics_type h_type, bool PC,
+	vector<Path>& paths_found_initially,
 	int cost_upperbound, int screen) :
-	PC(PC), screen(screen), focal_w(f_w), cost_upperbound(cost_upperbound),
+	screen(screen), focal_w(1), cost_upperbound(cost_upperbound),
 	initial_constraints(initial_constraints), paths_found_initially(paths_found_initially),
 	search_engines(search_engines), 
 	mdd_helper(initial_constraints, search_engines),
 	rectangle_helper(search_engines[0]->instance),
 	mutex_helper(search_engines[0]->instance),
 	corridor_helper(search_engines[0]->instance, initial_constraints, search_engines[0]->getName() == "SIPP"),
-	heuristic_helper(h_type, search_engines.size(), paths, search_engines, initial_constraints, mdd_helper)
+	heuristic_helper(search_engines.size(), paths, search_engines, initial_constraints, mdd_helper)
 {
 	num_of_agents = search_engines.size();
-  mutex_helper.search_engines = search_engines;
+	mutex_helper.search_engines = search_engines;
 }
 
-CBS::CBS(const Instance& instance, double f_w, heuristics_type h_type,
-	bool PC, bool sipp, int screen) :
-	PC(PC), screen(screen), focal_w(f_w),
+CBS::CBS(const Instance& instance, bool sipp, int screen) :
+	screen(screen), focal_w(1),
 	num_of_agents(instance.getDefaultNumberOfAgents()),
 	mdd_helper(initial_constraints, search_engines),
 	rectangle_helper(instance),
 	mutex_helper(instance),
 	corridor_helper(instance, initial_constraints, sipp),
-	heuristic_helper(h_type, instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper)
+	heuristic_helper(instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper)
 {
 	clock_t t = clock();
 	initial_constraints.resize(num_of_agents, 
@@ -989,7 +993,7 @@ CBS::CBS(const Instance& instance, double f_w, heuristics_type h_type,
 	}
 	runtime_preprocessing = (double)(clock() - t) / CLOCKS_PER_SEC;
 
-  mutex_helper.search_engines = search_engines;
+	mutex_helper.search_engines = search_engines;
 
 	if (screen >= 2) // print start and goals
 	{
@@ -997,7 +1001,7 @@ CBS::CBS(const Instance& instance, double f_w, heuristics_type h_type,
 	}
 }
 
-bool CBS::generateRoot(int initial_h)
+bool CBS::generateRoot()
 {
 	dummy_start = new CBSNode();
 	dummy_start->g_val = 0;
@@ -1017,8 +1021,13 @@ bool CBS::generateRoot(int initial_h)
 		{
 			agents[i] = i;
 		}
-		auto rng = std::default_random_engine{};
-		std::shuffle(std::begin(agents), std::end(agents), rng);
+
+		if (randomRoot)
+		{
+			std::random_device rd;
+			std::mt19937 g(rd());
+			std::shuffle(std::begin(agents), std::end(agents), g);
+		}
 
 		for (auto i : agents)
 		{
@@ -1033,8 +1042,8 @@ bool CBS::generateRoot(int initial_h)
 			paths[i] = &paths_found_initially[i];
 			dummy_start->makespan = max(dummy_start->makespan, paths_found_initially[i].size() - 1);
 			dummy_start->g_val += (int)paths_found_initially[i].size() - 1;
-			LL_num_expanded += search_engines[i]->num_expanded;
-			LL_num_generated += search_engines[i]->num_generated;
+			num_LL_expanded += search_engines[i]->num_expanded;
+			num_LL_generated += search_engines[i]->num_generated;
 		}
 	}
 	else
@@ -1048,7 +1057,7 @@ bool CBS::generateRoot(int initial_h)
 	}
 
 	// generate dummy start and update data structures		
-	dummy_start->h_val = initial_h;
+	dummy_start->h_val = 0;
 	dummy_start->f_val = dummy_start->g_val;
 
 	dummy_start->depth = 0;
@@ -1056,12 +1065,12 @@ bool CBS::generateRoot(int initial_h)
 	dummy_start->open_handle = open_list.push(dummy_start);
 	dummy_start->focal_handle = focal_list.push(dummy_start);
 
-	HL_num_generated++;
-	dummy_start->time_generated = HL_num_generated;
+	num_HL_generated++;
+	dummy_start->time_generated = num_HL_generated;
 	allNodes_table.push_back(dummy_start);
 	findConflicts(*dummy_start);
 
-	min_f_val = dummy_start->f_val;
+	min_f_val = max(min_f_val, (double)dummy_start->f_val);
 	focal_list_threshold = min_f_val * focal_w;
 	//if(h_type == heuristics_type::DG || h_type == heuristics_type::PAIR)
 	//	dummy_start->conflictGraph.resize(num_of_agents * num_of_agents, -1);

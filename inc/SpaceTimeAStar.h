@@ -10,7 +10,11 @@ public:
 	typedef pairing_heap< AStarNode*, compare<LLNode::secondary_compare_node> >::handle_type focal_handle_t;
 	open_handle_t open_handle;
 	focal_handle_t focal_handle;
+
+
 	bool wait_at_goal; // the action is to wait at the goal vertex or not. This is used for >lenghth constraints
+	list<int> unsatisfied_positive_constraint_sets; // store the idx of satisfied positive constraint sets
+
 
 	AStarNode() : LLNode(), wait_at_goal(false) {}
 
@@ -53,7 +57,8 @@ public:
 			return (s1 == s2) || (s1 && s2 &&
                         s1->location == s2->location &&
                         s1->timestep == s2->timestep &&
-						s1->wait_at_goal == s2->wait_at_goal);
+						s1->wait_at_goal == s2->wait_at_goal) &&
+						s1->unsatisfied_positive_constraint_sets == s2->unsatisfied_positive_constraint_sets;
 		}
 	};
 };

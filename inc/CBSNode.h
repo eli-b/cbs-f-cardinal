@@ -2,6 +2,7 @@
 #include "common.h"
 #include "Conflict.h"
 
+enum node_selection { NODE_RANDOM, NODE_H, NODE_DEPTH, NODE_CONFLICTS, NODE_CONFLICTPAIRS, NODE_MVC };
 
 class CBSNode
 {

@@ -29,8 +29,6 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 		case conflict_priority::NON:
 			os << "non-cardinal ";
 			break;
-        case conflict_priority::UNKNOWN:
-            break;
         case conflict_priority::PRIORITY_COUNT:
             break;
     }
@@ -47,6 +45,9 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 			break;
 		case conflict_type::TARGET:
 			os << "target";
+		case conflict_type::MUTEX:
+			os << "mutex";
+			break;
 	    case conflict_type::TYPE_COUNT:
             break;
     }
@@ -78,6 +79,10 @@ bool operator < (const Conflict& conflict1, const Conflict& conflict2) // return
 	if (conflict1.p < conflict2.p)
 		return false;
 	else if (conflict1.p > conflict2.p)
+		return true;
+	else if (conflict1.type == conflict_type::MUTEX && conflict2.type != conflict_type::MUTEX)
+		return false;
+	else if (conflict1.type != conflict_type::MUTEX && conflict2.type == conflict_type::MUTEX)
 		return true;
 	else if (conflict1.type == conflict_type::TARGET && conflict2.type != conflict_type::TARGET)
 	    return false;

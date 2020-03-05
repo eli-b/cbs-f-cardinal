@@ -35,12 +35,24 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
         return path;
     }
 
-	int holding_time = constraint_table.getHoldingTime();
+	int holding_time = constraint_table.getHoldingTime(); // the earliest timestep that the agent can hold its goal location
 	t = clock();
 	constraint_table.buildCAT(agent, paths, node.makespan + 1);
 	runtime_build_CAT = (double)(clock() - t) / CLOCKS_PER_SEC;
 	 // generate start and add it to the OPEN & FOCAL list
 	auto start = new AStarNode(start_location, 0, my_heuristic[start_location], nullptr, 0, 0, false);
+
+	list<int> positive_constraint_sets;
+	for (size_t i = 0; i < constraint_table.getNumOfPositiveConstraintSets(); i++)
+		positive_constraint_sets.push_back(i);
+	bool keep = constraint_table.updateUnsatisfiedPositiveConstraintSet(positive_constraint_sets,
+		start->unsatisfied_positive_constraint_sets, start_location, 0);
+	if (!keep)
+	{
+		delete(start);  // prune the node
+		return path;
+	}
+
 	num_generated++;
 	start->open_handle = open_list.push(start);
 	start->focal_handle = focal_list.push(start);
@@ -55,8 +67,10 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 		auto* curr = popNode();
 
 		// check if the popped node is a goal
-        if (curr->location == goal_location && !curr->wait_at_goal &&
-			curr->timestep >= max(constraint_table.length_min, holding_time))
+        if (curr->location == goal_location && // arrive at the goal location
+			!curr->wait_at_goal && // not wait at the goal location
+			curr->timestep >= holding_time && // the agent can hold the goal location afterward
+			curr->unsatisfied_positive_constraint_sets.empty()) // all positive constraint sets are satisfied
         {
             updatePath(curr, path);
             break;
@@ -70,8 +84,8 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
         for (int next_location : next_locations)
 		{
 			int next_timestep = curr->timestep + 1;
-			if (max((int)node.makespan + 1, constraint_table.latest_timestep) <= curr->timestep)
-            {
+			if (max((int)node.makespan, constraint_table.latest_timestep) < curr->timestep)
+            { // now everything is static, so switch to space A* where we always use the same timestep
                 if (next_location == curr->location)
                 {
                     continue;
@@ -96,7 +110,12 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 															curr, next_timestep, next_internal_conflicts, false);
 			if (next_location == goal_location && curr->location == goal_location)
 				next->wait_at_goal = true;
-
+			bool keep = constraint_table.updateUnsatisfiedPositiveConstraintSet(curr->unsatisfied_positive_constraint_sets, next->unsatisfied_positive_constraint_sets, next_location, next_timestep);
+			if (!keep)
+			{
+				delete(next);  // prune the node
+				continue;
+			}
 			// try to retrieve it from the hash table
 			auto it = allNodes_table.find(next);
             if (it == allNodes_table.end())
