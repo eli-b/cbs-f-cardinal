@@ -467,7 +467,7 @@ void MDDTable::findSingletons(CBSNode& node, int agent, Path& path)
 {
 	auto mdd = getMDD(node, agent, path.size());
 	for (size_t i = 0; i < mdd->levels.size(); i++)
-		path[i].single = (mdd->levels[i].size() == 1);
+		path[i].mdd_width = mdd->levels[i].size();
 	if (lookupTable.empty())
 		delete mdd;
 }
