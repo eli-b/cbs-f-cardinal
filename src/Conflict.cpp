@@ -96,6 +96,10 @@ bool operator < (const Conflict& conflict1, const Conflict& conflict2) // return
 		return false;
 	else if (conflict1.type != conflict_type::RECTANGLE && conflict2.type == conflict_type::RECTANGLE)
 		return true;
-	else return (conflict2.t < conflict1.t);
+	else if (conflict1.secondary_priority > conflict2.secondary_priority)
+		return false;
+	else if (conflict1.secondary_priority < conflict2.secondary_priority)
+		return true;
+	else return (rand() % 2);
 }
 

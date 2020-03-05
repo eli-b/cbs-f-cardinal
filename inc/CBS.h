@@ -84,7 +84,16 @@ public:
 		bypass = b;
 		// 2-agent solver for heuristic calculation does not need bypass strategy.
 	}
-
+	void setConflictSelectionRule(conflict_selection c)
+	{ 
+		conflict_seletion_rule = c;
+		heuristic_helper.conflict_seletion_rule = c;
+	}
+	void setNodeSelectionRule(node_selection n) 
+	{ 
+		node_selection_fule = n;
+		heuristic_helper.node_selection_fule = n;
+	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// Runs the algorithm until the problem is solved or time is exhausted 
@@ -110,7 +119,8 @@ private:
 	bool mutex_reasoning; // using mutex reasoning
 	bool bypass; // using Bypass1
 	bool PC; // prioritize conflicts
-
+	conflict_selection conflict_seletion_rule;
+	node_selection node_selection_fule;
 
 	MDDTable mdd_helper;	
 	RectangleReasoning rectangle_helper;
@@ -166,7 +176,7 @@ private:
 	//bool buildDependenceGraph(CBSNode& node);
 	//int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
 
-
+	void computePriorityForConflict(Conflict& conflict, const CBSNode& node);
 
 	//update information
 	inline void updatePaths(CBSNode* curr);

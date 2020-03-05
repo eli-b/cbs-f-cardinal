@@ -190,7 +190,7 @@ shared_ptr<Conflict> CBS::chooseConflict(const CBSNode &node) const
 		choose = node.conflicts.back();
 		for (const auto& conflict : node.conflicts)
 		{
-			if (*choose < *conflict) // choose the conflict with higher priority
+			if (*choose < *conflict)
 				choose = conflict;
 		}
 	}
@@ -199,13 +199,83 @@ shared_ptr<Conflict> CBS::chooseConflict(const CBSNode &node) const
 		choose = node.unknownConf.back();
 		for (const auto& conflict : node.unknownConf)
 		{
-			if (conflict->t < choose->t) // choose the conflict that happens earlier
+			if (*choose < *conflict)
 				choose = conflict;
 		}
 	}
 	return choose;
 }
 
+
+void CBS::computePriorityForConflict(Conflict& conflict, const CBSNode& node)
+{
+	switch (conflict_seletion_rule)
+	{
+		case conflict_selection::RANDOM:
+			conflict.secondary_priority = 0;
+			break;
+		case conflict_selection::EARLIEST:
+			switch (conflict.type)
+			{
+				case conflict_type::STANDARD:
+				case conflict_type::RECTANGLE:
+				case conflict_type::TARGET:
+				case conflict_type::MUTEX:
+					conflict.secondary_priority = get<3>(conflict.constraint1.front());
+					break;
+				case conflict_type::CORRIDOR:
+					conflict.secondary_priority = min(get<2>(conflict.constraint1.front()),
+																				get<3>(conflict.constraint1.front()));
+					break;
+			}
+			break;
+		case conflict_selection::CONFLICTS:
+			int count[2] = {0, 0};
+			for (const auto& c : node.conflicts)
+			{
+				if (c->a1 == conflict.a1 || c->a2 == conflict.a1)
+					count[0]++;
+				if (c->a1 == conflict.a2 || c->a2 == conflict.a2)
+					count[1]++;
+			}
+			conflict.secondary_priority = count[0] + count[1];
+			break;
+		/*case conflict_selection::MCONSTRAINTS:
+			int count[2] = { 0, 0 };
+			auto curr = node;
+			while (curr != nullptr)
+			{
+				if (get<0>(curr->constraints.front()) == conflict->a1)
+					count[0]++;
+				else if (get<0>(curr->constraints.front()) == conflict->a2)
+					count[1]++;
+				curr = curr->parent;
+			}
+			conflict.secondary_priority = - count[0] - count[1];
+			break;
+		case conflict_selection::FCONSTRAINTS:
+			int count[2] = { 0, 0 };
+			auto curr = node;
+			while (curr != nullptr)
+			{
+				for (const auto& constraint : curr->constraints)
+				{
+					if (get<0>(constraint) == conflict->a1)
+						count[0]++;
+					else if (get<0>(constraint) == conflict->a2)
+						count[1]++;
+				}
+				curr = curr->parent;
+			}
+			conflict.secondary_priority = count[0] + count[1];
+			break;
+		case conflict_selection::WIDTH:
+			break;
+		case conflict_selection::SINGLETONS:
+			break;*/
+	}
+	return;
+}
 
 
 void CBS::classifyConflicts(CBSNode &node)
@@ -264,8 +334,48 @@ void CBS::classifyConflicts(CBSNode &node)
 
 		if (con->p == conflict_priority::CARDINAL && heuristic_helper.type == heuristics_type::ZERO)
 		{
+			computePriorityForConflict(*con, node);
 			node.conflicts.push_back(con);
 			return;
+		}
+
+		// Target Reasoning
+		if (con->type == conflict_type::TARGET)
+		{
+			computePriorityForConflict(*con, node);
+			node.conflicts.push_back(con);
+			continue;
+		}
+
+		// Corridor reasoning
+		if (corridor_reasoning)
+		{
+			auto corridor = corridor_helper.findCorridorConflict(con, paths, cardinal1 && cardinal2, node);
+			if (corridor != nullptr)
+			{
+				corridor->p = con->p;
+				computePriorityForConflict(*corridor, node);
+				node.conflicts.push_back(corridor);
+				continue;
+			}
+		}
+
+
+		// Rectangle reasoning
+		if (rectangle_helper.strategy != rectangle_strategy::NONE &&
+			(int)paths[con->a1]->size() > timestep &&
+			(int)paths[con->a2]->size() > timestep && //conflict happens before both agents reach their goal locations
+			type == constraint_type::VERTEX) // vertex conflict
+		{
+			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
+			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
+			auto rectangle = rectangle_helper.findRectangleConflict(paths, timestep, a1, a2, mdd1, mdd2);
+			if (rectangle != nullptr)
+			{
+				computePriorityForConflict(*rectangle, node);
+				node.conflicts.push_back(rectangle);
+				continue;
+			}
 		}
 
 		// Mutex reasoning
@@ -279,50 +389,12 @@ void CBS::classifyConflicts(CBSNode &node)
 
 			if (mutex_conflict != nullptr)
 			{
+				computePriorityForConflict(*mutex_conflict, node);
 				node.conflicts.push_back(mutex_conflict);
 				continue;
 			}
 		}
-
-		// Target Reasoning
-		if (con->type == conflict_type::TARGET)
-		{
-			node.conflicts.push_back(con);
-			continue;
-		}
-
-		// Corridor reasoning
-		if (corridor_reasoning)
-		{
-			auto corridor = corridor_helper.findCorridorConflict(con, paths, cardinal1 && cardinal2, node);
-			if (corridor != nullptr)
-			{
-				corridor->p = con->p;
-				node.conflicts.push_back(corridor);
-				continue;
-			}
-		}
-
-		if (con->type == conflict_type::STANDARD &&
-			((int)paths[con->a1]->size() <= con->t || (int)paths[con->a2]->size() <= con->t)) //conflict happens after agent reaches its goal
-		{
-			node.conflicts.push_back(con);
-			continue;
-		}
-
-		// Rectangle reasoning
-		if (rectangle_helper.strategy != rectangle_strategy::NONE
-			&& type == constraint_type::VERTEX) // vertex conflict
-		{
-			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
-			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
-			auto rectangle = rectangle_helper.findRectangleConflict(paths, timestep, a1, a2, mdd1, mdd2);
-			if (rectangle != nullptr)
-			{
-				node.conflicts.push_back(rectangle);
-				continue;
-			}
-		}
+		computePriorityForConflict(*con, node);
 		node.conflicts.push_back(con);
 	}
 
@@ -479,15 +551,7 @@ bool CBS::generateChild(CBSNode*  node, CBSNode* parent)
 	}
 	else
 	{
-		int lowerbound;
-		if (parent->conflict->t >= (int)paths[agent]->size()) //conflict happens after agent reaches its goal
-			lowerbound = parent->conflict->t + 1;
-		else
-		if (parent->conflict->p == conflict_priority::CARDINAL && 
-			parent->conflict->type != conflict_type::CORRIDOR)
-			lowerbound = (int)paths[agent]->size();
-		else
-			lowerbound = (int)paths[agent]->size() - 1;
+		int lowerbound = (int)paths[agent]->size() - 1;
 		if (!findPathForSingleAgent(node, agent, lowerbound))
 		{
 			runtime_generate_child += (double)(clock() - t1) / CLOCKS_PER_SEC;

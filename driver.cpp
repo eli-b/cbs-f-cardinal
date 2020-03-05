@@ -165,7 +165,8 @@ int main(int argc, char** argv)
 	cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
 	cbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
 	cbs.setMutexReasoning(vm["mutexReasoning"].as<bool>());
-
+	cbs.setConflictSelectionRule(c);
+	cbs.setNodeSelectionRule(n);
 
 	//////////////////////////////////////////////////////////////////////
 	// run
