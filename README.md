@@ -13,10 +13,9 @@ Variants of Conflict-Based Search.
 2. Improve the efficiency of sipp (or scipp), and let SIPP handle >length constraints.
 
 3. Add bypassing -- done with BP1. Do we need BP2 in https://docs.wixstatic.com/ugd/749b4b_6c85984d14ff4379b3a4400aab955b7b.pdf?
+   * Does bypass help the 2-agent solver for WDG?
 
 4. Fix the bug in random restart.
-
-5. When mutex reasoning is on, replace merging MMDs with mutex propagation and turn off merging MMDs for WDG.
 
 
 ## Parameters:
