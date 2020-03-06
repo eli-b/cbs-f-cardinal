@@ -150,9 +150,14 @@ void ConstraintTable::build(const CBSNode& node, int agent)
 				}
 				break;
 			case constraint_type::VERTEX:
-				assert(curr->constraints.size() == 1);
 				if (a == agent)
-					insert2CT(x, t, t + 1);
+				{
+					for (const auto& constraint : curr->constraints)
+					{
+						tie(a, x, y, t, type) = constraint;
+						insert2CT(x, t, t + 1);
+					}
+				}
 				break;
 			case  constraint_type::EDGE:
 				assert(curr->constraints.size() == 1);

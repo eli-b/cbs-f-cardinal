@@ -83,7 +83,8 @@ struct ConstraintsHasher // Hash a CT node by constraints on one agent
 	{
 		bool operator() (const ConstraintsHasher& c1, const ConstraintsHasher& c2) const
 		{
-			assert(c1.a == c2.a);
+			if(c1.a != c2.a)
+				return false;
 				
 			std::set<Constraint> cons1, cons2;
 			const CBSNode* curr = c1.n;
