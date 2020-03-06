@@ -1,6 +1,7 @@
 #pragma once
 #include "MDD.h"
 #include "RectangleReasoning.h"
+#include "CorridorReasoning.h"
 
 enum heuristics_type { ZERO, CG, DG, WDG, STRATEGY_COUNT };
 
@@ -125,7 +126,7 @@ class CBSHeuristic
 public:
 	heuristics_type type;
 	rectangle_strategy rectangle_reasoning; // using rectangle reasoning
-	bool corridor_reasoning; // using corridor reasoning
+	corridor_strategy corridor_reasoning; // using corridor reasoning
 	bool target_reasoning; // using target reasoning
 	bool mutex_reasoning; // using mutex reasoning
 	bool disjoint_splitting; // disjoint splittting

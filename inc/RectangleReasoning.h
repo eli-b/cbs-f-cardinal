@@ -1,12 +1,12 @@
 #pragma once
 #include "MDD.h"
 
-enum rectangle_strategy { NONE, R, RM, DISJOINT };
+enum rectangle_strategy { NR, R, RM, DISJOINTR };
 
 class RectangleReasoning
 {
 public:
-	rectangle_strategy strategy; // using rectangle reasoning
+	rectangle_strategy strategy;
 	RectangleReasoning(const Instance& instance) : instance(instance) {}
 
 	shared_ptr<Conflict> findRectangleConflict(const vector<Path*>& paths, int timestep, 

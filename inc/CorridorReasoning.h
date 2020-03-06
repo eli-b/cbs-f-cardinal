@@ -2,9 +2,12 @@
 #include "ReservationTable.h"
 #include "Instance.h"
 
+enum corridor_strategy { NC, C, DISJOINTC };
+
 class CorridorReasoning
 {
 public:
+	corridor_strategy strategy;
 	CorridorReasoning(const Instance& instance, const vector<ConstraintTable>& initial_constraints, bool usingSIPP):
 		instance(instance), initial_constraints(initial_constraints), usingSIPP(usingSIPP) {}
 	

@@ -23,6 +23,7 @@ public:
 	uint64_t num_corridor_conflicts = 0;
 	uint64_t num_rectangle_conflicts = 0;
 	uint64_t num_target_conflicts = 0;
+	uint64_t num_mutex_conflicts = 0;
 	uint64_t num_standard_conflicts = 0;
 
 	uint64_t num_adopt_bypass = 0; // number of times when adopting bypasses
@@ -59,9 +60,9 @@ public:
 		rectangle_helper.strategy = r;
 		heuristic_helper.rectangle_reasoning = r;
 	}
-	void setCorridorReasoning(bool c)
+	void setCorridorReasoning(corridor_strategy c)
 	{
-		corridor_reasoning = c;
+		corridor_helper.strategy = c;
 		heuristic_helper.corridor_reasoning = c;
 	}
 	void setTargetReasoning(bool t)
@@ -113,7 +114,6 @@ public:
 	void clear(); // used for rapid random  restart
 
 private:
-	bool corridor_reasoning; // using corridor reasoning
 	bool target_reasoning; // using target reasoning
 	bool disjoint_splitting; // disjoint splittting
 	bool mutex_reasoning; // using mutex reasoning

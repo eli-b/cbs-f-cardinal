@@ -348,7 +348,7 @@ void CBS::classifyConflicts(CBSNode &node)
 		}
 
 		// Corridor reasoning
-		if (corridor_reasoning)
+		if (corridor_helper.strategy != corridor_strategy::NC)
 		{
 			auto corridor = corridor_helper.findCorridorConflict(con, paths, cardinal1 && cardinal2, node);
 			if (corridor != nullptr)
@@ -362,7 +362,7 @@ void CBS::classifyConflicts(CBSNode &node)
 
 
 		// Rectangle reasoning
-		if (rectangle_helper.strategy != rectangle_strategy::NONE &&
+		if (rectangle_helper.strategy != rectangle_strategy::NR &&
 			(int)paths[con->a1]->size() > timestep &&
 			(int)paths[con->a2]->size() > timestep && //conflict happens before both agents reach their goal locations
 			type == constraint_type::VERTEX) // vertex conflict
@@ -675,7 +675,7 @@ void CBS::saveResults(const string &fileName, const string &instanceName) const
 		addHeads << "runtime,#high-level expanded,#high-level generated,#low-level expanded,#low-level generated," <<
 			"solution cost,min f value,root g value, root f value," <<
 			"#adopt bypasses," <<
-			"standard conflicts,rectangle conflicts,corridor conflicts,target conflicts," <<
+			"standard conflicts,rectangle conflicts,corridor conflicts,target conflicts,mutex conflicts," <<
 			"#merge MDDs,#solve 2 agents,#memoization," <<
 			"runtime of building heuristic graph,runtime of solving MVC," <<
 			"runtime of detecting conflicts,runtime of classifying conflicts," <<
@@ -693,7 +693,7 @@ void CBS::saveResults(const string &fileName, const string &instanceName) const
 
 		num_adopt_bypass << "," <<
 
-		num_standard_conflicts << "," << num_rectangle_conflicts << "," << num_corridor_conflicts << "," << num_target_conflicts << "," <<
+		num_standard_conflicts << "," << num_rectangle_conflicts << "," << num_corridor_conflicts << "," << num_target_conflicts << "," << num_mutex_conflicts << "," <<
 
 		heuristic_helper.num_merge_MDDs << "," << 
 		heuristic_helper.num_solve_2agent_problems << "," << 
@@ -747,9 +747,9 @@ string CBS::getSolverName() const
 	case STRATEGY_COUNT:
 		break;
 	}
-	if (rectangle_helper.strategy != rectangle_strategy::NONE)
+	if (rectangle_helper.strategy != rectangle_strategy::NR)
 		name += "+R";
-	if (corridor_reasoning)
+	if (corridor_helper.strategy != corridor_strategy::NC)
 		name += "+C";
 	if (target_reasoning)
 		name += "+T";
@@ -761,10 +761,10 @@ string CBS::getSolverName() const
 	return name;
 }
 
-bool CBS::solve(double time_limit, int min_f_val)
+bool CBS::solve(double time_limit, int cost_lowerbound)
 {
 	this->time_limit = time_limit;
-	this->min_f_val = min_f_val;
+	this->min_f_val = cost_lowerbound;
 	if (screen > 0) // 1 or 2
 	{
 		string name = getSolverName();
@@ -898,7 +898,7 @@ bool CBS::solve(double time_limit, int min_f_val)
 			{
 				child[0]->constraints = curr->conflict->constraint1;
 				child[1]->constraints = curr->conflict->constraint2;
-				if (curr->conflict->type == conflict_type::RECTANGLE && rectangle_helper.strategy == rectangle_strategy::DISJOINT)
+				if (curr->conflict->type == conflict_type::RECTANGLE && rectangle_helper.strategy == rectangle_strategy::DISJOINTR)
 				{
 					int i = (bool)(rand() % 2);
 					for (const auto constraint : child[1 - i]->constraints)
@@ -906,6 +906,14 @@ bool CBS::solve(double time_limit, int min_f_val)
 						child[i]->constraints.emplace_back(get<0>(constraint), get<1>(constraint), get<2>(constraint), get<3>(constraint), 
 																							constraint_type::POSITIVE_BARRIER);
 					}
+				}
+				else if (curr->conflict->type == conflict_type::CORRIDOR && corridor_helper.strategy == corridor_strategy::DISJOINTC)
+				{
+					int i = (bool)(rand() % 2);
+					assert(child[1 - i]->constraints.size() == 1);
+					auto constraint = child[1 - i]->constraints.front();
+					child[i]->constraints.emplace_back(get<0>(constraint), get<1>(constraint), get<2>(constraint), get<3>(constraint),
+						constraint_type::POSITIVE_RANGE);
 				}
 			}
 
@@ -987,14 +995,24 @@ bool CBS::solve(double time_limit, int min_f_val)
 						}
 					}
 				}
-				if (curr->conflict->type == conflict_type::CORRIDOR)
-					num_corridor_conflicts++;
-				else if (curr->conflict->type == conflict_type::STANDARD)
-					num_standard_conflicts++;
-				else if (curr->conflict->type == conflict_type::RECTANGLE)
+				switch (curr->conflict->type)
+				{
+				case conflict_type::RECTANGLE:
 					num_rectangle_conflicts++;
-				else if (curr->conflict->type == conflict_type::TARGET)
+					break;
+				case conflict_type::CORRIDOR: 
+					num_corridor_conflicts++;
+					break;
+				case  conflict_type::TARGET:
 					num_target_conflicts++;
+					break;
+				case conflict_type::STANDARD:
+					num_standard_conflicts++;
+					break;
+				case conflict_type::MUTEX:
+					num_mutex_conflicts++;
+					break;
+				}
 				curr->clear();
 			}
 		}
@@ -1024,7 +1042,7 @@ CBS::CBS(vector<SingleAgentSolver*>& search_engines,
 	search_engines(search_engines), 
 	mdd_helper(initial_constraints, search_engines),
 	rectangle_helper(search_engines[0]->instance),
-	mutex_helper(search_engines[0]->instance),
+	mutex_helper(search_engines[0]->instance, initial_constraints),
 	corridor_helper(search_engines[0]->instance, initial_constraints, search_engines[0]->getName() == "SIPP"),
 	heuristic_helper(search_engines.size(), paths, search_engines, initial_constraints, mdd_helper)
 {
@@ -1037,7 +1055,7 @@ CBS::CBS(const Instance& instance, bool sipp, int screen) :
 	num_of_agents(instance.getDefaultNumberOfAgents()),
 	mdd_helper(initial_constraints, search_engines),
 	rectangle_helper(instance),
-	mutex_helper(instance),
+	mutex_helper(instance, initial_constraints),
 	corridor_helper(instance, initial_constraints, sipp),
 	heuristic_helper(instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper)
 {

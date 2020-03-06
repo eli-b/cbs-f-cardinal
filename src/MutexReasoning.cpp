@@ -35,8 +35,8 @@ shared_ptr<Conflict> MutexReasoning::findMutexConflict(int a1, int a2, CBSNode& 
     MDD mdd_1_cpy(*mdd_1);
     MDD mdd_2_cpy(*mdd_2);
 
-    ConstraintTable ct1;
-    ConstraintTable ct2;
+    ConstraintTable ct1(initial_constraints[a1]);
+    ConstraintTable ct2(initial_constraints[a2]);
 
     ct1.build(node, a1);
     ct2.build(node, a2);

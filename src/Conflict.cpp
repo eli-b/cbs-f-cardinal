@@ -45,6 +45,7 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 			break;
 		case conflict_type::TARGET:
 			os << "target";
+			break;
 		case conflict_type::MUTEX:
 			os << "mutex";
 			break;

@@ -39,16 +39,16 @@ int main(int argc, char** argv)
 		("warehouseWidth", po::value<int>()->default_value(0), "width of working stations on both sides, for generating instacnes")
 
 		// params for CBS
-		("heuristics", po::value<string>()->default_value("Zero"), "heuristics for the high-level search (Zero, CG,DG, WDG)")
+		("heuristics", po::value<string>()->default_value("CG"), "heuristics for the high-level search (Zero, CG,DG, WDG)")
 		("prioritizingConflicts", po::value<bool>()->default_value(true), "conflict prioirtization. If true, conflictSelection is used as a tie-breaking rule.")
 		("conflictSelection", po::value<string>()->default_value("Earliest"), 
 			"conflict selection (Random\n Earliest,\n Conflicts: most conflicts with others\n MConstraints: most constraints\n FConstraints: fewest constraints\n Width: thinest MDDs\n Singletons: most singletons in MDDs)")
 		("nodeSelection", po::value<string>()->default_value("Conflicts"),
 			"conflict selection (Random\n H: smallest h value\n Depth: depth-first manner\n Conflicts: most conflicts\n ConflictPairs: most conflictinng pairs of agents\n MVC: MVC on the conflict graph)")
-		("bypass", po::value<bool>()->default_value(true), "Bypass1")
-		("disjointSplitting", po::value<bool>()->default_value(true), "disjoint splitting")
+		("bypass", po::value<bool>()->default_value(false), "Bypass1")
+		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")
 		("rectangleReasoning", po::value<string>()->default_value("None"), "rectangle reasoning strategy (None, R, RM, Disjoint)")
-		("corridorReasoning", po::value<bool>()->default_value(false), "Using corridor reasoning")
+		("corridorReasoning", po::value<string>()->default_value("None"), " corridor reasoning strategy (None, C, Disjoint")
 		("mutexReasoning", po::value<bool>()->default_value(false), "Using mutex reasoning")
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
 		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
@@ -90,34 +90,47 @@ int main(int argc, char** argv)
 
 	rectangle_strategy r;
 	if (vm["rectangleReasoning"].as<string>() == "None")
-		r = rectangle_strategy::NONE;
+		r = rectangle_strategy::NR;
 	else if (vm["rectangleReasoning"].as<string>() == "R")
 		r = rectangle_strategy::R;
 	else if (vm["rectangleReasoning"].as<string>() == "RM")
 		r = rectangle_strategy::RM;
 	else if (vm["rectangleReasoning"].as<string>() == "Disjoint")
-		r = rectangle_strategy::DISJOINT;
+		r = rectangle_strategy::DISJOINTR;
 	else
 	{
 		cout << "WRONG rectangle reasoning strategy!" << endl;
 		return -1;
 	}
 
-	conflict_selection c;
+	corridor_strategy c;
+	if (vm["corridorReasoning"].as<string>() == "None")
+		c = corridor_strategy::NC;
+	else if (vm["corridorReasoning"].as<string>() == "C")
+		c = corridor_strategy::C;
+	else if (vm["corridorReasoning"].as<string>() == "Disjoint")
+		c = corridor_strategy::DISJOINTC;
+	else
+	{
+		cout << "WRONG corridor reasoning strategy!" << endl;
+		return -1;
+	}
+
+	conflict_selection conflict;
 	if (vm["conflictSelection"].as<string>() == "Random")
-		c = conflict_selection::RANDOM;
+		conflict = conflict_selection::RANDOM;
 	else if (vm["conflictSelection"].as<string>() == "Earliest")
-		c = conflict_selection::EARLIEST;
+		conflict = conflict_selection::EARLIEST;
 	else if (vm["conflictSelection"].as<string>() == "Conflicts")
-		c = conflict_selection::CONFLICTS;
+		conflict = conflict_selection::CONFLICTS;
 	else if (vm["conflictSelection"].as<string>() == "MConstraints")
-		c = conflict_selection::MCONSTRAINTS;
+		conflict = conflict_selection::MCONSTRAINTS;
 	else if (vm["conflictSelection"].as<string>() == "FConstraints")
-		c = conflict_selection::FCONSTRAINTS;
+		conflict = conflict_selection::FCONSTRAINTS;
 	else if (vm["conflictSelection"].as<string>() == "Width")
-		c = conflict_selection::WIDTH;
+		conflict = conflict_selection::WIDTH;
 	else if (vm["conflictSelection"].as<string>() == "Singletons")
-		c = conflict_selection::SINGLETONS;
+		conflict = conflict_selection::SINGLETONS;
 	else
 	{
 		cout << "WRONG conflict selection strategy!" << endl;
@@ -162,10 +175,10 @@ int main(int argc, char** argv)
 	cbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
 	cbs.setBypass(vm["bypass"].as<bool>());
 	cbs.setRectangleReasoning(r);
-	cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
+	cbs.setCorridorReasoning(c);
 	cbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
 	cbs.setMutexReasoning(vm["mutexReasoning"].as<bool>());
-	cbs.setConflictSelectionRule(c);
+	cbs.setConflictSelectionRule(conflict);
 	cbs.setNodeSelectionRule(n);
 
 	//////////////////////////////////////////////////////////////////////
