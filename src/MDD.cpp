@@ -458,7 +458,7 @@ MDD * MDDTable::getMDD(CBSNode& node, int id, size_t mdd_levels)
 		ConstraintsHasher c(id, &node);
 		lookupTable[c.a][c] = mdd;
 	}
-	runtime_build_MDDs += (double)(clock() - t) / CLOCKS_PER_SEC;
+	accumulated_runtime += (double)(clock() - t) / CLOCKS_PER_SEC;
 	return mdd;
 }
 
@@ -507,8 +507,6 @@ void MDDTable::clear()
 		}
 	}
 	lookupTable.clear();
-	runtime_build_MDDs = 0;
-	num_released_mdds = 0;
 }
 
 unordered_map<int, MDDNode*> collectMDDlevel(MDD* mdd, int i){

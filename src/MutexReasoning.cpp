@@ -1,6 +1,16 @@
 #include "MutexReasoning.h"
 #include "ConstraintPropagation.h"
 
+
+shared_ptr<Conflict> MutexReasoning::run(int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2)
+{
+	clock_t t = clock();
+	auto conflict = findMutexConflict(a1, a2, node, mdd_1, mdd_2);
+	accumulated_runtime += (double)(clock() - t) / CLOCKS_PER_SEC;
+	return conflict;
+}
+
+
 shared_ptr<Conflict> MutexReasoning::findMutexConflict(int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2){
   ConstraintPropagation cp(mdd_1, mdd_2);
   cp.init_mutex();

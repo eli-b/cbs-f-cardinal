@@ -103,7 +103,7 @@ public:
 class MDDTable
 {
 public:
-	double runtime_build_MDDs = 0;  // runtime of building MDDs
+	double accumulated_runtime = 0;  // runtime of building MDDs
 	uint64_t num_released_mdds = 0; // number of released MDDs ( to save memory)
 
 	MDDTable(const vector<ConstraintTable>& initial_constraints,

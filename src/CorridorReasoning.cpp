@@ -4,6 +4,16 @@
 #include "SpaceTimeAStar.h"
 #include "SIPP.h"
 
+shared_ptr<Conflict> CorridorReasoning::run(const shared_ptr<Conflict>& conflict,
+	const vector<Path*>& paths,
+	bool cardinal, const CBSNode& node)
+{
+	clock_t t = clock();
+	auto corridor = findCorridorConflict(conflict, paths, cardinal, node);
+	accumulated_runtime += (double)(clock() - t) / CLOCKS_PER_SEC;
+	return corridor;
+}
+
 
 shared_ptr<Conflict> CorridorReasoning::findCorridorConflict(const shared_ptr<Conflict>& conflict,
 	const vector<Path*>& paths,

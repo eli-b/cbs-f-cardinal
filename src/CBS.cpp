@@ -280,7 +280,6 @@ void CBS::computePriorityForConflict(Conflict& conflict, const CBSNode& node)
 
 void CBS::classifyConflicts(CBSNode &node)
 {
-	time_t t = clock();
 	// Classify all conflicts in unknownConf
 	while (!node.unknownConf.empty())
 	{
@@ -350,7 +349,7 @@ void CBS::classifyConflicts(CBSNode &node)
 		// Corridor reasoning
 		if (corridor_helper.strategy != corridor_strategy::NC)
 		{
-			auto corridor = corridor_helper.findCorridorConflict(con, paths, cardinal1 && cardinal2, node);
+			auto corridor = corridor_helper.run(con, paths, cardinal1 && cardinal2, node);
 			if (corridor != nullptr)
 			{
 				corridor->p = con->p;
@@ -369,7 +368,7 @@ void CBS::classifyConflicts(CBSNode &node)
 		{
 			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
 			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
-			auto rectangle = rectangle_helper.findRectangleConflict(paths, timestep, a1, a2, mdd1, mdd2);
+			auto rectangle = rectangle_helper.run(paths, timestep, a1, a2, mdd1, mdd2);
 			if (rectangle != nullptr)
 			{
 				computePriorityForConflict(*rectangle, node);
@@ -385,7 +384,7 @@ void CBS::classifyConflicts(CBSNode &node)
 			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
 			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
 
-			auto mutex_conflict = mutex_helper.findMutexConflict(a1, a2, node, mdd1, mdd2);
+			auto mutex_conflict = mutex_helper.run(a1, a2, node, mdd1, mdd2);
 
 			if (mutex_conflict != nullptr)
 			{
@@ -402,8 +401,6 @@ void CBS::classifyConflicts(CBSNode &node)
 
 	// remove conflicts that cannot be chosen, to save some memory
 	removeLowPriorityConflicts(node.conflicts);
-
-	runtime_classify_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
 }
 
 void CBS::removeLowPriorityConflicts(list<shared_ptr<Conflict>>& conflicts) const
@@ -678,7 +675,8 @@ void CBS::saveResults(const string &fileName, const string &instanceName) const
 			"standard conflicts,rectangle conflicts,corridor conflicts,target conflicts,mutex conflicts," <<
 			"#merge MDDs,#solve 2 agents,#memoization," <<
 			"runtime of building heuristic graph,runtime of solving MVC," <<
-			"runtime of detecting conflicts,runtime of classifying conflicts," <<
+			"runtime of detecting conflicts," <<
+			"runtime of rectangle conflicts,runtime of corridor conflicts,runtime of mutex conflicts," <<
 			"runtime of building MDDs,runtime of building constraint tables,runtime of building CATs," <<
 			"runtime of path finding,runtime of generating child nodes," <<
 			"preprocessing runtime,solver name,instance name" << endl;
@@ -701,8 +699,9 @@ void CBS::saveResults(const string &fileName, const string &instanceName) const
 		heuristic_helper.runtime_build_dependency_graph << "," << 
 		heuristic_helper.runtime_solve_MVC << "," <<
 
-		runtime_detect_conflicts << "," << runtime_classify_conflicts << "," <<
-		mdd_helper.runtime_build_MDDs << "," << runtime_build_CT << "," << runtime_build_CAT << "," <<
+		runtime_detect_conflicts << "," << 
+		rectangle_helper.accumulated_runtime << "," << corridor_helper.accumulated_runtime << "," << mutex_helper.accumulated_runtime << "," <<
+		mdd_helper.accumulated_runtime << "," << runtime_build_CT << "," << runtime_build_CAT << "," <<
 		runtime_path_finding << "," << runtime_generate_child << "," <<
 
 		runtime_preprocessing << "," << getSolverName() << "," << instanceName << endl;

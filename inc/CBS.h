@@ -17,7 +17,6 @@ public:
 	double runtime_build_CAT = 0; // runtime of building conflict avoidance table
 	double runtime_path_finding = 0; // runtime of finding paths for single agents
 	double runtime_detect_conflicts = 0;
-	double runtime_classify_conflicts = 0;
 	double runtime_preprocessing = 0; // runtime of building heuristic table for the low level
 
 	uint64_t num_corridor_conflicts = 0;
