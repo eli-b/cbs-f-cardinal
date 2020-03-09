@@ -1157,6 +1157,12 @@ bool CBS::generateRoot()
 	//	dummy_start->conflictGraph.resize(num_of_agents * num_of_agents, -1);
 	/*if (h_type == heuristics_type::DG && !EPEA4PAIR)
 	mdds_initially.resize(num_of_agents);*/
+
+	if (screen >= 2) // print start and goals
+	{
+		printPaths();
+	}
+
 	return true;
 }
 
