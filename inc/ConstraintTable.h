@@ -21,7 +21,7 @@ public:
     bool constrained(size_t curr_loc, size_t next_loc, int next_t) const;
 	int getNumOfConflictsForStep(size_t curr_id, size_t next_id, int next_timestep) const;
 	size_t getNumOfPositiveConstraintSets() const {return positive_constraint_sets.size(); }
-	bool ConstraintTable::updateUnsatisfiedPositiveConstraintSet(const list<int>& old_set, list<int>& new_set, int location, int timestep) const;
+	bool updateUnsatisfiedPositiveConstraintSet(const list<int>& old_set, list<int>& new_set, int location, int timestep) const;
 	ConstraintTable() = default;
 	ConstraintTable(size_t num_col, size_t map_size, int goal_location = -1) : goal_location(goal_location), num_col(num_col), map_size(map_size) {}
 	ConstraintTable(const ConstraintTable& other) {copy(other); }
