@@ -8,7 +8,8 @@ void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry> &path)
 	while (curr != nullptr) 
 	{
 		path[curr->g_val].location = curr->location;
-		path[curr->g_val].single = false;
+		// path[curr->g_val].single = false;
+		path[curr->g_val].mdd_width = 0;
 		curr = curr->parent;
 	}
 }

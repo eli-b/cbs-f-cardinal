@@ -562,7 +562,7 @@ list<int> RectangleReasoning::getStartCandidates(const vector<PathEntry>& path, 
 	list<int> starts;
 	for (int t = 0; t <= timestep; t++) //Find start that is single and Manhattan-optimal to conflicting location
 	{
-		if (path[t].single && instance.getManhattanDistance(path[t].location, path[timestep].location) == timestep - t)
+		if (path[t].is_single() && instance.getManhattanDistance(path[t].location, path[timestep].location) == timestep - t)
 			starts.push_back(t);
 	}
 	return starts;
@@ -574,7 +574,7 @@ list<int> RectangleReasoning::getGoalCandidates(const vector<PathEntry>& path, i
 	list<int> goals;
 	for (int t = path.size() - 1; t >= timestep; t--) //Find end that is single and Manhattan-optimal to conflicting location
 	{
-		if (path[t].single && instance.getManhattanDistance(path[t].location, path[timestep].location) == t - timestep)
+		if (path[t].is_single() && instance.getManhattanDistance(path[t].location, path[timestep].location) == t - timestep)
 			goals.push_back(t);
 	}
 	return goals;

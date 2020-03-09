@@ -294,30 +294,41 @@ void CBS::classifyConflicts(CBSNode &node)
 		bool cardinal1 = false, cardinal2 = false;
 		if (timestep >= (int)paths[a1]->size())
 			cardinal1 = true;
-		else //if (!paths[a1]->at(0).single)
+		else //if (!paths[a1]->at(0).is_single())
 		{
 			mdd_helper.findSingletons(node, a1, *paths[a1]);
 		}
 		if (timestep >= (int)paths[a2]->size())
 			cardinal2 = true;
-		else //if (!paths[a2]->at(0).single)
+		else //if (!paths[a2]->at(0).is_single())
 		{
 			mdd_helper.findSingletons(node, a2, *paths[a2]);
 		}
 
 		if (type == constraint_type::EDGE) // Edge conflict
 		{
-			cardinal1 = paths[a1]->at(timestep).single && paths[a1]->at(timestep - 1).single;
-			cardinal2 = paths[a2]->at(timestep).single && paths[a2]->at(timestep - 1).single;
+			cardinal1 = paths[a1]->at(timestep).is_single() && paths[a1]->at(timestep - 1).is_single();
+			cardinal2 = paths[a2]->at(timestep).is_single() && paths[a2]->at(timestep - 1).is_single();
 		}
 		else // vertex conflict or target conflict
 		{
 			if (!cardinal1)
-				cardinal1 = paths[a1]->at(timestep).single;
+				cardinal1 = paths[a1]->at(timestep).is_single();
 			if (!cardinal2)
-				cardinal2 = paths[a2]->at(timestep).single;
+				cardinal2 = paths[a2]->at(timestep).is_single();
 		}
 
+    int width_1 = 1, width_2 = 1;
+
+    if (paths[a1]->size() > timestep){
+      width_1 = paths[a1]->at(timestep).mdd_width;
+    }
+
+    if (paths[a2]->size() > timestep){
+      width_2 = paths[a2]->at(timestep).mdd_width;
+    }
+
+    con -> mdd_width = width_1 * width_2;
 		if (cardinal1 && cardinal2)
 		{
 			con->p = conflict_priority::CARDINAL;

@@ -26,6 +26,8 @@ public:
 	int a1;
 	int a2;
 	double secondary_priority; // used as the tie-breaking creteria for conflict selection
+	int t;
+  int mdd_width; // product of MDD widths
 	list<Constraint> constraint1;
 	list<Constraint> constraint2;
 	conflict_type type;
