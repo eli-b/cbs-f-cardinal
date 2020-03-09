@@ -12,12 +12,16 @@ public:
 	focal_handle_t focal_handle;
 
 
-	AStarNode() : LLNode() {}
+	bool wait_at_goal; // the action is to wait at the goal vertex or not. This is used for >lenghth constraints
+	list<int> unsatisfied_positive_constraint_sets; // store the idx of satisfied positive constraint sets
+
+
+	AStarNode() : LLNode(), wait_at_goal(false) {}
 
 	AStarNode(int loc, int g_val, int h_val, LLNode* parent, int timestep, int num_of_conflicts = 0, bool in_openlist = false) :
-		LLNode(loc, g_val, h_val, parent, timestep, num_of_conflicts, in_openlist) {}
+		LLNode(loc, g_val, h_val, parent, timestep, num_of_conflicts, in_openlist), wait_at_goal(false) {}
 
-	AStarNode(const AStarNode& other)
+	/*AStarNode(const AStarNode& other)
 	{
 		location = other.location;
 		g_val = other.g_val;
@@ -28,7 +32,8 @@ public:
 		open_handle = other.open_handle;
 		focal_handle = other.focal_handle;
 		num_of_conflicts = other.num_of_conflicts;
-	}
+	}*/
+
 	~AStarNode() {}
 
 	// The following is used by for generating the hash value of a nodes
@@ -50,8 +55,10 @@ public:
 		bool operator()(const AStarNode* s1, const AStarNode* s2) const
 		{
 			return (s1 == s2) || (s1 && s2 &&
-                            s1->location == s2->location &&
-                            s1->timestep == s2->timestep);
+                        s1->location == s2->location &&
+                        s1->timestep == s2->timestep &&
+						s1->wait_at_goal == s2->wait_at_goal) &&
+						s1->unsatisfied_positive_constraint_sets == s2->unsatisfied_positive_constraint_sets;
 		}
 	};
 };

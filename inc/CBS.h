@@ -7,33 +7,30 @@
 class CBS
 {
 public:
-	bool rectangle_reasoning; // using rectangle reasoning
-	bool corridor_reasoning; // using corridor reasoning
-	bool target_reasoning; // using target reasoning
-	bool disjoint_splitting; // disjoint splittting
-  bool mutex_reasoning; // using mutex reasoning
-	bool bypass; // using Bypass1
+	bool randomRoot = false; // randomize the order of the agents in the root CT node
 
+	/////////////////////////////////////////////////////////////////////////////////////
+	// stats
 	double runtime = 0;
 	double runtime_generate_child = 0; // runtimr of generating child nodes
 	double runtime_build_CT = 0; // runtimr of building constraint table
 	double runtime_build_CAT = 0; // runtime of building conflict avoidance table
 	double runtime_path_finding = 0; // runtime of finding paths for single agents
 	double runtime_detect_conflicts = 0;
-	double runtime_classify_conflicts = 0;
 	double runtime_preprocessing = 0; // runtime of building heuristic table for the low level
 
-	uint64_t num_corridor = 0;
-	uint64_t num_rectangle = 0;
-	uint64_t num_target = 0;
-	uint64_t num_standard = 0;
+	uint64_t num_corridor_conflicts = 0;
+	uint64_t num_rectangle_conflicts = 0;
+	uint64_t num_target_conflicts = 0;
+	uint64_t num_mutex_conflicts = 0;
+	uint64_t num_standard_conflicts = 0;
 
 	uint64_t num_adopt_bypass = 0; // number of times when adopting bypasses
 
-	uint64_t HL_num_expanded = 0;
-	uint64_t HL_num_generated = 0;
-	uint64_t LL_num_expanded = 0;
-	uint64_t LL_num_generated = 0;
+	uint64_t num_HL_expanded = 0;
+	uint64_t num_HL_generated = 0;
+	uint64_t num_LL_expanded = 0;
+	uint64_t num_LL_generated = 0;
 
 
 	CBSNode* dummy_start = nullptr;
@@ -46,15 +43,66 @@ public:
 	double min_f_val;
 	double focal_list_threshold;
 
-	// Runs the algorithm until the problem is solved or time is exhausted 
-	bool runICBSSearch(double time_limit, int initial_h);
+	/////////////////////////////////////////////////////////////////////////////////////////
+	// set params
+	void setHeuristicType(heuristics_type h)
+	{
+		heuristic_helper.type = h;
+	}
+	void setPrioritizeConflicts(bool p)
+	{
+		PC = p;
+		heuristic_helper.PC = p;
+	}
+	void setRectangleReasoning(rectangle_strategy r)
+	{
+		rectangle_helper.strategy = r;
+		heuristic_helper.rectangle_reasoning = r;
+	}
+	void setCorridorReasoning(corridor_strategy c)
+	{
+		corridor_helper.strategy = c;
+		heuristic_helper.corridor_reasoning = c;
+	}
+	void setTargetReasoning(bool t)
+	{
+		target_reasoning = t;
+		heuristic_helper.target_reasoning = t;
+	}
+	void setMutexReasoning(bool m)
+	{
+		mutex_reasoning = m;
+		heuristic_helper.mutex_reasoning = m;
+	}
+	void setDisjointSplitting(bool d)
+	{
+		disjoint_splitting = d;
+		heuristic_helper.disjoint_splitting = d;
+	}
+	void setBypass(bool b)
+	{
+		bypass = b;
+		// 2-agent solver for heuristic calculation does not need bypass strategy.
+	}
+	void setConflictSelectionRule(conflict_selection c)
+	{ 
+		conflict_seletion_rule = c;
+		heuristic_helper.conflict_seletion_rule = c;
+	}
+	void setNodeSelectionRule(node_selection n) 
+	{ 
+		node_selection_fule = n;
+		heuristic_helper.node_selection_fule = n;
+	}
 
-	CBS(const Instance& instance, double f_w,
-		heuristics_type h_type, bool PC, bool sipp, int screen);
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// Runs the algorithm until the problem is solved or time is exhausted 
+	bool solve(double time_limit, int initial_h);
+
+	CBS(const Instance& instance, bool sipp, int screen);
 	CBS(vector<SingleAgentSolver*>& search_engines,
 		const vector<ConstraintTable>& constraints,
-		vector<Path>& paths_found_initially, double f_w,
-		heuristics_type h_type, bool PC, int cost_upperbound, int screen);
+		vector<Path>& paths_found_initially, int cost_upperbound, int screen);
 	void clearSearchEngines();
 	~CBS();
 
@@ -65,22 +113,24 @@ public:
 	void clear(); // used for rapid random  restart
 
 private:
-	MDDTable mdd_helper;
+	bool target_reasoning; // using target reasoning
+	bool disjoint_splitting; // disjoint splittting
+	bool mutex_reasoning; // using mutex reasoning
+	bool bypass; // using Bypass1
+	bool PC; // prioritize conflicts
+	conflict_selection conflict_seletion_rule;
+	node_selection node_selection_fule;
+
+	MDDTable mdd_helper;	
 	RectangleReasoning rectangle_helper;
 	CorridorReasoning corridor_helper;
-  MutexReasoning mutex_helper;
+	MutexReasoning mutex_helper;
 	CBSHeuristic heuristic_helper;
-
-
 
 	pairing_heap< CBSNode*, compare<CBSNode::compare_node> > open_list;
 	pairing_heap< CBSNode*, compare<CBSNode::secondary_compare_node> > focal_list;
 	list<CBSNode*> allNodes_table;
 
-	// vector<MDDTable> mddTable;
-
-
-	bool PC; // prioritize conflicts or not
 
 	string getSolverName() const;
 
@@ -106,7 +156,7 @@ private:
 	// high level search
 	bool findPathForSingleAgent(CBSNode*  node, int ag, int lower_bound = 0);
 	bool generateChild(CBSNode* child, CBSNode* curr);
-	bool generateRoot(int initial_h);
+	bool generateRoot();
 
 	//conflicts
 	void findConflicts(CBSNode& curr);
@@ -125,7 +175,7 @@ private:
 	//bool buildDependenceGraph(CBSNode& node);
 	//int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
 
-
+	void computePriorityForConflict(Conflict& conflict, const CBSNode& node);
 
 	//update information
 	inline void updatePaths(CBSNode* curr);

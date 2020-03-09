@@ -7,7 +7,7 @@
 
 int CBSHeuristic::computeHeuristics(CBSNode& curr, double time_limit)
 {
-	if (type == heuristics_type::NONE)
+	if (type == heuristics_type::ZERO)
 	{
 		return 0;
 	}
@@ -98,7 +98,8 @@ int CBSHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
 	int rst = 0;
 	if (cardinal)
 		rst = 1;
-	else if (type == heuristics_type::DG || type == heuristics_type::WDG)
+	else if (!mutex_reasoning && // no mutex reasoning, so we might miss some cardinal conflicts
+		(type == heuristics_type::DG || type == heuristics_type::WDG))
 	{
 		// get mdds
 
@@ -130,20 +131,26 @@ int CBSHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
 			ConstraintTable(initial_constraints[a2]) };
 		constraints[0].build(node, a1);
 		constraints[1].build(node, a2);
-		CBS solver(engines, constraints, initial_paths, 1.0, heuristics_type::CG, true, upperbound, screen);
-		solver.disjoint_splitting = disjoint_splitting;
-		solver.bypass = false; // I guess that bypassing does not help two-agent path finding???
-		solver.rectangle_reasoning = rectangle_reasoning;
-		solver.corridor_reasoning = corridor_reasoning;
-		solver.target_reasoning = target_reasoning;
+		CBS cbs(engines, constraints, initial_paths, upperbound, screen);
+		cbs.setPrioritizeConflicts(PC);
+		cbs.setHeuristicType(heuristics_type::CG);
+		cbs.setDisjointSplitting(disjoint_splitting);
+		cbs.setBypass(false); // I guess that bypassing does not help two-agent path finding???
+		cbs.setRectangleReasoning(rectangle_reasoning);
+		cbs.setCorridorReasoning(corridor_reasoning);
+		cbs.setTargetReasoning(target_reasoning);
+		cbs.setMutexReasoning(mutex_reasoning);
+		cbs.setConflictSelectionRule(conflict_seletion_rule);
+		cbs.setNodeSelectionRule(node_selection_fule);
+
 		double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-		solver.runICBSSearch(time_limit - runtime, max(rst, 0));
-		if (solver.runtime >= time_limit - runtime) // time out
-			rst = (int)solver.min_f_val - cost_shortestPath; // using lowerbound to approximate
-		else if (solver.solution_cost  < 0) // no solution
-			rst = solver.solution_cost;
+		cbs.solve(time_limit - runtime, max(rst, 0));
+		if (cbs.runtime >= time_limit - runtime) // time out
+			rst = (int)cbs.min_f_val - cost_shortestPath; // using lowerbound to approximate
+		else if (cbs.solution_cost  < 0) // no solution
+			rst = cbs.solution_cost;
 		else
-			rst = solver.solution_cost - cost_shortestPath;
+			rst = cbs.solution_cost - cost_shortestPath;
 		num_solve_2agent_problems++;
 	}
 	lookupTable[a1][a2][newEntry] = rst;

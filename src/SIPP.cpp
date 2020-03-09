@@ -143,9 +143,6 @@ void SIPP::releaseNodes()
 	for (auto node: allNodes_table)
 		delete node;
 	allNodes_table.clear();
-	for (auto node : goal_nodes)
-		delete node;
-	goal_nodes.clear();
 }
 
 
@@ -165,14 +162,10 @@ void SIPP::generateChild(const Interval& interval, SIPPNode* curr, int next_loca
 
 	// try to retrieve it from the hash table
 	auto it = allNodes_table.find(next);
-	if (it == allNodes_table.end() ||
-		(next_location == goal_location && reservation_table.length_min > 0))
+	if (it == allNodes_table.end())
 	{
 		pushNode(next);
-		if (it == allNodes_table.end())
-			allNodes_table.insert(next);
-		else
-			goal_nodes.push_back(next);
+		allNodes_table.insert(next);
 		return;
 	}
 	// update existing node's if needed (only in the open_list)

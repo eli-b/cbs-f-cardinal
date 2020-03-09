@@ -4,7 +4,7 @@
 
 typedef tuple<size_t, size_t, size_t> Interval; // [t_min, t_max), num_of_collisions
 
-
+//TODO:: merge ReservationTable with ConstraintTable
 class ReservationTable: public ConstraintTable
 {
 public:
@@ -27,18 +27,17 @@ public:
     void print() const;
 
 private:
-
 	// Safe Interval Table (SIT)
 	unordered_map<size_t, list<Interval > > sit; // location/edge -> [t_min, t_max), num_of_collisions
-
 	// Conflict Avoidance Table (CAT)
 	unordered_map< size_t, list<pair<int, int> > > cat; //  location/edge -> time range
 
     void insert2RT(size_t location, size_t t_min, size_t t_max);
     void insertSoftConstraint2RT(size_t location, size_t t_min, size_t t_max);
-	void mergeIntervals(list<Interval >& intervals);
+	void mergeIntervals(list<Interval >& intervals) const;
 
-	void updateRT(size_t location); // update RT at the gvien location
+	
+	void updateSIT(size_t location); // update SIT at the gvien location
 
 	int getNumOfConflictsForStep(size_t curr_id, size_t next_id, size_t next_timestep) const;
 };

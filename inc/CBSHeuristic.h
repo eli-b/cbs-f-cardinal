@@ -1,5 +1,9 @@
 #pragma once
 #include "MDD.h"
+#include "RectangleReasoning.h"
+#include "CorridorReasoning.h"
+
+enum heuristics_type { ZERO, CG, DG, WDG, STRATEGY_COUNT };
 
 
 struct HTableEntry // look-up table entry 
@@ -116,14 +120,20 @@ struct HTableEntry // look-up table entry
 
 typedef unordered_map<HTableEntry, int, HTableEntry::Hasher, HTableEntry::EqNode> HTable;
 
-enum heuristics_type { NONE, CG, DG, WDG, STRATEGY_COUNT };
-
 
 class CBSHeuristic
 {
 public:
 	heuristics_type type;
-	
+	rectangle_strategy rectangle_reasoning; // using rectangle reasoning
+	corridor_strategy corridor_reasoning; // using corridor reasoning
+	bool target_reasoning; // using target reasoning
+	bool mutex_reasoning; // using mutex reasoning
+	bool disjoint_splitting; // disjoint splittting
+	bool PC; // prioritize conflicts
+	conflict_selection conflict_seletion_rule;
+	node_selection node_selection_fule;
+
 	double runtime_build_dependency_graph = 0;
 	double runtime_solve_MVC = 0;
 
@@ -131,16 +141,16 @@ public:
 	uint64_t num_solve_2agent_problems = 0;
 	uint64_t num_memoization = 0; // number of times when memeorization helps
 
-	CBSHeuristic(heuristics_type type, int num_of_agents,
+	CBSHeuristic(int num_of_agents,
 							const vector<Path*>& paths,
 							vector<SingleAgentSolver*>& search_engines,
 							const vector<ConstraintTable>& initial_constraints,
-							MDDTable& mdd_helper) : type(type), num_of_agents(num_of_agents),
+							MDDTable& mdd_helper) : num_of_agents(num_of_agents),
 		paths(paths), search_engines(search_engines), initial_constraints(initial_constraints), mdd_helper(mdd_helper) {}
 	
 	void init()
 	{
-		if (type != heuristics_type::NONE)
+		if (type == heuristics_type::DG || type == heuristics_type::WDG)
 		{
 			lookupTable.resize(num_of_agents);
 			for (int i = 0; i < num_of_agents; i++)
@@ -161,11 +171,6 @@ private:
 
 	double time_limit;
 	double start_time;
-
-	bool rectangle_reasoning; // using rectangle reasoning
-	bool corridor_reasoning; // using corridor reasoning
-	bool target_reasoning; // using target reasoning
-	bool disjoint_splitting; // disjoint splittting
 
 	const vector<Path*>& paths;
 	const vector<SingleAgentSolver*>& search_engines;

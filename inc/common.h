@@ -1,4 +1,3 @@
-
 #pragma once
 #include <tuple>
 #include <list>
@@ -18,6 +17,7 @@ using boost::unordered_map;
 using boost::unordered_set;
 using std::vector;
 using std::list;
+using std::set;
 using std::get;
 using std::tuple;
 using std::make_tuple;
@@ -35,10 +35,9 @@ using std::ofstream;
 using std::cerr;
 using std::string;
 
+// #define NDEBUG 
+
 #define MAX_TIMESTEP INT_MAX
-
-enum split_strategy { NON_DISJOINT, RANDOM, SINGLETONS, WIDTH, DISJOINT3, SPLIT_COUNT };
-
 
 struct PathEntry
 {

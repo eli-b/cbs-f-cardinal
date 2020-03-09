@@ -29,8 +29,6 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 		case conflict_priority::NON:
 			os << "non-cardinal ";
 			break;
-        case conflict_priority::UNKNOWN:
-            break;
         case conflict_priority::PRIORITY_COUNT:
             break;
     }
@@ -47,6 +45,10 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 			break;
 		case conflict_type::TARGET:
 			os << "target";
+			break;
+		case conflict_type::MUTEX:
+			os << "mutex";
+			break;
 	    case conflict_type::TYPE_COUNT:
             break;
     }
@@ -79,6 +81,10 @@ bool operator < (const Conflict& conflict1, const Conflict& conflict2) // return
 		return false;
 	else if (conflict1.p > conflict2.p)
 		return true;
+	else if (conflict1.type == conflict_type::MUTEX && conflict2.type != conflict_type::MUTEX)
+		return false;
+	else if (conflict1.type != conflict_type::MUTEX && conflict2.type == conflict_type::MUTEX)
+		return true;
 	else if (conflict1.type == conflict_type::TARGET && conflict2.type != conflict_type::TARGET)
 	    return false;
     else if (conflict1.type != conflict_type::TARGET && conflict2.type == conflict_type::TARGET)
@@ -87,6 +93,14 @@ bool operator < (const Conflict& conflict1, const Conflict& conflict2) // return
         return false;
     else if (conflict1.type != conflict_type::CORRIDOR && conflict2.type == conflict_type::CORRIDOR)
         return true;
-	else return (conflict2.t < conflict1.t);
+	else if (conflict1.type == conflict_type::RECTANGLE && conflict2.type != conflict_type::RECTANGLE)
+		return false;
+	else if (conflict1.type != conflict_type::RECTANGLE && conflict2.type == conflict_type::RECTANGLE)
+		return true;
+	else if (conflict1.secondary_priority > conflict2.secondary_priority)
+		return false;
+	else if (conflict1.secondary_priority < conflict2.secondary_priority)
+		return true;
+	else return (rand() % 2);
 }
 

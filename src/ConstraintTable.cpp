@@ -15,7 +15,6 @@ void ConstraintTable::insert2CT(size_t loc, int t_min, int t_max)
 	}
 }
 
-
 void ConstraintTable::insertLandmark(size_t loc, int t)
 {
 	auto it = landmarks.find(t);
@@ -25,6 +24,40 @@ void ConstraintTable::insertLandmark(size_t loc, int t)
 		assert(it->second == loc);		
 }
 
+// return the location-time pairs on the barrier in an increasing order of their timesteps
+list<pair<int, int> > ConstraintTable::decodeBarrier(int x, int y, int t)
+{
+	list<pair<int, int> > rst;
+	int x1 = x / num_col, y1 = x % num_col;
+	int x2 = y / num_col, y2 = y % num_col;
+	if (x1 == x2)
+	{
+		if (y1 < y2)
+			for (int i = min(y2 - y1, t); i>= 0; i--)
+			{
+				rst.emplace_back(x1 * num_col + y2 - i, t - i);
+			}
+		else
+			for (int i = min(y1 - y2, t); i >= 0; i--)
+			{
+				rst.emplace_back(x1 * num_col + y2 + i, t - i);
+			}
+	}
+	else // y1== y2
+	{
+		if (x1 < x2)
+			for (int i = min(x2 - x1, t); i>= 0; i--)
+			{
+				rst.emplace_back((x2 - i) * num_col + y1, t - i);
+			}
+		else
+			for (int i = min(x1 - x2, t); i>= 0; i--)
+			{
+				rst.emplace_back((x2 + i) * num_col + y1, t - i);
+			}
+	}
+	return rst;
+}
 
 bool ConstraintTable::constrained(size_t loc, int t) const
 {
@@ -77,96 +110,106 @@ void ConstraintTable::build(const CBSNode& node, int agent)
 		int a, x, y, t;
 		constraint_type type;
 		tie(a, x, y, t, type) = curr->constraints.front();
-		if (type == constraint_type::LEQLENGTH)
+		switch (type)
 		{
-			assert(curr->constraints.size() == 1);
-			if (agent == a) // this agent has to reach its goal at or before timestep t.
-				length_max = min(length_max, t);
-			else // other agents cannot stay at x at or after timestep t
-				insert2CT(x, t, MAX_TIMESTEP);
-		}
-		else if (type == constraint_type::POSITIVE_VERTEX)
-		{
-			assert(curr->constraints.size() == 1);
-			if (agent == a) // this agent has to be at x at timestep t 
-			{
-				insertLandmark(x, t);
-			}
-			else // other agents cannot stay at x at timestep t
-			{
-				insert2CT(x, t, t + 1);
-			}
-		}
-		else if (type == constraint_type::POSITIVE_EDGE)
-		{
-			assert(curr->constraints.size() == 1);
-			if (agent == a) // this agent has to be at x at timestep t - 1 and be at y at timestep t
-			{
-				insertLandmark(x, t - 1);
-				insertLandmark(y, t);
-			}
-			else // other agents cannot stay at x at timestep t - 1, be at y at timestep t, or traverse edge (y, x) from timesteps t - 1 to t
-			{
-				insert2CT(x, t - 1, t);
-				insert2CT(y, t, t + 1);
-				insert2CT(y, x, t, t + 1);
-			}
-		}
-		else if (a == agent) // the rest types of constraints only affect agent a
-		{
-			for (auto constraint : curr->constraints)
-			{
-				tie(a, x, y, t, type) = constraint;
-				if (type == constraint_type::RANGE) // time range constraint
-				{
-					insert2CT(x, y, t + 1); // the agent cannot stay at x from timestep y to timestep t.
-				}
-				else if (type == constraint_type::BARRIER) // barrier constraint
-				{
-					int x1 = x / num_col, y1 = x % num_col;
-					int x2 = y / num_col, y2 = y % num_col;
-					if (x1 == x2)
-					{
-						if (y1 < y2)
-							for (int i = 0; i <= min(y2 - y1, t); i++)
-							{
-								insert2CT(x1 * num_col + y2 - i, t - i, t - i + 1);
-							}
-						else
-							for (int i = 0; i <= min(y1 - y2, t); i++)
-							{
-								insert2CT(x1 * num_col + y2 + i, t - i, t - i + 1);
-							}
-					}
-					else // y1== y2
-					{
-						if (x1 < x2)
-							for (int i = 0; i <= min(x2 - x1, t); i++)
-							{
-								insert2CT((x2 - i) * num_col + y1, t - i, t - i + 1);
-							}
-						else
-							for (int i = 0; i <= min(x1 - x2, t); i++)
-							{
-								insert2CT((x2 + i) * num_col + y1, t - i, t - i + 1);
-							}
-					}
-				}
-				else if (type == constraint_type::GLENGTH)
-				{
-					// path of agent_id should be of length at least t + 1
+			case constraint_type::LEQLENGTH:
+				assert(curr->constraints.size() == 1);
+				if (agent == a) // this agent has to reach its goal at or before timestep t.
+					length_max = min(length_max, t);
+				else // other agents cannot stay at x at or after timestep t
+					insert2CT(x, t, MAX_TIMESTEP);
+				break;
+			case constraint_type::GLENGTH:
+				assert(curr->constraints.size() == 1);
+				if (a == agent) // path of agent_id should be of length at least t + 1
 					length_min = max(length_min, t + 1);
+				break;
+			case constraint_type::POSITIVE_VERTEX:
+				assert(curr->constraints.size() == 1);
+				if (agent == a) // this agent has to be at x at timestep t 
+				{
+					insertLandmark(x, t);
 				}
-				else if (type == constraint_type::VERTEX)
+				else // other agents cannot stay at x at timestep t
 				{
 					insert2CT(x, t, t + 1);
 				}
-				else // edge
+				break;
+			case constraint_type::POSITIVE_EDGE:
+				assert(curr->constraints.size() == 1);
+				if (agent == a) // this agent has to be at x at timestep t - 1 and be at y at timestep t
 				{
-					assert(type == constraint_type::EDGE);
-					insert2CT(x, y, t, t + 1);
+					insertLandmark(x, t - 1);
+					insertLandmark(y, t);
 				}
-			}
+				else // other agents cannot stay at x at timestep t - 1, be at y at timestep t, or traverse edge (y, x) from timesteps t - 1 to t
+				{
+					insert2CT(x, t - 1, t);
+					insert2CT(y, t, t + 1);
+					insert2CT(y, x, t, t + 1);
+				}
+				break;
+			case constraint_type::VERTEX:
+				if (a == agent)
+				{
+					for (const auto& constraint : curr->constraints)
+					{
+						tie(a, x, y, t, type) = constraint;
+						insert2CT(x, t, t + 1);
+					}
+				}
+				break;
+			case  constraint_type::EDGE:
+				assert(curr->constraints.size() == 1);
+				if (a == agent)
+					insert2CT(x, y, t, t + 1);
+				break;
+			case constraint_type::BARRIER:
+			case constraint_type::POSITIVE_BARRIER:
+				for (auto constraint : curr->constraints)
+				{
+					tie(a, x, y, t, type) = constraint;
+					if (a == agent)
+					{
+						auto states = decodeBarrier(x, y, t);
+						if (type == constraint_type::BARRIER) // barrier constraint
+						{
+							for (const auto& state : states)
+							{
+								insert2CT(state.first, state.second, state.second + 1);
+							}
+						}
+						else
+						{
+							assert(type == constraint_type::POSITIVE_BARRIER); // positive barrier constraint
+							positive_constraint_sets.push_back(states);
+						}
+					}
+			   }
+				break;
+			case constraint_type::RANGE:
+			case constraint_type::POSITIVE_RANGE:
+				for (auto constraint : curr->constraints)
+				{
+					tie(a, x, y, t, type) = constraint;
+					if (a == agent)
+					{
+						if (type == constraint_type::RANGE)
+						{
+							insert2CT(x, y, t + 1); // the agent cannot stay at x from timestep y to timestep t.
+						}
+						else
+						{
+							assert(type == constraint_type::POSITIVE_RANGE);
+							positive_constraint_sets.emplace_back();
+							for (int i = y; i <= t; i++)
+							{
+								positive_constraint_sets.back().emplace_back(x, i);
+							}
+						}
+					}
+				}
+				break;
 		}
 		curr = curr->parent;
 	}
@@ -315,7 +358,7 @@ int ConstraintTable::getNumOfConflictsForStep(size_t curr_id, size_t next_id, in
 // return the earliest timestep that the agent can hold its goal location
 int ConstraintTable::getHoldingTime()
 {
-	int rst = 0;
+	int rst = length_min;
 	auto it = ct.find(goal_location);
 	if (it != ct.end())
 	{
@@ -328,4 +371,28 @@ int ConstraintTable::getHoldingTime()
 			rst = max(rst, (int)landmark.first + 1);
 	}
 	return rst;
+}
+
+
+// return false if one of the positive constraints can never be satisfied, otherwise return true.
+bool ConstraintTable::updateUnsatisfiedPositiveConstraintSet(const list<int>& old_set, list<int>& new_set, int location, int timestep) const
+{
+	for (auto i : old_set)
+	{
+		new_set.push_back(i);
+		if (positive_constraint_sets[i].front().second <= timestep && timestep <= positive_constraint_sets[i].back().second)
+		{
+			for (const auto& state : positive_constraint_sets[i])
+			{
+				if (state.second == timestep && state.first == location)
+				{
+					new_set.pop_back();
+					break;
+				}
+			}
+		}
+		else if (positive_constraint_sets[i].back().second < timestep)
+			return false;
+	}
+	return true;
 }
