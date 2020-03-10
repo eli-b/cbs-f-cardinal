@@ -71,7 +71,7 @@ int CorridorReasoning::findCorridor(const shared_ptr<Conflict>& conflict,
 		}
 		else // endpoint of the corridor
 		{
-			assert(std::find(neighbors.begin(), neighbors.end(), endpoint2) != neighbors.end()); // endpoint2 must be in neighbors.
+			assert(std::find(neighbors.begin(), neighbors.end(), endpoints[1]) != neighbors.end()); // endpoint2 must be in neighbors.
 			prev = curr;
 			curr = endpoints[1];
 		}

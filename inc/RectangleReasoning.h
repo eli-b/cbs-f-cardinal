@@ -37,12 +37,12 @@ private:
 	//Identify rectangle conflicts
 	bool isRectangleConflict(const pair<int, int>& s1, const pair<int, int>& s2,
 		const pair<int, int>& g1, const pair<int, int>& g2, int g1_t, int g2_t);// for CR and R
-	bool isRectangleConflict(int s1, int s2, int g1, int g2);// for RM
+	bool isRectangleConflict(const pair<int, int>& s1, const pair<int, int>& s2, const pair<int, int>& g1, const pair<int, int>& g2) const;// for RM
 
 	//Classify rectangle conflicts
 	int classifyRectangleConflict(const pair<int, int>& s1, const pair<int, int>& s2,
 		const pair<int, int>& g1, const pair<int, int>& g2);// for CR and R
-	int classifyRectangleConflict(int s1, int s2, int g1, int g2, const pair<int, int>& Rg);// for RM
+	int classifyRectangleConflict(const pair<int, int>& s1, const pair<int, int>& s2, const pair<int, int>& g1, const pair<int, int>& g2, const pair<int, int>& Rg);// for RM
 
 	 //Compute rectangle corners
 	pair<int, int> getRg(const pair<int, int>& s1, const pair<int, int>& g1, const pair<int, int>& g2);
@@ -57,6 +57,7 @@ private:
 
 
 	// int getRectangleTime(const Conflict& conflict, const std::vector<std::vector<PathEntry>*>& paths, int num_col);
+	bool hasNodeOnBarrier(const MDD* mdd, int y_start, int y_end, int x, int t_min, bool horizontal) const;
 
 	bool addModifiedBarrierConstraints(int a1, int a2, const pair<int, int>& Rs, const pair<int, int>& Rg,
 		const pair<int, int>& s1, const pair<int, int>& s2, int Rg_t,
