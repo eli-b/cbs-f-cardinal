@@ -65,6 +65,10 @@ shared_ptr<Conflict> MutexReasoning::findMutexConflict(int a1, int a2, CBSNode& 
       get<0>(con) = a2;
       mutex_conflict->constraint2.push_back(con);
     }
+
+    mutex_conflict->final_len_1 = ip.final_len_0;
+    mutex_conflict->final_len_2 = ip.final_len_1;
+
     // mutex_conflict->constraint1 = list<Constraint>(a.begin(), a.end());
     // mutex_conflict->constraint2 = list<Constraint>(b.begin(), b.end());
 
@@ -77,8 +81,7 @@ shared_ptr<Conflict> MutexReasoning::findMutexConflict(int a1, int a2, CBSNode& 
   if (swapped){
     std::swap(conflict_to_return->a1, conflict_to_return->a2);
     std::swap(conflict_to_return->constraint1, conflict_to_return->constraint2);
+    std::swap(conflict_to_return->final_len_1, conflict_to_return->final_len_2);
   }
-
   return conflict_to_return;
-
 }

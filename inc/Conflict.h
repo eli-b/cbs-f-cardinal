@@ -31,6 +31,10 @@ public:
 	conflict_type type;
 	conflict_priority p = conflict_priority::UNKNOWN;
 
+  // For mutex propagation
+  int final_len_1;
+  int final_len_2;
+
 	void vertexConflict(int a1, int a2, int v, int t)
 	{
         constraint1.clear();
