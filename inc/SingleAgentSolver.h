@@ -72,11 +72,15 @@ public:
 	int start_location;
 	int goal_location;
 	vector<int> my_heuristic;  // this is the precomputed heuristic for this agent
-
+	int compute_heuristic(int from, int to) const  // compute admissible heuristic between two locations
+	{
+		return max(get_DH_heuristic(from, to), instance.getManhattanDistance(from, to));
+	}
 	const Instance& instance;
 
 	virtual Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
 		const vector<Path*>& paths, int agent, int lower_bound) = 0;
+	virtual int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound) = 0;
 	virtual string getName() const = 0;
 
 	list<int> getNextLocations(int curr) const; // including itself and its neighbors
@@ -96,5 +100,6 @@ public:
 
 protected:
 	void compute_heuristics();
+	int get_DH_heuristic(int from, int to) const { return abs(my_heuristic[from] - my_heuristic[to]); }
 };
 

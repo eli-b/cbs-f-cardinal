@@ -26,8 +26,6 @@ public:
 	int a1;
 	int a2;
 	double secondary_priority; // used as the tie-breaking creteria for conflict selection
-	int t;
-  int mdd_width; // product of MDD widths
 	list<Constraint> constraint1;
 	list<Constraint> constraint2;
 	conflict_type type;
@@ -55,14 +53,14 @@ public:
 		type = conflict_type::STANDARD;
 	}
 
-	void corridorConflict(int a1, int a2, int v1, int v2, int t3, int t4, int t3_, int t4_, int k)
+	void corridorConflict(int a1, int a2, int v1, int v2, int t1, int t2)
 	{
         constraint1.clear();
         constraint2.clear();
 		this->a1 = a1;
 		this->a2 = a2;
-		this->constraint1.emplace_back(a1, v1, t3, std::min(t3_ - 1, t4 + k), constraint_type::RANGE);
-		this->constraint2.emplace_back(a2, v2, t4, std::min(t4_ - 1, t3 + k), constraint_type::RANGE);
+		this->constraint1.emplace_back(a1, v1, 0, t1, constraint_type::RANGE);
+		this->constraint2.emplace_back(a2, v2, 0, t2, constraint_type::RANGE);
 		type = conflict_type::CORRIDOR;
 	}
 

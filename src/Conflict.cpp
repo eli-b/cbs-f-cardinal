@@ -3,17 +3,37 @@
 #include "MDD.h"
 
 
-
-
-
 std::ostream& operator<<(std::ostream& os, const Constraint& constraint)
 {
 	os << "<" << std::get<0>(constraint) << "," << std::get<1>(constraint) << "," <<
-		std::get<2>(constraint) << "," << std::get<3>(constraint) << "," << std::get<4>(constraint) << ">";
+		std::get<2>(constraint) << "," << std::get<3>(constraint) << ",";
+	switch (get<4>(constraint))
+	{
+		case constraint_type::VERTEX:
+			os << "V";
+			break;
+		case constraint_type::POSITIVE_VERTEX:
+			os << "V+";
+			break;
+		case constraint_type::EDGE:
+			os << "E";
+			break;
+		case constraint_type::POSITIVE_EDGE:
+			os <<"E+";
+			break;
+		case constraint_type::BARRIER:
+			os << "B";
+			break;
+		case constraint_type::RANGE:
+			os << "R";
+		case constraint_type::GLENGTH:
+			os << "G";
+		case constraint_type::LEQLENGTH:
+			os << "L";
+	}
+	os << ">";
 	return os;
 }
-
-
 
 
 std::ostream& operator<<(std::ostream& os, const Conflict& conflict)

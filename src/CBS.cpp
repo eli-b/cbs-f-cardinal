@@ -318,17 +318,17 @@ void CBS::classifyConflicts(CBSNode &node)
 				cardinal2 = paths[a2]->at(timestep).is_single();
 		}
 
-    int width_1 = 1, width_2 = 1;
+		/*int width_1 = 1, width_2 = 1;
 
-    if (paths[a1]->size() > timestep){
-      width_1 = paths[a1]->at(timestep).mdd_width;
-    }
+		if (paths[a1]->size() > timestep){
+		  width_1 = paths[a1]->at(timestep).mdd_width;
+		}
 
-    if (paths[a2]->size() > timestep){
-      width_2 = paths[a2]->at(timestep).mdd_width;
-    }
+		if (paths[a2]->size() > timestep){
+		  width_2 = paths[a2]->at(timestep).mdd_width;
+		}
+		con -> mdd_width = width_1 * width_2;*/
 
-    con -> mdd_width = width_1 * width_2;
 		if (cardinal1 && cardinal2)
 		{
 			con->p = conflict_priority::CARDINAL;
@@ -1053,7 +1053,7 @@ CBS::CBS(vector<SingleAgentSolver*>& search_engines,
 	mdd_helper(initial_constraints, search_engines),
 	rectangle_helper(search_engines[0]->instance),
 	mutex_helper(search_engines[0]->instance, initial_constraints),
-	corridor_helper(search_engines[0]->instance, initial_constraints, search_engines[0]->getName() == "SIPP"),
+	corridor_helper(search_engines, initial_constraints),
 	heuristic_helper(search_engines.size(), paths, search_engines, initial_constraints, mdd_helper)
 {
 	num_of_agents = search_engines.size();
@@ -1066,7 +1066,7 @@ CBS::CBS(const Instance& instance, bool sipp, int screen) :
 	mdd_helper(initial_constraints, search_engines),
 	rectangle_helper(instance),
 	mutex_helper(instance, initial_constraints),
-	corridor_helper(instance, initial_constraints, sipp),
+	corridor_helper(search_engines, initial_constraints),
 	heuristic_helper(instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper)
 {
 	clock_t t = clock();

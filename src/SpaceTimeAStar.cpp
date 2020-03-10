@@ -171,6 +171,64 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 	return path;
 }
 
+int SpaceTimeAStar::getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound)
+{
+	int length = INT_MAX;
+	auto root = new AStarNode(start, 0, compute_heuristic(start, end), nullptr, 0);
+	root->open_handle = open_list.push(root);  // add root to heap
+	allNodes_table.insert(root);       // add root to hash_table (nodes)
+	AStarNode* curr = nullptr;
+	while (!open_list.empty())
+	{
+		curr = open_list.top(); open_list.pop();
+		if (curr->location == end)
+		{
+			length = curr->g_val;
+			break;
+		}
+		list<int> next_locations = instance.getNeighbors(curr->location);
+		next_locations.emplace_back(curr->location);
+		for (int next_location : next_locations)
+		{
+			int next_timestep = curr->timestep + 1;
+			int next_g_val = curr->g_val + 1;
+			if (constraint_table.latest_timestep <= curr->timestep)
+			{
+				if (curr->location == next_location)
+				{
+					continue;
+				}
+				next_timestep--;
+			}
+			if (!constraint_table.constrained(next_location, next_timestep) &&
+				!constraint_table.constrained(curr->location, next_location, next_timestep))
+			{  // if that grid is not blocked
+				int next_h_val = compute_heuristic(next_location, end);
+				if (next_g_val + next_h_val >= upper_bound) // the cost of the path is larger than the upper bound
+					continue;
+				auto next = new AStarNode(next_location, next_g_val, next_h_val, nullptr, next_timestep);
+				auto it = allNodes_table.find(next);
+				if (it == allNodes_table.end())
+				{  // add the newly generated node to heap and hash table
+					next->open_handle = open_list.push(next);
+					allNodes_table.insert(next);
+				}
+				else {  // update existing node's g_val if needed (only in the heap)
+					delete(next);  // not needed anymore -- we already generated it before
+					auto existing_next = *it;
+					if (existing_next->g_val > next_g_val)
+					{
+						existing_next->g_val = next_g_val;
+						existing_next->timestep = next_timestep;
+						open_list.increase(existing_next->open_handle);
+					}
+				}
+			}
+		}
+	}
+	releaseNodes();
+	return length;
+}
 
 inline AStarNode* SpaceTimeAStar::popNode()
 {

@@ -74,6 +74,8 @@ public:
 	Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
 						const vector<Path*>& paths, int agent, int lower_bound);
 
+	int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound);
+
 	string getName() const { return "AStar"; }
 
 	SpaceTimeAStar(const Instance& instance, int agent):
