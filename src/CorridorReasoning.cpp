@@ -33,7 +33,7 @@ int CorridorReasoning::findCorridor(const shared_ptr<Conflict>& conflict,
 	}
 	else // edge conflict
 	{
-		if (search_engines[0]->instance.getDegree(loc1) != 2 && search_engines[0]->instance.getDegree(loc2) == 2)
+		if (search_engines[0]->instance.getDegree(loc1) != 2 && search_engines[0]->instance.getDegree(loc2) != 2)
 			return 0; // not a corridor 	
 	}
 
