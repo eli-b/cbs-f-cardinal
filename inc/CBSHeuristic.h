@@ -120,7 +120,6 @@ struct HTableEntry // look-up table entry
 
 typedef unordered_map<HTableEntry, int, HTableEntry::Hasher, HTableEntry::EqNode> HTable;
 
-
 class CBSHeuristic
 {
 public:
@@ -142,32 +141,21 @@ public:
 	uint64_t num_memoization = 0; // number of times when memeorization helps
 
 	CBSHeuristic(int num_of_agents,
-							const vector<Path*>& paths,
-							vector<SingleAgentSolver*>& search_engines,
-							const vector<ConstraintTable>& initial_constraints,
-							MDDTable& mdd_helper) : num_of_agents(num_of_agents),
-		paths(paths), search_engines(search_engines), initial_constraints(initial_constraints), mdd_helper(mdd_helper) {}
-	
-	void init()
-	{
-		if (type == heuristics_type::DG || type == heuristics_type::WDG)
-		{
-			lookupTable.resize(num_of_agents);
-			for (int i = 0; i < num_of_agents; i++)
-			{
-				lookupTable[i].resize(num_of_agents);
-			}
-		}
-	}
+               const vector<Path*>& paths,
+               vector<SingleAgentSolver*>& search_engines,
+               const vector<ConstraintTable>& initial_constraints,
+               MDDTable& mdd_helper) : num_of_agents(num_of_agents),
+                                       paths(paths), search_engines(search_engines), initial_constraints(initial_constraints), mdd_helper(mdd_helper) {}
+
 
 	int computeHeuristics(CBSNode& curr, double time_limit);
-	void copyConflictGraph(CBSNode& child, const CBSNode& parent);
-	void clear() { lookupTable.clear(); }
 
-private:
+	void init() {}
+	void clear() {}
+
+protected:
 	int screen = 0;
 	int num_of_agents;
-	vector<vector<HTable> > lookupTable;
 
 	double time_limit;
 	double start_time;
@@ -177,21 +165,61 @@ private:
 	const vector<ConstraintTable>& initial_constraints;
 	MDDTable& mdd_helper;
 
-
-	// Match and prune MDD according to another MDD.
-	bool SyncMDDs(const MDD &mdd1, const MDD& mdd2);
-
-	int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
-	int minimumVertexCover(const vector<int>& CG, int old_mvc, int cols, int num_of_edges);
-	bool buildDependenceGraph(CBSNode& node);
-	bool KVertexCover(const vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
-
-	int greedyMatching(const vector<int>& CG, int cols);
-
-	int weightedVertexCover(const vector<int>& CG);
-	int weightedVertexCover(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
 };
 
 
+class ZeroHeuristic: public CBSHeuristic {
+public:
+	int computeHeuristics(CBSNode& curr, double time_limit);
+
+};
+
+class CGHeuristic: public CBSHeuristic {
+public:
+	int computeHeuristics(CBSNode& curr, double time_limit);
+
+protected:
+	int minimumVertexCover(const vector<int>& CG, int old_mvc, int cols, int num_of_edges);
+	bool KVertexCover(const vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
+};
+
+
+class DGHeuristic: public CGHeuristic {
+public:
+	int computeHeuristics(CBSNode& curr, double time_limit);
+
+	void init()
+	{
+		if (type == heuristics_type::DG || type == heuristics_type::WDG)
+      {
+        lookupTable.resize(num_of_agents);
+        for (int i = 0; i < num_of_agents; i++)
+          {
+            lookupTable[i].resize(num_of_agents);
+          }
+      }
+	}
+
+  void clear() { lookupTable.clear(); }
+protected:
+	vector<vector<HTable> > lookupTable;
+
+	bool buildDependenceGraph(CBSNode& node);
+	int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
+	bool SyncMDDs(const MDD &mdd1, const MDD& mdd2);
+  
+};
+
+class WDGHeuristic: public DGHeuristic {
+  
+public:
+	int computeHeuristics(CBSNode& curr, double time_limit);
+
+protected:
+	bool buildDependenceGraph(CBSNode& node);
+	int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
+	int weightedVertexCover(const vector<int>& CG);
+	int weightedVertexCover(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
+};
 
 
