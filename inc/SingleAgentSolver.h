@@ -93,6 +93,7 @@ public:
 		compute_heuristics();
 	}
 
+  virtual ~SingleAgentSolver(){} 
 
 protected:
 	void compute_heuristics();
