@@ -198,3 +198,19 @@ bool DGHeuristic::SyncMDDs(const MDD &mdd, const MDD& other) // assume mdd.level
 	copy.clear();
 	return true;
 }
+
+void DGHeuristic::copyConflictGraph(CBSNode& child, const CBSNode& parent)
+{
+  unordered_set<int> changed;
+  for (const auto& p : child.paths) {
+    changed.insert(p.first);
+  }
+  for (auto e : parent.conflictGraph) {
+    if (changed.find(e.first / num_of_agents) == changed.end() &&
+				changed.find(e.first % num_of_agents) == changed.end())
+      child.conflictGraph[e.first] = e.second;
+
+	}
+}
+
+

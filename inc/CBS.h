@@ -45,39 +45,35 @@ public:
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	// set params
-	void setHeuristicType(heuristics_type h)
-	{
-		heuristic_helper.type = h;
-	}
 	void setPrioritizeConflicts(bool p)
 	{
 		PC = p;
-		heuristic_helper.PC = p;
+		heuristic_helper->PC = p;
 	}
 	void setRectangleReasoning(rectangle_strategy r)
 	{
 		rectangle_helper.strategy = r;
-		heuristic_helper.rectangle_reasoning = r;
+		heuristic_helper->rectangle_reasoning = r;
 	}
 	void setCorridorReasoning(corridor_strategy c)
 	{
 		corridor_helper.strategy = c;
-		heuristic_helper.corridor_reasoning = c;
+		heuristic_helper->corridor_reasoning = c;
 	}
 	void setTargetReasoning(bool t)
 	{
 		target_reasoning = t;
-		heuristic_helper.target_reasoning = t;
+		heuristic_helper->target_reasoning = t;
 	}
 	void setMutexReasoning(bool m)
 	{
 		mutex_reasoning = m;
-		heuristic_helper.mutex_reasoning = m;
+		heuristic_helper->mutex_reasoning = m;
 	}
 	void setDisjointSplitting(bool d)
 	{
 		disjoint_splitting = d;
-		heuristic_helper.disjoint_splitting = d;
+		heuristic_helper->disjoint_splitting = d;
 	}
 	void setBypass(bool b)
 	{
@@ -87,22 +83,23 @@ public:
 	void setConflictSelectionRule(conflict_selection c)
 	{ 
 		conflict_seletion_rule = c;
-		heuristic_helper.conflict_seletion_rule = c;
+		heuristic_helper->conflict_seletion_rule = c;
 	}
 	void setNodeSelectionRule(node_selection n) 
 	{ 
 		node_selection_fule = n;
-		heuristic_helper.node_selection_fule = n;
+		heuristic_helper->node_selection_fule = n;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// Runs the algorithm until the problem is solved or time is exhausted 
 	bool solve(double time_limit, int initial_h);
 
-	CBS(const Instance& instance, bool sipp, int screen);
+	CBS(const Instance& instance, bool sipp, heuristics_type heuristic, int screen);
 	CBS(vector<SingleAgentSolver*>& search_engines,
-		const vector<ConstraintTable>& constraints,
-		vector<Path>& paths_found_initially, int cost_upperbound, int screen);
+      const vector<ConstraintTable>& constraints,
+      vector<Path>& paths_found_initially, int cost_upperbound,
+      heuristics_type heuristic,  int screen);
 	void clearSearchEngines();
 	~CBS();
 
@@ -125,7 +122,7 @@ private:
 	RectangleReasoning rectangle_helper;
 	CorridorReasoning corridor_helper;
 	MutexReasoning mutex_helper;
-	CBSHeuristic heuristic_helper;
+	CBSHeuristic* heuristic_helper;
 
 	pairing_heap< CBSNode*, compare<CBSNode::compare_node> > open_list;
 	pairing_heap< CBSNode*, compare<CBSNode::secondary_compare_node> > focal_list;
@@ -152,6 +149,8 @@ private:
 	// vector<MDD*> mdds_initially;  // contain initial paths found
 	vector < SingleAgentSolver* > search_engines;  // used to find (single) agents' paths and mdd
 
+  // init helper
+  void init_heuristic(heuristics_type heuristic);
 
 	// high level search
 	bool findPathForSingleAgent(CBSNode*  node, int ag, int lower_bound = 0);

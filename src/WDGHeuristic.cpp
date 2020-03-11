@@ -232,9 +232,8 @@ int WDGHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
 			ConstraintTable(initial_constraints[a2]) };
 		constraints[0].build(node, a1);
 		constraints[1].build(node, a2);
-		CBS cbs(engines, constraints, initial_paths, upperbound, screen);
+		CBS cbs(engines, constraints, initial_paths, upperbound, heuristics_type::CG, screen);
 		cbs.setPrioritizeConflicts(PC);
-		cbs.setHeuristicType(heuristics_type::CG);
 		cbs.setDisjointSplitting(disjoint_splitting);
 		cbs.setBypass(false); // I guess that bypassing does not help two-agent path finding???
 		cbs.setRectangleReasoning(rectangle_reasoning);
