@@ -1,6 +1,7 @@
 #pragma once
 #include "ReservationTable.h"
 #include "Instance.h"
+#include "SingleAgentSolver.h"
 
 enum corridor_strategy { NC, C, DISJOINTC };
 
