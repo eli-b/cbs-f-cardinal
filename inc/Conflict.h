@@ -3,9 +3,14 @@
 
 
 enum conflict_type { MUTEX, TARGET, CORRIDOR, RECTANGLE, STANDARD, TYPE_COUNT };
+
 enum conflict_priority { CARDINAL, PSEUDO_CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
+// Pseudo-cardinal conflicts are semi-/non-caridnal conflicts between dependent agents. 
+// We prioritize them over normal semi-/non-caridnal conflicts 
+
 enum constraint_type { LEQLENGTH, GLENGTH, RANGE, BARRIER, VERTEX, EDGE, 
 											POSITIVE_VERTEX, POSITIVE_EDGE, POSITIVE_BARRIER, POSITIVE_RANGE, CONSTRAINT_COUNT };
+
 enum conflict_selection {RANDOM, EARLIEST, CONFLICTS, MCONSTRAINTS, FCONSTRAINTS, WIDTH, SINGLETONS};
 
 typedef std::tuple<int, int, int, int, constraint_type> Constraint;

@@ -26,9 +26,7 @@ int CBSHeuristic::computeHeuristics(CBSNode& curr, double time_limit)
 			rst = minimumVertexCover(HG, curr.parent->h_val, num_of_agents, num_of_CGedges);
 		break;
 	case heuristics_type::DG:
-		if (mutex_reasoning)
-			buildCardinalConflictGraph(curr, HG, num_of_CGedges); // mutex reasoning already finds ALL depedent agents
-		else if (!buildDependenceGraph(curr, HG, num_of_CGedges))
+		if (!buildDependenceGraph(curr, HG, num_of_CGedges))
 			return -1;
 		// Minimum Vertex Cover
 		if (curr.parent == nullptr) // root node of CBS tree
@@ -137,27 +135,26 @@ bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode& node, vector<int>& CG)
 			num_memoization++;
 			node.conflictGraph[idx] = got->second;
 		}
-		else if (rectangle_reasoning != rectangle_strategy::RM && !mutex_reasoning)
+		else if (rectangle_reasoning == rectangle_strategy::RM || mutex_reasoning)
 		{
+			node.conflictGraph[idx] = solve2Agents(a1, a2, node, false);
+			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
+		}
+		else
+		{ 
 			bool cardinal = conflict->priority == conflict_priority::CARDINAL;
 			if (!cardinal) // using merging MDD methods before runing 2-agent instance
 			{
 				cardinal = dependent(a1, a2, node);
 			}
-			if (cardinal)
+			if (cardinal) // run 2-agent solver only for dependent agents
 			{
-				node.conflictGraph[idx] = solve2Agents(a1, a2, node, cardinal);
-				
+				node.conflictGraph[idx] = solve2Agents(a1, a2, node, cardinal);			
 			}
 			else
 			{
 				node.conflictGraph[idx] = 0;
 			}
-			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
-		}
-		else
-		{
-			node.conflictGraph[idx] = solve2Agents(a1, a2, node, false);
 			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
 		}
 		if (conflict->priority != conflict_priority::CARDINAL && node.conflictGraph[idx] > 0)
@@ -231,7 +228,8 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 		assert(cbs.solution_cost >= root_g);
 		rst = cbs.solution_cost - root_g;
 	}
-	/*if (rst > 0 && cbs.num_HL_expanded > 3)
+	// For debug!!!
+	if (rst > 0 && cbs.num_HL_expanded > 3)
 	{
 		ct_nodes.emplace_back(a1, a2, &node, cbs.num_HL_expanded);
 		auto ptr = cbs.goal_node;
@@ -259,7 +257,7 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 				cout << *ptr->conflict << endl;
 			ptr = ptr->parent;
 		}
-	}*/
+	}
 	return rst;
 }
 
