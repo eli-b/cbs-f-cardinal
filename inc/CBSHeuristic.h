@@ -177,17 +177,24 @@ private:
 	const vector<ConstraintTable>& initial_constraints;
 	MDDTable& mdd_helper;
 
+	//stats
+	// record CT nodes if sub CBS expand more than 2 nodes
+	list<tuple<int, int, const CBSNode*, int> > ct_nodes; 	// <agent 1, agent 2, node, number of expanded CT nodes> 
 
-	// Match and prune MDD according to another MDD.
-	bool SyncMDDs(const MDD &mdd1, const MDD& mdd2);
 
-	int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
+	void buildCardinalConflictGraph(CBSNode& curr, vector<int>& CG, int& num_of_CGedges);
+	bool buildDependenceGraph(CBSNode& node, vector<int>& CG, int& num_of_CGedges);
+	bool buildWeightedDependencyGraph(CBSNode& curr, vector<int>& CG);
+
+	bool dependent(int a1, int a2, CBSNode& node); // return true if the two agents are dependent
+	int solve2Agents(int a1, int a2, const CBSNode& node, bool cardinal);
+	bool SyncMDDs(const MDD &mdd1, const MDD& mdd2); 	// Match and prune MDD according to another MDD.
+
+	// int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
 	int minimumVertexCover(const vector<int>& CG, int old_mvc, int cols, int num_of_edges);
-	bool buildDependenceGraph(CBSNode& node);
 	bool KVertexCover(const vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
-
 	int greedyMatching(const vector<int>& CG, int cols);
-
+	int minimumWeightedVertexCover(const vector<int>& CG);
 	int weightedVertexCover(const vector<int>& CG);
 	int weightedVertexCover(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
 };

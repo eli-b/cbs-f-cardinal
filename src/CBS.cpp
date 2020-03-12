@@ -331,22 +331,39 @@ void CBS::classifyConflicts(CBSNode &node)
 
 		if (cardinal1 && cardinal2)
 		{
-			con->p = conflict_priority::CARDINAL;
+			con->priority = conflict_priority::CARDINAL;
 		}
 		else if (cardinal1 || cardinal2)
 		{
-			con->p = conflict_priority::SEMI;
+			con->priority = conflict_priority::SEMI;
 		}
 		else
 		{
-			con->p = conflict_priority::NON;
+			con->priority = conflict_priority::NON;
 		}
 
-		if (con->p == conflict_priority::CARDINAL && heuristic_helper.type == heuristics_type::ZERO)
+		if (con->priority == conflict_priority::CARDINAL && heuristic_helper.type == heuristics_type::ZERO)
 		{
 			computePriorityForConflict(*con, node);
 			node.conflicts.push_back(con);
 			return;
+		}
+
+		// Mutex reasoning
+		if (mutex_reasoning)
+		{
+			// TODO mutex reasoning is per agent pair, don't do duplicated work...
+			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
+			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
+
+			auto mutex_conflict = mutex_helper.run(a1, a2, node, mdd1, mdd2);
+
+			if (mutex_conflict != nullptr)
+			{
+				computePriorityForConflict(*mutex_conflict, node);
+				node.conflicts.push_back(mutex_conflict);
+				continue;
+			}
 		}
 
 		// Target Reasoning
@@ -363,7 +380,7 @@ void CBS::classifyConflicts(CBSNode &node)
 			auto corridor = corridor_helper.run(con, paths, cardinal1 && cardinal2, node);
 			if (corridor != nullptr)
 			{
-				corridor->p = con->p;
+				corridor->priority = con->priority;
 				computePriorityForConflict(*corridor, node);
 				node.conflicts.push_back(corridor);
 				continue;
@@ -388,22 +405,6 @@ void CBS::classifyConflicts(CBSNode &node)
 			}
 		}
 
-		// Mutex reasoning
-		if (mutex_reasoning)
-		{
-			// TODO mutex reasoning is per agent pair, don't do duplicated work...
-			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
-			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
-
-			auto mutex_conflict = mutex_helper.run(a1, a2, node, mdd1, mdd2);
-
-			if (mutex_conflict != nullptr)
-			{
-				computePriorityForConflict(*mutex_conflict, node);
-				node.conflicts.push_back(mutex_conflict);
-				continue;
-			}
-		}
 		computePriorityForConflict(*con, node);
 		node.conflicts.push_back(con);
 	}
@@ -771,10 +772,12 @@ string CBS::getSolverName() const
 	return name;
 }
 
-bool CBS::solve(double time_limit, int cost_lowerbound)
+bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 {
-	this->time_limit = time_limit;
 	this->min_f_val = cost_lowerbound;
+	this->cost_upperbound = cost_upperbound;
+	this->time_limit = time_limit;
+
 	if (screen > 0) // 1 or 2
 	{
 		string name = getSolverName();
@@ -1045,9 +1048,8 @@ bool CBS::solve(double time_limit, int cost_lowerbound)
 
 CBS::CBS(vector<SingleAgentSolver*>& search_engines,
 	const vector<ConstraintTable>& initial_constraints,
-	vector<Path>& paths_found_initially,
-	int cost_upperbound, int screen) :
-	screen(screen), focal_w(1), cost_upperbound(cost_upperbound),
+	vector<Path>& paths_found_initially, int screen) :
+	screen(screen), focal_w(1), 
 	initial_constraints(initial_constraints), paths_found_initially(paths_found_initially),
 	search_engines(search_engines), 
 	mdd_helper(initial_constraints, search_engines),

@@ -2,8 +2,8 @@
 #include "common.h"
 
 
-enum conflict_type { TARGET, CORRIDOR, RECTANGLE, STANDARD, MUTEX, TYPE_COUNT };
-enum conflict_priority { CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
+enum conflict_type { MUTEX, TARGET, CORRIDOR, RECTANGLE, STANDARD, TYPE_COUNT };
+enum conflict_priority { CARDINAL, PSEUDO_CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
 enum constraint_type { LEQLENGTH, GLENGTH, RANGE, BARRIER, VERTEX, EDGE, 
 											POSITIVE_VERTEX, POSITIVE_EDGE, POSITIVE_BARRIER, POSITIVE_RANGE, CONSTRAINT_COUNT };
 enum conflict_selection {RANDOM, EARLIEST, CONFLICTS, MCONSTRAINTS, FCONSTRAINTS, WIDTH, SINGLETONS};
@@ -25,11 +25,11 @@ class Conflict
 public:
 	int a1;
 	int a2;
-	double secondary_priority; // used as the tie-breaking creteria for conflict selection
 	list<Constraint> constraint1;
 	list<Constraint> constraint2;
 	conflict_type type;
-	conflict_priority p = conflict_priority::UNKNOWN;
+	conflict_priority priority = conflict_priority::UNKNOWN;
+	double secondary_priority = 0; // used as the tie-breaking creteria for conflict selection
 
 	void vertexConflict(int a1, int a2, int v, int t)
 	{
@@ -95,7 +95,7 @@ public:
 		this->a1 = a1;
 		this->a2 = a2;
 		type = conflict_type::MUTEX;
-		p = conflict_priority::CARDINAL;
+		priority = conflict_priority::CARDINAL;
 		// TODO add constraints from mutex reasoning
 	}
 

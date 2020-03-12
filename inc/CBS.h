@@ -97,12 +97,12 @@ public:
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// Runs the algorithm until the problem is solved or time is exhausted 
-	bool solve(double time_limit, int initial_h);
+	bool solve(double time_limit, int cost_lowerbound = 0, int cost_upperbound = INT_MAX);
 
 	CBS(const Instance& instance, bool sipp, int screen);
 	CBS(vector<SingleAgentSolver*>& search_engines,
 		const vector<ConstraintTable>& constraints,
-		vector<Path>& paths_found_initially, int cost_upperbound, int screen);
+		vector<Path>& paths_found_initially, int screen);
 	void clearSearchEngines();
 	~CBS();
 
@@ -138,7 +138,7 @@ private:
 	
 	double time_limit;
 	double focal_w = 1.0;
-	const int cost_upperbound = INT_MAX;
+	int cost_upperbound = INT_MAX;
 
 
 	vector<ConstraintTable> initial_constraints;
