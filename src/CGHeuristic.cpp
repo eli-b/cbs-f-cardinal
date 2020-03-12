@@ -91,21 +91,7 @@ int CGHeuristic::computeHeuristics(CBSNode& curr, double time_limit){
 	this->time_limit = time_limit;
 	vector<int> CG(num_of_agents * num_of_agents, 0);
 	int num_of_CGedges = 0;
-		for (const auto& conflict : curr.conflicts)
-		{
-			if (conflict->p == conflict_priority::CARDINAL)
-			{
-				int a1 = conflict->a1;
-				int a2 = conflict->a2;
-				if (!CG[a1 * num_of_agents + a2])
-				{
-					CG[a1 * num_of_agents + a2] = true;
-					CG[a2 * num_of_agents + a1] = true;
-					num_of_CGedges++;
-				}
-			}
-		}
-	runtime_build_dependency_graph += (double)(clock() - start_time) / CLOCKS_PER_SEC;
+  buildCardinalConflictGraph(curr, CG, num_of_CGedges);
 	auto t = clock();
 	int rst;
   // Minimum Vertex Cover
@@ -116,4 +102,24 @@ int CGHeuristic::computeHeuristics(CBSNode& curr, double time_limit){
 	runtime_solve_MVC += (double)(clock() - t) / CLOCKS_PER_SEC;
 	return rst;
 
+}
+
+void CGHeuristic::buildCardinalConflictGraph(CBSNode& curr, vector<int>& CG, int& num_of_CGedges)
+{
+	num_of_CGedges = 0;
+	for (const auto& conflict : curr.conflicts)
+    {
+      if (conflict->p == conflict_priority::CARDINAL)
+        {
+          int a1 = conflict->a1;
+          int a2 = conflict->a2;
+          if (!CG[a1 * num_of_agents + a2])
+            {
+              CG[a1 * num_of_agents + a2] = true;
+              CG[a2 * num_of_agents + a1] = true;
+              num_of_CGedges++;
+            }
+        }
+    }
+	runtime_build_dependency_graph += (double)(clock() - start_time) / CLOCKS_PER_SEC;
 }

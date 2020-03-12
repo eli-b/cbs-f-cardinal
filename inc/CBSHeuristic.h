@@ -193,6 +193,7 @@ public:
 	virtual int computeHeuristics(CBSNode& curr, double time_limit);
 
 protected:
+  virtual void buildCardinalConflictGraph(CBSNode& curr, vector<int>& CG, int& num_of_CGedges);
   virtual int minimumVertexCover(const vector<int>& CG, int old_mvc, int cols, int num_of_edges);
 	virtual bool KVertexCover(const vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
 };
@@ -225,7 +226,7 @@ protected:
 	virtual bool buildDependenceGraph(CBSNode& node);
 	virtual int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
 	virtual bool SyncMDDs(const MDD &mdd1, const MDD& mdd2);
-  
+  virtual bool canMergeMDD(int a1, int a2, CBSNode& node);
 };
 
 class WDGHeuristic: public DGHeuristic {
@@ -240,7 +241,9 @@ public:
 	virtual int computeHeuristics(CBSNode& curr, double time_limit);
 
 protected:
+  int delta_limit = 10; // upperbounding the edge delta
 	virtual bool buildDependenceGraph(CBSNode& node);
+  int computePairwiseDelta(int a1, int a2, CBSNode& node);
 	virtual int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
 	virtual int weightedVertexCover(const vector<int>& CG);
 	virtual int weightedVertexCover(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);

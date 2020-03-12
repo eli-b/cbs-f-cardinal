@@ -68,19 +68,15 @@ bool DGHeuristic::buildDependenceGraph(CBSNode& node)
 int DGHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
 {
 	HTableEntry newEntry(a1, a2, &node);
-	if (type != heuristics_type::CG)
-	{
-		HTable::const_iterator got = lookupTable[a1][a2].find(newEntry);
+  HTable::const_iterator got = lookupTable[a1][a2].find(newEntry);
 
-		if (got != lookupTable[a1][a2].end())
+  if (got != lookupTable[a1][a2].end())
 		{
 			num_memoization++;
 			return got->second;
 		}
 
-	}
 
-	int cost_shortestPath = (int)paths[a1]->size() + (int)paths[a2]->size() - 2;
 	// runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
 	if (screen > 2)
 	{
@@ -89,29 +85,32 @@ int DGHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
 	int rst = 0;
 	if (cardinal)
 		rst = 1;
-	else if (!mutex_reasoning && // no mutex reasoning, so we might miss some cardinal conflicts
-		(type == heuristics_type::DG || type == heuristics_type::WDG))
+	else if (!mutex_reasoning) // no mutex reasoning, so we might miss some cardinal conflicts
 	{
-		// get mdds
-
-		const MDD* mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
-		const MDD* mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
-		if (mdd1->levels.size() > mdd2->levels.size()) // swap
-		{
-			const MDD* temp = mdd1;
-			mdd1 = mdd2;
-			mdd2 = temp;
-		}
-		if (!SyncMDDs(*mdd1, *mdd2))
-			rst = 1;
-		else
-			rst = 0;
-		num_merge_MDDs++;
+    // merging MDDs
+    rst = canMergeMDD(a1, a2, node)? 0 : 1;
 	}
 	lookupTable[a1][a2][newEntry] = rst;
 	return rst;
 }
 
+bool DGHeuristic::canMergeMDD(int a1, int a2, CBSNode& node){
+  bool rst;
+  const MDD* mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
+  const MDD* mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
+  if (mdd1->levels.size() > mdd2->levels.size()) // swap
+		{
+			const MDD* temp = mdd1;
+			mdd1 = mdd2;
+			mdd2 = temp;
+		}
+  if (!SyncMDDs(*mdd1, *mdd2))
+    rst = false;
+  else
+    rst = true;
+  num_merge_MDDs++;
+  return rst;
+}
 bool DGHeuristic::SyncMDDs(const MDD &mdd, const MDD& other) // assume mdd.levels <= other.levels
 {
 	if (other.levels.size() <= 1) // Either of the MDDs was already completely pruned already
