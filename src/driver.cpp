@@ -31,7 +31,7 @@ int main(int argc, char** argv)
 		("cutoffTime,t", po::value<double>()->default_value(7200), "cutoff time (seconds)")
 		("screen,s", po::value<int>()->default_value(1), "screen option (0: none; 1: results; 2:all)")
 		("seed,d", po::value<int>()->default_value(0), "random seed")
-
+		("stats", po::value<bool>()->default_value(false), "write to files some statistics")
 		// params for instance generators
 		("rows", po::value<int>()->default_value(0), "number of rows")
 		("cols", po::value<int>()->default_value(0), "number of columns")
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	heuristics_type h;
+  heuristics_type h;
 	if (vm["heuristics"].as<string>() == "Zero")
 		h = heuristics_type::ZERO;
 	else if (vm["heuristics"].as<string>() == "CG")
@@ -171,16 +171,16 @@ int main(int argc, char** argv)
 	// initialize the solver
 	CBS cbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>());
 	cbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
-	cbs.setHeuristicType(h);
 	cbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
 	cbs.setBypass(vm["bypass"].as<bool>());
 	cbs.setRectangleReasoning(r);
 	cbs.setCorridorReasoning(c);
+	cbs.setHeuristicType(h);
 	cbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
 	cbs.setMutexReasoning(vm["mutexReasoning"].as<bool>());
 	cbs.setConflictSelectionRule(conflict);
 	cbs.setNodeSelectionRule(n);
-
+	cbs.setSavingStats(vm["stats"].as<bool>());
 	//////////////////////////////////////////////////////////////////////
 	// run
 	double runtime = 0;
@@ -198,6 +198,10 @@ int main(int argc, char** argv)
 	cbs.runtime = runtime;
 	if (vm.count("output"))
 		cbs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
+	if (vm["stats"].as<bool>())
+	{
+		cbs.saveStats(vm["output"].as<string>(), vm["agents"].as<string>());
+	}
 	cbs.clearSearchEngines();
 	return 0;
 

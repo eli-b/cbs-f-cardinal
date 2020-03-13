@@ -45,30 +45,11 @@ public:
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	// set params
-	void setHeuristicType(heuristics_type h)
-	{
-		heuristic_helper.type = h;
-	}
-	void setPrioritizeConflicts(bool p)
-	{
-		PC = p;
-		heuristic_helper.PC = p;
-	}
-	void setRectangleReasoning(rectangle_strategy r)
-	{
-		rectangle_helper.strategy = r;
-		heuristic_helper.rectangle_reasoning = r;
-	}
-	void setCorridorReasoning(corridor_strategy c)
-	{
-		corridor_helper.strategy = c;
-		heuristic_helper.corridor_reasoning = c;
-	}
-	void setTargetReasoning(bool t)
-	{
-		target_reasoning = t;
-		heuristic_helper.target_reasoning = t;
-	}
+	void setHeuristicType(heuristics_type h) {heuristic_helper.type = h; }
+	void setPrioritizeConflicts(bool p) {PC = p;	heuristic_helper.PC = p; }
+	void setRectangleReasoning(rectangle_strategy r) {rectangle_helper.strategy = r; heuristic_helper.rectangle_reasoning = r; }
+	void setCorridorReasoning(corridor_strategy c) {corridor_helper.strategy = c; heuristic_helper.corridor_reasoning = c; }
+	void setTargetReasoning(bool t) {target_reasoning = t; heuristic_helper.target_reasoning = t; }
 	void setMutexReasoning(bool m)
 	{
 		mutex_reasoning = m;
@@ -94,7 +75,7 @@ public:
 		node_selection_fule = n;
 		heuristic_helper.node_selection_fule = n;
 	}
-
+	void setSavingStats(bool s) {save_stats = s; heuristic_helper.save_stats = s; }
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// Runs the algorithm until the problem is solved or time is exhausted 
 	bool solve(double time_limit, int cost_lowerbound = 0, int cost_upperbound = INT_MAX);
@@ -108,7 +89,7 @@ public:
 
 	// Save results
 	void saveResults(const string &fileName, const string &instanceName) const;
-	// void saveLogs(const std::string &fileName) const;
+	void saveStats(const string &fileName, const string &instanceName) const;
 
 	void clear(); // used for rapid random  restart
 
@@ -118,6 +99,7 @@ private:
 	bool mutex_reasoning; // using mutex reasoning
 	bool bypass; // using Bypass1
 	bool PC; // prioritize conflicts
+	bool save_stats;
 	conflict_selection conflict_seletion_rule;
 	node_selection node_selection_fule;
 

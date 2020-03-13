@@ -228,35 +228,10 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 		assert(cbs.solution_cost >= root_g);
 		rst = cbs.solution_cost - root_g;
 	}
-	// For debug!!!
-	if (rst > 0 && cbs.num_HL_expanded > 3)
+	// For statistic study!!!
+	if (save_stats)
 	{
-		ct_nodes.emplace_back(a1, a2, &node, cbs.num_HL_expanded);
-		auto ptr = cbs.goal_node;
-		while (ptr != nullptr)
-		{
-			for (auto path : ptr->paths)
-			{
-				int id;
-				if (path.first == 0)
-					id = a1;
-				else
-					id = a2;
-				cout << "Agent " << id << " (" << paths[id]->size() - 1 << " -->" <<
-					path.second.size() - 1 << "): ";
-				for (const auto & t : path.second)
-					cout << t.location << "->";
-				cout << endl;
-			}
-			ptr = ptr->parent;
-		}
-		ptr = cbs.goal_node;
-		while (ptr != nullptr)
-		{
-			if (ptr->conflict != nullptr)
-				cout << *ptr->conflict << endl;
-			ptr = ptr->parent;
-		}
+		sub_instances.emplace_back(a1, a2, &node, cbs.num_HL_expanded, rst);
 	}
 	return rst;
 }

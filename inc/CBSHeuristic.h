@@ -131,6 +131,7 @@ public:
 	bool mutex_reasoning; // using mutex reasoning
 	bool disjoint_splitting; // disjoint splittting
 	bool PC; // prioritize conflicts
+	bool save_stats;
 	conflict_selection conflict_seletion_rule;
 	node_selection node_selection_fule;
 
@@ -140,6 +141,10 @@ public:
 	uint64_t num_merge_MDDs = 0;
 	uint64_t num_solve_2agent_problems = 0;
 	uint64_t num_memoization = 0; // number of times when memeorization helps
+
+	 //stats
+	list<tuple<int, int, const CBSNode*, int, int> > sub_instances; 	// <agent 1, agent 2, node, number of expanded CT nodes, h value> 
+
 
 	CBSHeuristic(int num_of_agents,
 							const vector<Path*>& paths,
@@ -177,9 +182,6 @@ private:
 	const vector<ConstraintTable>& initial_constraints;
 	MDDTable& mdd_helper;
 
-	//stats
-	// record CT nodes if sub CBS expand more than 2 nodes
-	list<tuple<int, int, const CBSNode*, int> > ct_nodes; 	// <agent 1, agent 2, node, number of expanded CT nodes> 
 
 
 	void buildCardinalConflictGraph(CBSNode& curr, vector<int>& CG, int& num_of_CGedges);

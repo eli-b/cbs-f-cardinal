@@ -720,6 +720,18 @@ void CBS::saveResults(const string &fileName, const string &instanceName) const
 	stats.close();
 }
 
+void CBS::saveStats(const string &fileName, const string &instanceName) const
+{
+	ofstream stats(fileName+ ".txt", std::ios::app);
+	stats << instanceName << endl;
+	stats <<  "agent 1,agent 2,node id,#expanded nodes, h" << endl; 
+	for (auto ins : heuristic_helper.sub_instances)
+	{
+			stats << get<0>(ins) << "," << get<1>(ins) << "," << get<2>(ins)->time_generated << "," << get<3>(ins) << "," << get<4>(ins) << endl;
+	}
+	stats.close();
+}
+
 void CBS::printConflicts(const CBSNode &curr) const
 {
 	for (const auto& conflict : curr.conflicts)
