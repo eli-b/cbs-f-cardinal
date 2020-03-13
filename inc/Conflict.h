@@ -100,7 +100,6 @@ public:
 		this->a2 = a2;
 		type = conflict_type::MUTEX;
 		p = conflict_priority::CARDINAL;
-		// TODO add constraints from mutex reasoning
 	}
 
 
