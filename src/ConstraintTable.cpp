@@ -122,7 +122,10 @@ void ConstraintTable::build(const CBSNode& node, int agent)
 			case constraint_type::GLENGTH:
 				assert(curr->constraints.size() == 1);
 				if (a == agent) // path of agent_id should be of length at least t + 1
-					length_min = max(length_min, t + 1);
+          {
+            length_min = max(length_min, t + 1);
+            latest_timestep = max(latest_timestep, length_min);
+          }
 				break;
 			case constraint_type::POSITIVE_VERTEX:
 				assert(curr->constraints.size() == 1);
