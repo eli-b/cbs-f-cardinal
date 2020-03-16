@@ -205,15 +205,14 @@ int WDGHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
 	}
 	if (rst > 0)
 	{
-    rst = computePairwiseDelta(a1, a2, node);
+    rst = computePairwiseDelta(a1, a2, node, rst);
 	}
 	lookupTable[a1][a2][newEntry] = rst;
 	return rst;
 }
 
-int WDGHeuristic::computePairwiseDelta(int a1, int a2, CBSNode& node){
+int WDGHeuristic::computePairwiseDelta(int a1, int a2, CBSNode& node, int rst){
   // Compute the difference between minimum cost and sum of cost in CT nodes.
-  int rst;
 	int cost_shortestPath = (int)paths[a1]->size() + (int)paths[a2]->size() - 2;
   vector<SingleAgentSolver*> engines(2);
   engines[0] = search_engines[a1];

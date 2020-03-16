@@ -243,7 +243,7 @@ public:
 protected:
   int delta_limit = 10; // upperbounding the edge delta
 	virtual bool buildDependenceGraph(CBSNode& node);
-  int computePairwiseDelta(int a1, int a2, CBSNode& node);
+  int computePairwiseDelta(int a1, int a2, CBSNode& node, int rst);
 	virtual int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
 	virtual int weightedVertexCover(const vector<int>& CG);
 	virtual int weightedVertexCover(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
