@@ -31,7 +31,6 @@ int main(int argc, char** argv)
 		("cutoffTime,t", po::value<double>()->default_value(7200), "cutoff time (seconds)")
 		("screen,s", po::value<int>()->default_value(1), "screen option (0: none; 1: results; 2:all)")
 		("seed,d", po::value<int>()->default_value(0), "random seed")
-		("stats", po::value<bool>()->default_value(false), "write to files some statistics")
 		// params for instance generators
 		("rows", po::value<int>()->default_value(0), "number of rows")
 		("cols", po::value<int>()->default_value(0), "number of columns")
@@ -180,7 +179,6 @@ int main(int argc, char** argv)
 	cbs.setMutexReasoning(vm["mutexReasoning"].as<bool>());
 	cbs.setConflictSelectionRule(conflict);
 	cbs.setNodeSelectionRule(n);
-	cbs.setSavingStats(vm["stats"].as<bool>());
 	//////////////////////////////////////////////////////////////////////
 	// run
 	double runtime = 0;
@@ -198,10 +196,6 @@ int main(int argc, char** argv)
 	cbs.runtime = runtime;
 	if (vm.count("output"))
 		cbs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
-	if (vm["stats"].as<bool>())
-	{
-		cbs.saveStats(vm["output"].as<string>(), vm["agents"].as<string>());
-	}
 	cbs.clearSearchEngines();
 	return 0;
 
@@ -214,29 +208,7 @@ Prints out usage help.
 */
 static void usage()
 {
-	//("help", "produce help message")
-	//("screen", po::value<int>(), "screen output on or off (default)")
-	//("instance", po::value<std::string>(), "input instance")
-	//("exp", po::value<std::string>(), "experiment")
-	//("strat", po::value<int>(), "branching strategy")
-	//("sbnodes", po::value<int>(), "number of SB nodes")
-	//("diag", po::value<int>(), "diagnostic trigger")
-	//("root", po::value<int>(), "limit cuts and heuristics to root node")
-	//("learningAlg", po::value<int>(), "learning algorithm")
-	//("c", po::value<std::string>(), "SVM parameter, default 0.1")
-	//("alpha", po::value<std::string>(), "label threshold, default 0.2")
-	//("loss", po::value<int>(), "loss function for learning")
-	//("varPerNode", po::value<int>(), "number of SB variables per node")
-	//("varSorting", po::value<int>(), "variable sorting criterion")
-	//("maxtime", po::value<double>(), "time cutoff")
-	//("restart", po::value<int>(), "restart from root")
-	//("kernel", po::value<int>(), "2nd degree polynomial kernel, default 1")
-	//("seed", po::value<int>(), "random seed for CPLEX, default 1")
-	//("cutoff", po::value<int>(), "supply cutoff value, default 0")
-	//("collect", po::value<int>(), "collect data and abort or not, default 0")
-	//("whichpc", po::value<int>(), "default 0 means PC features are set after phase 1, 1 means along the way")
-	//("desc", po::value<std::string>(), "description to be added to filenames to distinguish them");
-
+	// TODO: update the following information
 	fprintf(stderr, "Usage: optimize instance exp strat [options]\n");
 	fprintf(stderr, "Arguments:\n");
 	fprintf(stderr, "	help		-> this list\n");

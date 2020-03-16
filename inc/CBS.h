@@ -50,32 +50,12 @@ public:
 	void setRectangleReasoning(rectangle_strategy r) {rectangle_helper.strategy = r; heuristic_helper.rectangle_reasoning = r; }
 	void setCorridorReasoning(corridor_strategy c) {corridor_helper.strategy = c; heuristic_helper.corridor_reasoning = c; }
 	void setTargetReasoning(bool t) {target_reasoning = t; heuristic_helper.target_reasoning = t; }
-	void setMutexReasoning(bool m)
-	{
-		mutex_reasoning = m;
-		heuristic_helper.mutex_reasoning = m;
-	}
-	void setDisjointSplitting(bool d)
-	{
-		disjoint_splitting = d;
-		heuristic_helper.disjoint_splitting = d;
-	}
-	void setBypass(bool b)
-	{
-		bypass = b;
-		// 2-agent solver for heuristic calculation does not need bypass strategy.
-	}
-	void setConflictSelectionRule(conflict_selection c)
-	{ 
-		conflict_seletion_rule = c;
-		heuristic_helper.conflict_seletion_rule = c;
-	}
-	void setNodeSelectionRule(node_selection n) 
-	{ 
-		node_selection_fule = n;
-		heuristic_helper.node_selection_fule = n;
-	}
-	void setSavingStats(bool s) {save_stats = s; heuristic_helper.save_stats = s; }
+	void setMutexReasoning(bool m) {mutex_reasoning = m; heuristic_helper.mutex_reasoning = m; }
+	void setDisjointSplitting(bool d) {disjoint_splitting = d; heuristic_helper.disjoint_splitting = d; }
+	void setBypass(bool b) { bypass = b; } // 2-agent solver for heuristic calculation does not need bypass strategy.
+	void setConflictSelectionRule(conflict_selection c) { conflict_seletion_rule = c; heuristic_helper.conflict_seletion_rule = c; }
+	void setNodeSelectionRule(node_selection n) { node_selection_fule = n; heuristic_helper.node_selection_fule = n; }
+
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// Runs the algorithm until the problem is solved or time is exhausted 
 	bool solve(double time_limit, int cost_lowerbound = 0, int cost_upperbound = INT_MAX);
@@ -89,7 +69,6 @@ public:
 
 	// Save results
 	void saveResults(const string &fileName, const string &instanceName) const;
-	void saveStats(const string &fileName, const string &instanceName) const;
 
 	void clear(); // used for rapid random  restart
 
@@ -99,7 +78,6 @@ private:
 	bool mutex_reasoning; // using mutex reasoning
 	bool bypass; // using Bypass1
 	bool PC; // prioritize conflicts
-	bool save_stats;
 	conflict_selection conflict_seletion_rule;
 	node_selection node_selection_fule;
 

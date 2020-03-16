@@ -228,11 +228,7 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 		assert(cbs.solution_cost >= root_g);
 		rst = cbs.solution_cost - root_g;
 	}
-	// For statistic study!!!
-	if (save_stats)
-	{
-		sub_instances.emplace_back(a1, a2, &node, cbs.num_HL_expanded, rst);
-	}
+
 	return rst;
 }
 
