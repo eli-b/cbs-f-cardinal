@@ -7,20 +7,12 @@ using namespace std;
 IPMutexPropagation::IPMutexPropagation(MDD* MDD_0, MDD* MDD_1,
                                        SingleAgentSolver* se_0, SingleAgentSolver* se_1,
                                        ConstraintTable cons_0,
-                                       ConstraintTable cons_1
-                                       ){
-  this->MDD_0 = MDD_0;
-  this->MDD_1 = MDD_1;
-
-  init_len_0 = MDD_0->levels.size();
-  init_len_1 = MDD_1->levels.size();
-
-  search_engine_0 = se_0;
-  search_engine_1 = se_1;
-
-  this->cons_0 = cons_0;
-  this->cons_1 = cons_1;
-
+                                       ConstraintTable cons_1,
+                                       int incr_limit
+                                       ):
+  MDD_0(MDD_0), MDD_1(MDD_1), init_len_0(MDD_0->levels.size()), init_len_1(MDD_1->levels.size()),
+  incr_limit(incr_limit), search_engine_0(se_0), search_engine_1(se_1), cons_0(cons_0), cons_1(cons_1)
+{
 }
 
 std::pair<con_vec, con_vec> IPMutexPropagation::gen_constraints(){
@@ -34,7 +26,6 @@ std::pair<con_vec, con_vec> IPMutexPropagation::gen_constraints(){
 
   // set len to sum of two agent's current length;
   int inc_len = 0;
-
   // cout << cp._feasible(init_len_0 - 1, init_len_1 -1) << endl;
 
   while(!found_solution){
@@ -46,7 +37,7 @@ std::pair<con_vec, con_vec> IPMutexPropagation::gen_constraints(){
 
     // cout << (!cp.feasible(init_len_0 + inc_len - 1, init_len_1 + inc_len - 1)) << endl;
 
-    if (inc_len > 20){
+    if (inc_len > incr_limit){
       final_len_0 = max(inc_len - 1, 0);
       final_len_1 = max(inc_len - 1, 0);
       return cp.generate_constraints(init_len_0 + max(inc_len - 1, 0), init_len_1 + max(inc_len - 1, 0));
@@ -61,7 +52,7 @@ std::pair<con_vec, con_vec> IPMutexPropagation::gen_constraints(){
         int inc_0 = d_inc_0, inc_1 = d_inc_1;
 
         while (init_len_0 + inc_0 <= init_len_1 + inc_1 && cp.feasible( init_len_0 + inc_0 +  max(inc_len - 1, 0) - 1, init_len_1 + inc_1 + max(inc_len - 1, 0) - 1)){
-			if (inc_0 > 20)
+			if (inc_0 > incr_limit)
 			{
 				break;
 			}
@@ -82,7 +73,7 @@ std::pair<con_vec, con_vec> IPMutexPropagation::gen_constraints(){
         int inc_0 = d_inc_0, inc_1 = d_inc_1;
 
         while (init_len_0 + inc_0 >= init_len_1 + inc_1 && cp.feasible( init_len_0 + inc_0 +  max(inc_len - 1, 0) - 1, init_len_1 + inc_1 + max(inc_len - 1, 0) - 1)){
-			if (inc_1 > 20)
+			if (inc_1 > incr_limit)
 			{
 				break;
 			}
