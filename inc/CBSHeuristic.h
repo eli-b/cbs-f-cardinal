@@ -175,7 +175,9 @@ public:
                vector<SingleAgentSolver*>& search_engines,
                const vector<ConstraintTable>& initial_constraints,
                 MDDTable& mdd_helper) : CBSHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper)
-  {}
+  {
+    type = heuristics_type::ZERO;
+  }
 
 	virtual int computeHeuristics(CBSNode& curr, double time_limit);
 
@@ -188,7 +190,9 @@ public:
                 vector<SingleAgentSolver*>& search_engines,
                 const vector<ConstraintTable>& initial_constraints,
                 MDDTable& mdd_helper) : CBSHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper)
-  {}
+  {
+    type = heuristics_type::CG;
+  }
 
 	virtual int computeHeuristics(CBSNode& curr, double time_limit);
 
@@ -206,7 +210,9 @@ public:
               vector<SingleAgentSolver*>& search_engines,
               const vector<ConstraintTable>& initial_constraints,
               MDDTable& mdd_helper) : CGHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper)
-  {}
+  {
+    type = heuristics_type::DG;
+  }
 	virtual int computeHeuristics(CBSNode& curr, double time_limit);
 
 	virtual void init()
@@ -236,7 +242,9 @@ public:
                 vector<SingleAgentSolver*>& search_engines,
                 const vector<ConstraintTable>& initial_constraints,
                 MDDTable& mdd_helper) : DGHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper)
-  {}
+  {
+    type = heuristics_type::WDG;
+  }
 
 	virtual int computeHeuristics(CBSNode& curr, double time_limit);
 
