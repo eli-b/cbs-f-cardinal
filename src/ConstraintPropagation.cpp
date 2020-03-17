@@ -242,6 +242,7 @@ void ConstraintPropagation::bwd_mutex_prop(){
 
 
 bool ConstraintPropagation::mutexed(int level_0, int level_1){
+  // level_0 < mdd_s->levels, the index of the level
   MDD* mdd_s = mdd0;
   MDD* mdd_l = mdd1;
   if (level_0 > level_1){
@@ -370,8 +371,9 @@ std::pair<std::vector<Constraint>, std::vector<Constraint>> ConstraintPropagatio
   }
 
   if (!non_mutexed.empty()){
+    // AC
     int l = level_0;
-    std::vector<std::pair<int, int>> cons_vec_0;
+    // std::vector<std::pair<int, int>> cons_vec_0;
     // std::vector<std::pair<int, int>> cons_vec_1;
     boost::unordered_set<std::pair<int, int>> cons_set_1;
     boost::unordered_set<MDDNode*> level_i({goal_ptr_i});
@@ -384,7 +386,6 @@ std::pair<std::vector<Constraint>, std::vector<Constraint>> ConstraintPropagatio
       }
     }
 
-
     for (l = level_0; l >= 0; l--){
       for (auto ptr_i:level_i){
         bool non_all_mutexed=false;
@@ -395,7 +396,7 @@ std::pair<std::vector<Constraint>, std::vector<Constraint>> ConstraintPropagatio
           }
         }
         if (!non_all_mutexed){
-          cons_vec_0.push_back({l, ptr_i->location});
+          // cons_vec_0.push_back({l, ptr_i->location});
         }
       }
       for (auto ptr_j:level_j){
@@ -463,7 +464,7 @@ std::pair<std::vector<Constraint>, std::vector<Constraint>> ConstraintPropagatio
       }
     }
 
-    Constraint length_con(0, goal_ptr_i->location, -1, level_0, constraint_type::LEQLENGTH);
+    Constraint length_con(0, goal_ptr_i->location, -1, level_0 - 1, constraint_type::GLENGTH);
     // std::pair<int, int> length_con = {-1, level_0};
 
     std::vector<Constraint>cons_vec_1;
@@ -471,6 +472,7 @@ std::pair<std::vector<Constraint>, std::vector<Constraint>> ConstraintPropagatio
       cons_vec_1.push_back(Constraint(1, it.second, -1, it.first, constraint_type::VERTEX));
     }
     // std::vector<std::pair<int, int>> cons_vec_1(cons_set_1.begin(), cons_set_1.end());
+    cons_vec_1.push_back(Constraint(0, goal_ptr_i->location,  -1, level_0 - 1, constraint_type::LEQLENGTH));
 
 
     if (reversed){
