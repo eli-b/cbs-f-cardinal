@@ -620,9 +620,10 @@ bool CBSHeuristic::dependent(int a1, int a2, CBSNode& node) // return true if th
 	if (mdd1->levels.size() > mdd2->levels.size()) // swap
 		std::swap(mdd1, mdd2);
 	num_merge_MDDs++;
-	return SyncMDDs(*mdd1, *mdd2);
+	return !SyncMDDs(*mdd1, *mdd2);
 }
 
+// return true if the joint MDD exists.
 bool CBSHeuristic::SyncMDDs(const MDD &mdd, const MDD& other) // assume mdd.levels <= other.levels
 {
 	if (other.levels.size() <= 1) // Either of the MDDs was already completely pruned already
