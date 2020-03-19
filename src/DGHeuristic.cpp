@@ -104,7 +104,7 @@ bool DGHeuristic::canMergeMDD(int a1, int a2, CBSNode& node){
 			mdd1 = mdd2;
 			mdd2 = temp;
 		}
-  if (!SyncMDDs(*mdd1, *mdd2))
+  if (SyncMDDs(*mdd1, *mdd2))
     rst = false;
   else
     rst = true;
