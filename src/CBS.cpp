@@ -800,8 +800,8 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 			break;
 		}
 		runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
-		if (runtime > time_limit)
-		{  // timeout
+		if (runtime > time_limit || num_HL_expanded > node_limit)
+		{  // time/node out
 			solution_cost = -1;
 			solution_found = false;
 			break;

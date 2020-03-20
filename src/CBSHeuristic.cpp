@@ -209,6 +209,7 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 	cbs.setMutexReasoning(mutex_reasoning);
 	cbs.setConflictSelectionRule(conflict_seletion_rule);
 	cbs.setNodeSelectionRule(node_selection_fule);
+	cbs.setNodeLimit(node_limit);
 
 	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 	int root_g = (int)initial_paths[0].size() - 1 + (int)initial_paths[1].size() - 1;
@@ -219,7 +220,7 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 	cbs.solve(time_limit - runtime, lowerbound, upperbound);
 	num_solve_2agent_problems++;
 	int rst;
-	if (cbs.runtime >= time_limit - runtime) // time out
+	if (cbs.runtime > time_limit - runtime || cbs.num_HL_expanded > node_limit) // time out or node out
 		rst = (int)cbs.min_f_val - root_g; // using lowerbound to approximate
 	else if (cbs.solution_cost  < 0) // no solution
 		rst = cbs.solution_cost;

@@ -55,7 +55,7 @@ public:
 	void setBypass(bool b) { bypass = b; } // 2-agent solver for heuristic calculation does not need bypass strategy.
 	void setConflictSelectionRule(conflict_selection c) { conflict_seletion_rule = c; heuristic_helper.conflict_seletion_rule = c; }
 	void setNodeSelectionRule(node_selection n) { node_selection_fule = n; heuristic_helper.node_selection_fule = n; }
-
+	void setNodeLimit(int n) { node_limit = n; }
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// Runs the algorithm until the problem is solved or time is exhausted 
 	bool solve(double time_limit, int cost_lowerbound = 0, int cost_upperbound = INT_MAX);
@@ -97,6 +97,7 @@ private:
 	int screen;
 	
 	double time_limit;
+	int node_limit = INT_MAX;
 	double focal_w = 1.0;
 	int cost_upperbound = INT_MAX;
 

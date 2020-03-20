@@ -170,6 +170,7 @@ private:
 	vector<vector<HTable> > lookupTable;
 
 	double time_limit;
+	int node_limit = 64;  // terminate the sub CBS solver if the number of its expanded nodes exceeds the node limit.
 	double start_time;
 
 	const vector<Path*>& paths;
