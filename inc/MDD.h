@@ -18,7 +18,7 @@ public:
 	}
 	int location;
 	int level;
-  int cost; // minimum cost of path traversing this MDD node
+  int cost=0; // minimum cost of path traversing this MDD node
 
 	bool operator == (const MDDNode & node) const
 	{
