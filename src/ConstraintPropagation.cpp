@@ -138,55 +138,111 @@ void ConstraintPropagation::init_mutex(){
 }
 
 void ConstraintPropagation::fwd_mutex_prop(){
-  std::deque<edge_pair> open(fwd_mutexes.begin(), fwd_mutexes.end());
 
-  while (!open.empty()){
-    auto mutex = open.front();
 
-    open.pop_front();
+  std::vector<boost::unordered_set<edge_pair> > to_check(max(mdd0->levels.size(), mdd1->levels.size()));
 
-    if (is_edge_mutex(mutex)){
-      auto node_to_1 = mutex.first.second;
-      auto node_to_2 = mutex.second.second;
+  for (const auto & mutex: fwd_mutexes){
+    int l = mutex.first.first->level;
+    to_check[l].insert(mutex);
+  }
+  // std::deque<edge_pair> open(fwd_mutexes.begin(), fwd_mutexes.end());
 
-      if (has_fwd_mutex(node_to_1, node_to_2)){
-        continue;
-      }
+  for (int i = 0; i < to_check.size(); i ++){
+    for (auto & mutex: to_check[i]){
+      if (is_edge_mutex(mutex)){
+        auto node_to_1 = mutex.first.second;
+        auto node_to_2 = mutex.second.second;
 
-      if (!should_be_fwd_mutexed(node_to_1, node_to_2)){
-        continue;
-      }
-      auto new_mutex = std::make_pair(std::make_pair(node_to_1, nullptr),
-                                      std::make_pair(node_to_2, nullptr));
+        if (has_fwd_mutex(node_to_1, node_to_2)){
+          continue;
+        }
 
-      fwd_mutexes.insert(new_mutex);
-      open.push_back(new_mutex);
-    }else{
-      // Node mutex
-      auto node_a = mutex.first.first;
-      auto node_b = mutex.second.first;
+        if (!should_be_fwd_mutexed(node_to_1, node_to_2)){
+          continue;
+        }
+        auto new_mutex = std::make_pair(std::make_pair(node_to_1, nullptr),
+                                        std::make_pair(node_to_2, nullptr));
 
-      // Check their child
+        fwd_mutexes.insert(new_mutex);
+        assert(i + 1 == node_to_1->level);
+        to_check[i + 1].insert(new_mutex);
+      }else{
+        // Node mutex
+        auto node_a = mutex.first.first;
+        auto node_b = mutex.second.first;
 
-      for (auto node_a_ch: node_a->children){
-        for (auto node_b_ch: node_b->children){
+        // Check their child
 
-          if (has_fwd_mutex(node_a_ch, node_b_ch)){
-            continue;
+        for (auto node_a_ch: node_a->children){
+          for (auto node_b_ch: node_b->children){
+
+            if (has_fwd_mutex(node_a_ch, node_b_ch)){
+              continue;
+            }
+
+            if (!should_be_fwd_mutexed(node_a_ch, node_b_ch)){
+              continue;
+            }
+            auto new_mutex = std::make_pair(std::make_pair(node_a_ch, nullptr),
+                                            std::make_pair(node_b_ch, nullptr));
+
+            fwd_mutexes.insert(new_mutex);
+            assert(i + 1 == node_a_ch->level);
+            to_check[i + 1].insert(new_mutex);
           }
-
-          if (!should_be_fwd_mutexed(node_a_ch, node_b_ch)){
-            continue;
-          }
-          auto new_mutex = std::make_pair(std::make_pair(node_a_ch, nullptr),
-                                          std::make_pair(node_b_ch, nullptr));
-
-          fwd_mutexes.insert(new_mutex);
-          open.push_back(new_mutex);
         }
       }
     }
   }
+
+//   while (!open.empty()){
+//     auto mutex = open.front();
+
+//     open.pop_front();
+
+//     if (is_edge_mutex(mutex)){
+//       auto node_to_1 = mutex.first.second;
+//       auto node_to_2 = mutex.second.second;
+
+//       if (has_fwd_mutex(node_to_1, node_to_2)){
+//         continue;
+//       }
+
+//       if (!should_be_fwd_mutexed(node_to_1, node_to_2)){
+//         continue;
+//       }
+//       auto new_mutex = std::make_pair(std::make_pair(node_to_1, nullptr),
+//                                       std::make_pair(node_to_2, nullptr));
+
+//       fwd_mutexes.insert(new_mutex);
+//       open.push_back(new_mutex);
+//     }else{
+//       // Node mutex
+//       auto node_a = mutex.first.first;
+//       auto node_b = mutex.second.first;
+
+//       // Check their child
+
+//       for (auto node_a_ch: node_a->children){
+//         for (auto node_b_ch: node_b->children){
+
+//           if (has_fwd_mutex(node_a_ch, node_b_ch)){
+//             continue;
+//           }
+
+//           if (!should_be_fwd_mutexed(node_a_ch, node_b_ch)){
+//             continue;
+//           }
+//           auto new_mutex = std::make_pair(std::make_pair(node_a_ch, nullptr),
+//                                           std::make_pair(node_b_ch, nullptr));
+
+//           fwd_mutexes.insert(new_mutex);
+//           open.push_back(new_mutex);
+//         }
+//       }
+//     }
+//   }
 }
 
 void ConstraintPropagation::bwd_mutex_prop(){
@@ -239,7 +295,6 @@ void ConstraintPropagation::bwd_mutex_prop(){
     }
   }
 }
-
 
 bool ConstraintPropagation::mutexed(int level_0, int level_1){
   // level_0 < mdd_s->levels, the index of the level
