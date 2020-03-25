@@ -34,7 +34,7 @@ private:
 
     void insert2RT(size_t location, size_t t_min, size_t t_max);
     void insertSoftConstraint2RT(size_t location, size_t t_min, size_t t_max);
-	void mergeIntervals(list<Interval >& intervals) const;
+	// void mergeIntervals(list<Interval >& intervals) const;
 
 	
 	void updateSIT(size_t location); // update SIT at the gvien location

@@ -54,7 +54,8 @@ public:
 		{
 			return (n1 == n2) ||
 				(n1 && n2 && n1->location == n2->location && 
-					get<0>(n1->interval) == get<0>(n2->interval));
+					n1->wait_at_goal == n2->wait_at_goal &&
+					get<0>(n1->interval) == get<0>(n2->interval)); //TODO: do we need to compare timestep here?
 		}
 	};
 };

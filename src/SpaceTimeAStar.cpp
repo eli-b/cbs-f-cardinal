@@ -36,7 +36,7 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
         return path;
     }
 
-	int holding_time = constraint_table.getHoldingTime(); // the earliest timestep that the agent can hold its goal location
+	int holding_time = constraint_table.getHoldingTime(); // the earliest timestep that the agent can hold its goal location. The length_min is considered here.
 	t = clock();
 	constraint_table.buildCAT(agent, paths, node.makespan + 1);
 	runtime_build_CAT = (double)(clock() - t) / CLOCKS_PER_SEC;
@@ -60,7 +60,7 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 	start->in_openlist = true;
 	allNodes_table.insert(start);
 	min_f_val = (int)start->getFVal();
-	lower_bound = max(holding_time, max(min_f_val, max(constraint_table.length_min, lowerbound)));
+	lower_bound = max(holding_time, max(min_f_val, lowerbound));
 
 	while (!open_list.empty())
 	{

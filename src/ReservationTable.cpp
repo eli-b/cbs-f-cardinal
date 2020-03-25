@@ -83,13 +83,19 @@ int ReservationTable::getNumOfConflictsForStep(size_t curr_id, size_t next_id, s
 
 void ReservationTable::insert2RT(size_t location, size_t t_min, size_t t_max)
 {
+	assert(t_min >= 0 && t_min < t_max);
     if (sit.find(location) == sit.end())
     {
-        if (t_min > 0)
-        {
+		assert(length_min <= length_max);
+		int latest_timestep = min(length_max, MAX_TIMESTEP - 1) + 1;
+		if (t_min > 0)
+		{
 			sit[location].emplace_back(0, t_min, 0);
-        }
-		sit[location].emplace_back(t_max, MAX_TIMESTEP, 0);
+		}
+		if ((int)t_max < latest_timestep)
+		{
+			sit[location].emplace_back(t_max, latest_timestep, 0);
+		}
         return;
     }
     for (auto it = sit[location].begin(); it != sit[location].end();)
@@ -168,7 +174,7 @@ void ReservationTable::insertSoftConstraint2RT(size_t location, size_t t_min, si
 
 
 //merge successive safe intervals with the same number of conflicts.
-void ReservationTable::mergeIntervals(list<Interval >& intervals) const
+/*void ReservationTable::mergeIntervals(list<Interval >& intervals) const
 {
 	if (intervals.empty())
 		return;
@@ -188,7 +194,7 @@ void ReservationTable::mergeIntervals(list<Interval >& intervals) const
 			++curr;
 		}
 	}
-}
+}*/ // we cannot merge intervals for goal locations seperated by length_min
 
 
 // update SIT at the gvien location
@@ -196,7 +202,25 @@ void ReservationTable::updateSIT(size_t location)
 {
 	if (sit.find(location) == sit.end())
 	{
-		const auto& it = ct.find(location);
+		// length constraints for the goal location
+		if (location == goal_location) // we need to divide the same intevals into 2 parts [0, length_min) and [length_min, length_max + 1)
+		{
+			int latest_timestep = min(length_max, MAX_TIMESTEP - 1) + 1;
+			if (length_min > length_max) // the location is blocked for the entire time horizon
+			{
+				sit[location].emplace_back(0, 0, 0);
+				return;
+			}
+			if (0 < length_min)
+			{
+				sit[location].emplace_back(0, length_min, 0);
+			}
+			assert(length_min >= 0);
+			sit[location].emplace_back(length_min, latest_timestep, 0);
+		}
+
+		// negative constraints
+		const auto& it = ct.find(location); 
 		if (it != ct.end())
 		{
 			for (auto time_range : it->second)
@@ -204,6 +228,7 @@ void ReservationTable::updateSIT(size_t location)
 			ct.erase(it);
 		}
 
+		// positive constraints
 		if (location < map_size)
 		{
 			for (auto landmark : landmarks)
@@ -215,13 +240,31 @@ void ReservationTable::updateSIT(size_t location)
 			}
 		}
 
+		// soft constraints
 		const auto& it2 = cat.find(location);
 		if (it2 != cat.end())
 		{
 			for (auto time_range : it2->second)
 				insertSoftConstraint2RT(location, time_range.first, time_range.second);
 			cat.erase(it2);
-			mergeIntervals(sit[location]);
+			// merge the intervals if possible
+			auto prev = sit[location].begin();
+			auto curr = prev;
+			++curr;
+			while (curr != sit[location].end())
+			{
+				if (get<1>(*prev) == get<0>(*curr) && get<2>(*prev) == get<2>(*curr) &&
+					(location != goal_location || get<1>(*prev) != length_min))
+				{
+					*prev = make_tuple(get<0>(*prev), get<1>(*curr), get<2>(*prev));
+					curr = sit[location].erase(curr);
+				}
+				else
+				{
+					prev = curr;
+					++curr;
+				}
+			}
 		}
 	}
 }
@@ -239,7 +282,7 @@ list<Interval> ReservationTable::get_safe_intervals(size_t location, size_t lowe
 
     if (it == sit.end())
     {
-		rst.emplace_back(0, MAX_TIMESTEP, 0);
+		rst.emplace_back(0, min(length_max, MAX_TIMESTEP - 1) + 1, 0);
 		return rst;
     }
 
@@ -278,7 +321,6 @@ list<Interval> ReservationTable::get_safe_intervals(size_t from, size_t to, size
 		if (t_max == get<1>(*it2))
 			++it2;
 	}
-	mergeIntervals(rst);
 	return rst;
 }
 

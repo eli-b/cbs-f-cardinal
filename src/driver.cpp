@@ -66,11 +66,11 @@ int main(int argc, char** argv)
 	po::notify(vm);
 	/////////////////////////////////////////////////////////////////////////
 	// check the correctness and consistence of params
-	if (vm["sipp"].as<bool>() && vm["targetReasoning"].as<bool>())
+	/*if (vm["sipp"].as<bool>() && vm["targetReasoning"].as<bool>())
 	{
 		cerr << "SIPP cannot work together with target reasoning!" << endl;
 		return -1;
-	}
+	}*/
 
   heuristics_type h;
 	if (vm["heuristics"].as<string>() == "Zero")

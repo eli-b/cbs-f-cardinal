@@ -7,7 +7,7 @@ class ConstraintTable
 {
 public:
 	int length_min = 0;
-	int length_max = INT_MAX;
+	int length_max = MAX_TIMESTEP;
 	int goal_location;
 	int latest_timestep = 0; // No negative constraints after this timestep.
 	size_t num_col;

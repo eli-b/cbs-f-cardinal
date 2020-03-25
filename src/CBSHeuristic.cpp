@@ -138,6 +138,7 @@ bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode& node, vector<int>& CG)
 		else if (rectangle_reasoning == rectangle_strategy::RM || mutex_reasoning)
 		{
 			node.conflictGraph[idx] = solve2Agents(a1, a2, node, false);
+			assert(node.conflictGraph[idx] >= 0);
 			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
 		}
 		else
@@ -149,7 +150,8 @@ bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode& node, vector<int>& CG)
 			}
 			if (cardinal) // run 2-agent solver only for dependent agents
 			{
-				node.conflictGraph[idx] = solve2Agents(a1, a2, node, cardinal);			
+				node.conflictGraph[idx] = solve2Agents(a1, a2, node, cardinal);		
+				assert(node.conflictGraph[idx] >= 1);
 			}
 			else
 			{
@@ -157,6 +159,12 @@ bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode& node, vector<int>& CG)
 			}
 			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
 		}
+
+		if (node.conflictGraph[idx] == INT_MAX) // no solution
+		{
+			return false;
+		}
+
 		if (conflict->priority != conflict_priority::CARDINAL && node.conflictGraph[idx] > 0)
 		{
 			conflict->priority = conflict_priority::PSEUDO_CARDINAL; // the two agents are dependent, although resolving this conflict might not increase the cost
@@ -214,22 +222,21 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 	int root_g = (int)initial_paths[0].size() - 1 + (int)initial_paths[1].size() - 1;
 	int lowerbound = root_g;
-	int upperbound = lowerbound + 10;
+	int upperbound = INT_MAX;
 	if (cardinal)
 		lowerbound += 1;
-	cbs.solve(time_limit - runtime, lowerbound, upperbound);
+	cbs.solve(time_limit - runtime, lowerbound, INT_MAX);
 	num_solve_2agent_problems++;
 	int rst;
 	if (cbs.runtime > time_limit - runtime || cbs.num_HL_expanded > node_limit) // time out or node out
 		rst = (int)cbs.min_f_val - root_g; // using lowerbound to approximate
 	else if (cbs.solution_cost  < 0) // no solution
-		rst = cbs.solution_cost;
+		rst = INT_MAX;
 	else
 	{
-		assert(cbs.solution_cost >= root_g);
 		rst = cbs.solution_cost - root_g;
 	}
-
+	assert(rst >= 0);
 	return rst;
 }
 

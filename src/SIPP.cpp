@@ -68,9 +68,9 @@ Path SIPP::findPath(const CBSNode& node, const ConstraintTable& initial_constrai
 		num_expanded++;
 
 		// check if the popped node is a goal node
-        if (curr->location == goal_location && 
-			curr->timestep >= max(reservation_table.length_min, holding_time) &&
-			(curr->parent == nullptr || curr->parent->location != goal_location))
+        if (curr->location == goal_location && // arrive at the goal location
+			!curr->wait_at_goal && // not wait at the goal location
+			curr->timestep >= holding_time) // the agent can hold the goal location afterward
         {
             updatePath(curr, path);
             break;
@@ -159,7 +159,8 @@ void SIPP::generateChild(const Interval& interval, SIPPNode* curr, int next_loca
 
 	// generate (maybe temporary) node
 	auto next = new SIPPNode(next_location, next_g_val, next_h_val, curr, next_timestep, interval, next_conflicts, false);
-
+	if (next_location == goal_location && curr->location == goal_location)
+		next->wait_at_goal = true;
 	// try to retrieve it from the hash table
 	auto it = allNodes_table.find(next);
 	if (it == allNodes_table.end())

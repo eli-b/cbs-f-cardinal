@@ -1040,6 +1040,7 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 		printPaths();
 		exit(-1);
 	}
+
 	if (screen > 0) // 1 or 2
 		printResults();
 	return solution_found;
