@@ -56,6 +56,7 @@ public:
 		parent = other.parent;
 		timestep = other.timestep;
 		num_of_conflicts = other.num_of_conflicts;
+		wait_at_goal = other.wait_at_goal;
 	}
 };
 

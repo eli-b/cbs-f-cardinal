@@ -137,7 +137,7 @@ void ReservationTable::insertSoftConstraint2RT(size_t location, size_t t_min, si
 			sit[location].emplace_back(0, t_min, 0);
         }
 		sit[location].emplace_back(t_min, t_max, 1);
-		sit[location].emplace_back(t_max, MAX_TIMESTEP, 0);
+		sit[location].emplace_back(t_max, min(length_max, MAX_TIMESTEP - 1) + 1, 0);
         return;
     }
     for (auto it = sit[location].begin(); it != sit[location].end(); it++)
@@ -329,7 +329,7 @@ Interval ReservationTable::get_first_safe_interval(size_t location)
 	updateSIT(location);
     const auto& it = sit.find(location);
     if (it == sit.end())
-		return Interval(0, MAX_TIMESTEP, 0);
+		return Interval(0, min(length_max, MAX_TIMESTEP - 1) + 1, 0);
     else
 		return it->second.front();
 }
@@ -337,25 +337,20 @@ Interval ReservationTable::get_first_safe_interval(size_t location)
 // find a safe interval with t_min as given
 bool ReservationTable::find_safe_interval(Interval& interval, size_t location, size_t t_min)
 {
-	if (t_min >= MAX_TIMESTEP)
+	if (t_min >= min(length_max, MAX_TIMESTEP - 1) + 1)
 		return false;
 	updateSIT(location);
 	const auto& it = sit.find(location);
     if (it == sit.end())
     {
-		if (t_min == 0)
-		{
-			interval = Interval(0, MAX_TIMESTEP, 0);
-			return true;
-		}
-		else
-			return  false;
+		interval = Interval(t_min, min(length_max, MAX_TIMESTEP - 1) + 1, 0);
+		return true;
     }
     for( auto i : it->second)
     {
-        if (t_min == (int)get<0>(i))
+        if ((int)get<0>(i) <= t_min && t_min < (int)get<1>(i))
         {
-            interval = i;
+            interval = Interval(t_min, get<1>(i), get<2>(i));
             return true;
         }
         else if (t_min < (int)get<0>(i))
