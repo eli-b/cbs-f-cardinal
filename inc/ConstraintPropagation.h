@@ -9,6 +9,8 @@
 typedef std::pair<MDDNode*, MDDNode*> node_pair;
 typedef std::pair<node_pair, node_pair> edge_pair;
 
+bool is_edge_mutex(edge_pair ep);
+
 class ConstraintPropagation{
 protected:
   // TODO ownership?

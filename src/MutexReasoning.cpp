@@ -1,5 +1,6 @@
 #include "MutexReasoning.h"
 #include "ConstraintPropagation.h"
+#include "ConstraintPropagationGeneralized.h"
 
 
 shared_ptr<Conflict> MutexReasoning::run(int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2)
@@ -12,13 +13,23 @@ shared_ptr<Conflict> MutexReasoning::run(int a1, int a2, CBSNode& node, MDD* mdd
 
 
 shared_ptr<Conflict> MutexReasoning::findMutexConflict(int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2){
-  ConstraintPropagation cp(mdd_1, mdd_2);
-  cp.init_mutex();
-  cp.fwd_mutex_prop();
+  ConstraintPropagation* cp;
 
-  if (cp._feasible(mdd_1->levels.size() - 1, mdd_2->levels.size() - 1) >= 0){
+  bool use_general_mutex = false;
+
+  if (use_general_mutex){
+    cp = new ConstraintPropagationGeneralized(mdd_1, mdd_2);
+  }else{
+    cp = new ConstraintPropagation(mdd_1, mdd_2);
+  }
+  cp->init_mutex();
+  cp->fwd_mutex_prop();
+
+  if (cp->_feasible(mdd_1->levels.size() - 1, mdd_2->levels.size() - 1) >= 0){
     return nullptr;
   }
+
+  delete cp;
 
   bool swapped = false;
   if (a1 > a2){
