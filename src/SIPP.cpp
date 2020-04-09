@@ -40,7 +40,8 @@ Path SIPP::findPath(const CBSNode& node, const ConstraintTable& initial_constrai
 	t = clock();
 	reservation_table.buildCAT(agent, paths);
 	runtime_build_CAT = (double)(clock() - t) / CLOCKS_PER_SEC;
-
+	if (reservation_table.length_min >= MAX_TIMESTEP || reservation_table.length_min > reservation_table.length_max) // the agent cannot reach its goal location
+		return path;
 	num_expanded = 0;
 	num_generated = 0;
 	Interval interval = reservation_table.get_first_safe_interval(start_location);
@@ -214,6 +215,11 @@ void SIPP::generateChild(const Interval& interval, SIPPNode* curr, int next_loca
 int SIPP::getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound)
 {
 	int length = MAX_TIMESTEP;
+	if (constraint_table.length_min >= MAX_TIMESTEP || constraint_table.length_min > constraint_table.length_max || // the agent cannot reach its goal location
+		constraint_table.constrained(start, 0)) // the agent cannot stay at its start location
+	{
+		return length;
+	}
 	auto root = new SIPPNode(start, 0, compute_heuristic(start, end), nullptr, 0, Interval(0, 1, 0));
 	root->open_handle = open_list.push(root);  // add root to heap
 	allNodes_table.insert(root);       // add root to hash_table (nodes)

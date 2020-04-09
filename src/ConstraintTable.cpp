@@ -231,6 +231,8 @@ void ConstraintTable::build(const CBSNode& node, int agent)
 // build the conflict avoidance table
 void ConstraintTable::buildCAT(int agent, const vector<Path*>& paths, size_t cat_size)
 {
+	if (length_min >= MAX_TIMESTEP || length_min > length_max) // the agent cannot reach its goal location
+		return; // don't have to build CAT
   cat_size = std::max(cat_size, (size_t)latest_timestep);
 	if (map_size < map_size_threshold)
 	{
