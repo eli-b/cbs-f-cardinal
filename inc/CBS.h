@@ -58,7 +58,7 @@ public:
 	void setNodeLimit(int n) { node_limit = n; }
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// Runs the algorithm until the problem is solved or time is exhausted 
-	bool solve(double time_limit, int cost_lowerbound = 0, int cost_upperbound = INT_MAX);
+	bool solve(double time_limit, int cost_lowerbound = 0, int cost_upperbound = MAX_COST);
 
 	CBS(const Instance& instance, bool sipp, int screen);
 	CBS(vector<SingleAgentSolver*>& search_engines,
@@ -97,9 +97,9 @@ private:
 	int screen;
 	
 	double time_limit;
-	int node_limit = INT_MAX;
+	int node_limit = MAX_NODES;
 	double focal_w = 1.0;
-	int cost_upperbound = INT_MAX;
+	int cost_upperbound = MAX_COST;
 
 
 	vector<ConstraintTable> initial_constraints;

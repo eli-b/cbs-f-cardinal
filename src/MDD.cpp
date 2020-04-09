@@ -476,7 +476,7 @@ void MDDTable::releaseMDDMemory(int id)
 {
 	if (id < 0 || lookupTable.empty() || (int)lookupTable[id].size() < max_num_of_mdds)
 		return;
-	int minLength = INT_MAX;
+	int minLength = MAX_TIMESTEP;
 	for (auto mdd : lookupTable[id])
 	{
 		if ((int)mdd.second->levels.size() < minLength)

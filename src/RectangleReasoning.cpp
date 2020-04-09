@@ -167,7 +167,7 @@ bool RectangleReasoning::ExtractBarriers(const MDD& mdd, int loc, int timestep,
 		num_barrier = sign1 * (instance.getRowCoordinate(goal) - instance.getRowCoordinate(start)) + 1;
 	}
 
-	vector<int> extent_L(num_barrier, INT_MAX);
+	vector<int> extent_L(num_barrier, MAX_TIMESTEP);
 	vector<int> extent_U(num_barrier, -1);
 
 	unordered_map<MDDNode*, vector<bool>> blocking;
@@ -224,7 +224,7 @@ bool RectangleReasoning::ExtractBarriers(const MDD& mdd, int loc, int timestep,
 			}
 			if (0 <= barrier_id && barrier_id < num_barrier && !block[barrier_id] && barrier_time == n->level)
 			{
-				if (n->children.size() == 1 && extent_L[barrier_id] == INT_MAX &&
+				if (n->children.size() == 1 && extent_L[barrier_id] == MAX_TIMESTEP &&
 					abs(dir1) * abs(n->location - n->children.front()->location) == instance.getCols());// the only child node is on the same barrier
 				else
 				{

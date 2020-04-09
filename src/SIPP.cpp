@@ -213,7 +213,7 @@ void SIPP::generateChild(const Interval& interval, SIPPNode* curr, int next_loca
 // TODO:: currently this is implemented in A*, not SIPP
 int SIPP::getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound)
 {
-	int length = INT_MAX;
+	int length = MAX_TIMESTEP;
 	auto root = new SIPPNode(start, 0, compute_heuristic(start, end), nullptr, 0, Interval(0, 1, 0));
 	root->open_handle = open_list.push(root);  // add root to heap
 	allNodes_table.insert(root);       // add root to hash_table (nodes)

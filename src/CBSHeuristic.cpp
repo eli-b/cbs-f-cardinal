@@ -160,7 +160,7 @@ bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode& node, vector<int>& CG)
 			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
 		}
 
-		if (node.conflictGraph[idx] == INT_MAX) // no solution
+		if (node.conflictGraph[idx] == MAX_COST) // no solution
 		{
 			return false;
 		}
@@ -222,16 +222,16 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 	int root_g = (int)initial_paths[0].size() - 1 + (int)initial_paths[1].size() - 1;
 	int lowerbound = root_g;
-	int upperbound = INT_MAX;
+	int upperbound = MAX_COST;
 	if (cardinal)
 		lowerbound += 1;
-	cbs.solve(time_limit - runtime, lowerbound, INT_MAX);
+	cbs.solve(time_limit - runtime, lowerbound, upperbound);
 	num_solve_2agent_problems++;
 	int rst;
 	if (cbs.runtime > time_limit - runtime || cbs.num_HL_expanded > node_limit) // time out or node out
 		rst = (int)cbs.min_f_val - root_g; // using lowerbound to approximate
 	else if (cbs.solution_cost  < 0) // no solution
-		rst = INT_MAX;
+		rst = MAX_COST;
 	else
 	{
 		rst = cbs.solution_cost - root_g;
@@ -521,7 +521,7 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 				G[j * num + k] = std::max(CG[indices[j] * num_of_agents + indices[k]], CG[indices[k] * num_of_agents + indices[j]]);
 			}
 		}
-		int best_so_far = INT_MAX;
+		int best_so_far = MAX_COST;
 		rst += weightedVertexCover(x, 0, 0, G, range, best_so_far);
 		double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 		if (runtime > time_limit)
@@ -551,7 +551,7 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 int CBSHeuristic::weightedVertexCover(std::vector<int>& x, int i, int sum, const std::vector<int>& CG, const std::vector<int>& range, int& best_so_far)
 {
 	if (sum >= best_so_far)
-		return INT_MAX;
+		return MAX_COST;
 	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 	if (runtime > time_limit)
 		return -1; // run out of time
