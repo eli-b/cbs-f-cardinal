@@ -13,15 +13,23 @@ void ConstraintTable::insert2CT(size_t loc, int t_min, int t_max)
 	{
 		latest_timestep = t_max;
 	}
+	else if (t_max == MAX_TIMESTEP && t_min > latest_timestep)
+	{
+		latest_timestep = t_min;
+	}
 }
 
 void ConstraintTable::insertLandmark(size_t loc, int t)
 {
 	auto it = landmarks.find(t);
 	if (it == landmarks.end())
+	{
 		landmarks[t] = loc;
+		if (t > latest_timestep)
+			latest_timestep = t;
+	}
 	else
-		assert(it->second == loc);		
+		assert(it->second == loc);
 }
 
 // return the location-time pairs on the barrier in an increasing order of their timesteps
