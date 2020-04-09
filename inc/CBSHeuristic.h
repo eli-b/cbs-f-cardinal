@@ -132,7 +132,7 @@ public:
 	bool disjoint_splitting; // disjoint splittting
 	bool PC; // prioritize conflicts
 	conflict_selection conflict_seletion_rule;
-	node_selection node_selection_fule;
+	node_selection node_selection_rule;
 
 	double runtime_build_dependency_graph = 0;
 	double runtime_solve_MVC = 0;

@@ -216,7 +216,7 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 	cbs.setTargetReasoning(target_reasoning);
 	cbs.setMutexReasoning(mutex_reasoning);
 	cbs.setConflictSelectionRule(conflict_seletion_rule);
-	cbs.setNodeSelectionRule(node_selection_fule);
+	cbs.setNodeSelectionRule(node_selection_rule);
 	cbs.setNodeLimit(node_limit);
 
 	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
