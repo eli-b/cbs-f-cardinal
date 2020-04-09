@@ -221,6 +221,10 @@ void ConstraintTable::build(const CBSNode& node, int agent)
 		}
 		curr = curr->parent;
 	}
+	if (latest_timestep < length_min)
+		latest_timestep = length_min;
+	if (length_max < MAX_TIMESTEP && latest_timestep < length_max)
+		latest_timestep = length_max;
 }
 
 
