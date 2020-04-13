@@ -423,7 +423,7 @@ void CBS::removeLowPriorityConflicts(list<shared_ptr<Conflict>>& conflicts) cons
 	list<shared_ptr<Conflict>> to_delete;
 	for (const auto& conflict : conflicts)
 	{
-		int a1 = conflict->a1, a2 = conflict->a2;
+		int a1 = min(conflict->a1, conflict->a2), a2 = max(conflict->a1, conflict->a2);
 		int key = a1 * num_of_agents + a2;
 		auto p = keep.find(key);
 		if (p == keep.end())
