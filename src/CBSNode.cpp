@@ -1,11 +1,14 @@
 #include "CBSNode.h"
 
+bool CLEAN_CBS_NODE = true;
 
 void CBSNode::clear()
 {
-	conflicts.clear();
-	unknownConf.clear();
-	conflictGraph.clear();
+  if ( CLEAN_CBS_NODE ){
+    conflicts.clear();
+    unknownConf.clear();
+    conflictGraph.clear();
+  }
 }
 
 void CBSNode::printConflictGraph(int num_of_agents) const
