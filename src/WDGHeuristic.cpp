@@ -226,7 +226,7 @@ int WDGHeuristic::computePairwiseDelta(int a1, int a2, CBSNode& node, int rst){
                                       ConstraintTable(initial_constraints[a2]) };
   constraints[0].build(node, a1);
   constraints[1].build(node, a2);
-  CBS cbs(engines, constraints, initial_paths, upperbound, heuristics_type::CG, screen);
+  CBS cbs(engines, constraints, initial_paths, heuristics_type::CG, screen);
   cbs.setPrioritizeConflicts(PC);
   cbs.setDisjointSplitting(disjoint_splitting);
   cbs.setBypass(false); // I guess that bypassing does not help two-agent path finding???
@@ -235,7 +235,7 @@ int WDGHeuristic::computePairwiseDelta(int a1, int a2, CBSNode& node, int rst){
   cbs.setTargetReasoning(target_reasoning);
   cbs.setMutexReasoning(mutex_reasoning);
   cbs.setConflictSelectionRule(conflict_seletion_rule);
-  cbs.setNodeSelectionRule(node_selection_fule);
+  cbs.setNodeSelectionRule(node_selection_rule);
 
   double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
   cbs.solve(time_limit - runtime, max(rst, 0));
@@ -260,7 +260,7 @@ bool WDGHeuristic::buildDependenceGraph(CBSNode& node)
       double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
       if (runtime > time_limit)
         return false; // run out of time
-      if (conflict->p == conflict_priority::CARDINAL)
+      if (conflict->priority == conflict_priority::CARDINAL)
         {
           int w = getEdgeWeight(a1, a2, node, true);
           if (w < 0) // no solution

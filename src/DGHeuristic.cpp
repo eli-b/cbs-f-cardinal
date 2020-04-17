@@ -46,7 +46,7 @@ bool DGHeuristic::buildDependenceGraph(CBSNode& node)
 		double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 		if (runtime > time_limit)
 			return false; // run out of time
-		if (conflict->p == conflict_priority::CARDINAL)
+		if (conflict->priority == conflict_priority::CARDINAL)
 		{
       node.conflictGraph[idx] = 1;
 		}

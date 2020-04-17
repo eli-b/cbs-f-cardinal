@@ -109,7 +109,7 @@ void CGHeuristic::buildCardinalConflictGraph(CBSNode& curr, vector<int>& CG, int
 	num_of_CGedges = 0;
 	for (const auto& conflict : curr.conflicts)
     {
-      if (conflict->p == conflict_priority::CARDINAL)
+      if (conflict->priority == conflict_priority::CARDINAL)
         {
           int a1 = conflict->a1;
           int a2 = conflict->a2;
