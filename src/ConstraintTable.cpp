@@ -13,15 +13,23 @@ void ConstraintTable::insert2CT(size_t loc, int t_min, int t_max)
 	{
 		latest_timestep = t_max;
 	}
+	else if (t_max == MAX_TIMESTEP && t_min > latest_timestep)
+	{
+		latest_timestep = t_min;
+	}
 }
 
 void ConstraintTable::insertLandmark(size_t loc, int t)
 {
 	auto it = landmarks.find(t);
 	if (it == landmarks.end())
+	{
 		landmarks[t] = loc;
+		if (t > latest_timestep)
+			latest_timestep = t;
+	}
 	else
-		assert(it->second == loc);		
+		assert(it->second == loc);
 }
 
 // return the location-time pairs on the barrier in an increasing order of their timesteps
@@ -216,12 +224,18 @@ void ConstraintTable::build(const CBSNode& node, int agent)
 		}
 		curr = curr->parent;
 	}
+	if (latest_timestep < length_min)
+		latest_timestep = length_min;
+	if (length_max < MAX_TIMESTEP && latest_timestep < length_max)
+		latest_timestep = length_max;
 }
 
 
 // build the conflict avoidance table
 void ConstraintTable::buildCAT(int agent, const vector<Path*>& paths, size_t cat_size)
 {
+	if (length_min >= MAX_TIMESTEP || length_min > length_max) // the agent cannot reach its goal location
+		return; // don't have to build CAT
   cat_size = std::max(cat_size, (size_t)latest_timestep);
 	if (map_size < map_size_threshold)
 	{

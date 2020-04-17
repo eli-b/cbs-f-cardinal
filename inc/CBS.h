@@ -45,67 +45,29 @@ public:
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	// set params
-	void setPrioritizeConflicts(bool p)
-	{
-		PC = p;
-		heuristic_helper->PC = p;
-	}
-	void setRectangleReasoning(rectangle_strategy r)
-	{
-		rectangle_helper.strategy = r;
-		heuristic_helper->rectangle_reasoning = r;
-	}
-	void setCorridorReasoning(corridor_strategy c)
-	{
-		corridor_helper.strategy = c;
-		heuristic_helper->corridor_reasoning = c;
-	}
-	void setTargetReasoning(bool t)
-	{
-		target_reasoning = t;
-		heuristic_helper->target_reasoning = t;
-	}
-	void setMutexReasoning(bool m)
-	{
-		mutex_reasoning = m;
-		heuristic_helper->mutex_reasoning = m;
-	}
-	void setDisjointSplitting(bool d)
-	{
-		disjoint_splitting = d;
-		heuristic_helper->disjoint_splitting = d;
-	}
-	void setBypass(bool b)
-	{
-		bypass = b;
-		// 2-agent solver for heuristic calculation does not need bypass strategy.
-	}
-	void setConflictSelectionRule(conflict_selection c)
-	{ 
-		conflict_seletion_rule = c;
-		heuristic_helper->conflict_seletion_rule = c;
-	}
-	void setNodeSelectionRule(node_selection n) 
-	{ 
-		node_selection_fule = n;
-		heuristic_helper->node_selection_fule = n;
-	}
-
+	void setPrioritizeConflicts(bool p) {PC = p;	heuristic_helper->PC = p; }
+	void setRectangleReasoning(rectangle_strategy r) {rectangle_helper.strategy = r; heuristic_helper->rectangle_reasoning = r; }
+	void setCorridorReasoning(corridor_strategy c) {corridor_helper.strategy = c; heuristic_helper->corridor_reasoning = c; }
+	void setTargetReasoning(bool t) {target_reasoning = t; heuristic_helper->target_reasoning = t; }
+	void setMutexReasoning(bool m) {mutex_reasoning = m; heuristic_helper->mutex_reasoning = m; }
+	void setDisjointSplitting(bool d) {disjoint_splitting = d; heuristic_helper->disjoint_splitting = d; }
+	void setBypass(bool b) { bypass = b; } // 2-agent solver for heuristic calculation does not need bypass strategy.
+	void setConflictSelectionRule(conflict_selection c) { conflict_seletion_rule = c; heuristic_helper->conflict_seletion_rule = c; }
+	void setNodeSelectionRule(node_selection n) { node_selection_fule = n; heuristic_helper->node_selection_rule = n; }
+	void setNodeLimit(int n) { node_limit = n; }
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// Runs the algorithm until the problem is solved or time is exhausted 
-	bool solve(double time_limit, int initial_h);
+	bool solve(double time_limit, int cost_lowerbound = 0, int cost_upperbound = MAX_COST);
 
 	CBS(const Instance& instance, bool sipp, heuristics_type heuristic, int screen);
 	CBS(vector<SingleAgentSolver*>& search_engines,
-      const vector<ConstraintTable>& constraints,
-      vector<Path>& paths_found_initially, int cost_upperbound,
-      heuristics_type heuristic,  int screen);
+		const vector<ConstraintTable>& constraints,
+      vector<Path>& paths_found_initially, heuristics_type heuristic, int screen);
 	void clearSearchEngines();
 	~CBS();
 
 	// Save results
 	void saveResults(const string &fileName, const string &instanceName) const;
-	// void saveLogs(const std::string &fileName) const;
 
 	void clear(); // used for rapid random  restart
 
@@ -134,8 +96,9 @@ private:
 	int screen;
 	
 	double time_limit;
+	int node_limit = MAX_NODES;
 	double focal_w = 1.0;
-	const int cost_upperbound = INT_MAX;
+	int cost_upperbound = MAX_COST;
 
 
 	vector<ConstraintTable> initial_constraints;

@@ -8,7 +8,8 @@ void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry> &path)
 	while (curr != nullptr) 
 	{
 		path[curr->g_val].location = curr->location;
-		path[curr->g_val].single = false;
+		// path[curr->g_val].single = false;
+		path[curr->g_val].mdd_width = 0;
 		curr = curr->parent;
 	}
 }
@@ -24,18 +25,18 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 	Path path;
 	num_expanded = 0;
 	num_generated = 0;
-
 	// build constraint table
 	auto t = clock();
 	ConstraintTable constraint_table(initial_constraints);
 	constraint_table.build(node, agent);
 	runtime_build_CT = (double)(clock() - t) / CLOCKS_PER_SEC;
-    if (constraint_table.constrained(start_location, 0))
+    if (constraint_table.length_min >= MAX_TIMESTEP || constraint_table.length_min > constraint_table.length_max || // the agent cannot reach its goal location
+		constraint_table.constrained(start_location, 0)) // the agent cannot stay at its start location
     {
         return path;
     }
 
-	int holding_time = constraint_table.getHoldingTime(); // the earliest timestep that the agent can hold its goal location
+	int holding_time = constraint_table.getHoldingTime(); // the earliest timestep that the agent can hold its goal location. The length_min is considered here.
 	t = clock();
 	constraint_table.buildCAT(agent, paths, node.makespan + 1);
 	runtime_build_CAT = (double)(clock() - t) / CLOCKS_PER_SEC;
@@ -59,7 +60,7 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 	start->in_openlist = true;
 	allNodes_table.insert(start);
 	min_f_val = (int)start->getFVal();
-	lower_bound = max(holding_time, max(min_f_val, max(constraint_table.length_min, lowerbound)));
+	lower_bound = max(holding_time, max(min_f_val, lowerbound));
 
 	while (!open_list.empty())
 	{
@@ -84,7 +85,7 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
         for (int next_location : next_locations)
 		{
 			int next_timestep = curr->timestep + 1;
-			if (max((int)node.makespan, constraint_table.latest_timestep) < curr->timestep)
+			if (max((int)node.makespan, constraint_table.latest_timestep) + 1 < curr->timestep)
             { // now everything is static, so switch to space A* where we always use the same timestep
                 if (next_location == curr->location)
                 {
@@ -170,6 +171,69 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 	return path;
 }
 
+int SpaceTimeAStar::getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound)
+{
+	int length = MAX_TIMESTEP;
+	if (constraint_table.length_min >= MAX_TIMESTEP || constraint_table.length_min > constraint_table.length_max || // the agent cannot reach its goal location
+		constraint_table.constrained(start, 0)) // the agent cannot stay at its start location
+	{
+		return length;
+	}
+	auto root = new AStarNode(start, 0, compute_heuristic(start, end), nullptr, 0);
+	root->open_handle = open_list.push(root);  // add root to heap
+	allNodes_table.insert(root);       // add root to hash_table (nodes)
+	AStarNode* curr = nullptr;
+	while (!open_list.empty())
+	{
+		curr = open_list.top(); open_list.pop();
+		if (curr->location == end)
+		{
+			length = curr->g_val;
+			break;
+		}
+		list<int> next_locations = instance.getNeighbors(curr->location);
+		next_locations.emplace_back(curr->location);
+		for (int next_location : next_locations)
+		{
+			int next_timestep = curr->timestep + 1;
+			int next_g_val = curr->g_val + 1;
+			if (constraint_table.latest_timestep <= curr->timestep)
+			{
+				if (curr->location == next_location)
+				{
+					continue;
+				}
+				next_timestep--;
+			}
+			if (!constraint_table.constrained(next_location, next_timestep) &&
+				!constraint_table.constrained(curr->location, next_location, next_timestep))
+			{  // if that grid is not blocked
+				int next_h_val = compute_heuristic(next_location, end);
+				if (next_g_val + next_h_val >= upper_bound) // the cost of the path is larger than the upper bound
+					continue;
+				auto next = new AStarNode(next_location, next_g_val, next_h_val, nullptr, next_timestep);
+				auto it = allNodes_table.find(next);
+				if (it == allNodes_table.end())
+				{  // add the newly generated node to heap and hash table
+					next->open_handle = open_list.push(next);
+					allNodes_table.insert(next);
+				}
+				else {  // update existing node's g_val if needed (only in the heap)
+					delete(next);  // not needed anymore -- we already generated it before
+					auto existing_next = *it;
+					if (existing_next->g_val > next_g_val)
+					{
+						existing_next->g_val = next_g_val;
+						existing_next->timestep = next_timestep;
+						open_list.increase(existing_next->open_handle);
+					}
+				}
+			}
+		}
+	}
+	releaseNodes();
+	return length;
+}
 
 inline AStarNode* SpaceTimeAStar::popNode()
 {

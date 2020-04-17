@@ -37,12 +37,19 @@ using std::string;
 
 // #define NDEBUG 
 
-#define MAX_TIMESTEP INT_MAX
+#define MAX_TIMESTEP INT_MAX / 2
+#define MAX_COST INT_MAX / 2
+#define MAX_NODES INT_MAX / 2
 
 struct PathEntry
 {
 	int location = -1;
-	bool single = false;
+	// bool single = false;
+  int mdd_width;
+
+  bool is_single() const {
+    return mdd_width == 1;
+  }
 	// PathEntry(int loc = -1) { location = loc; single = false; }
 };
 

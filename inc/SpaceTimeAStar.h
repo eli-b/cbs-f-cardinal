@@ -11,15 +11,13 @@ public:
 	open_handle_t open_handle;
 	focal_handle_t focal_handle;
 
-
-	bool wait_at_goal; // the action is to wait at the goal vertex or not. This is used for >lenghth constraints
 	list<int> unsatisfied_positive_constraint_sets; // store the idx of satisfied positive constraint sets
 
 
-	AStarNode() : LLNode(), wait_at_goal(false) {}
+	AStarNode() : LLNode() {}
 
 	AStarNode(int loc, int g_val, int h_val, LLNode* parent, int timestep, int num_of_conflicts = 0, bool in_openlist = false) :
-		LLNode(loc, g_val, h_val, parent, timestep, num_of_conflicts, in_openlist), wait_at_goal(false) {}
+		LLNode(loc, g_val, h_val, parent, timestep, num_of_conflicts, in_openlist) {}
 
 	/*AStarNode(const AStarNode& other)
 	{
@@ -73,6 +71,8 @@ public:
 	// lowerbound is an underestimation of the length of the path in order to speed up the search.
 	Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
 						const vector<Path*>& paths, int agent, int lower_bound);
+
+	int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound);
 
 	string getName() const { return "AStar"; }
 

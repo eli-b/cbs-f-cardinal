@@ -2,10 +2,15 @@
 #include "common.h"
 
 
-enum conflict_type { TARGET, CORRIDOR, RECTANGLE, STANDARD, MUTEX, TYPE_COUNT };
-enum conflict_priority { CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
+enum conflict_type { MUTEX, TARGET, CORRIDOR, RECTANGLE, STANDARD, TYPE_COUNT };
+
+enum conflict_priority { CARDINAL, PSEUDO_CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
+// Pseudo-cardinal conflicts are semi-/non-caridnal conflicts between dependent agents. 
+// We prioritize them over normal semi-/non-caridnal conflicts 
+
 enum constraint_type { LEQLENGTH, GLENGTH, RANGE, BARRIER, VERTEX, EDGE, 
 											POSITIVE_VERTEX, POSITIVE_EDGE, POSITIVE_BARRIER, POSITIVE_RANGE, CONSTRAINT_COUNT };
+
 enum conflict_selection {RANDOM, EARLIEST, CONFLICTS, MCONSTRAINTS, FCONSTRAINTS, WIDTH, SINGLETONS};
 
 typedef std::tuple<int, int, int, int, constraint_type> Constraint;
@@ -25,11 +30,11 @@ class Conflict
 public:
 	int a1;
 	int a2;
-	double secondary_priority; // used as the tie-breaking creteria for conflict selection
 	list<Constraint> constraint1;
 	list<Constraint> constraint2;
 	conflict_type type;
-	conflict_priority p = conflict_priority::UNKNOWN;
+	conflict_priority priority = conflict_priority::UNKNOWN;
+	double secondary_priority = 0; // used as the tie-breaking creteria for conflict selection
 
   // For mutex propagation
   int final_len_1;
@@ -57,14 +62,14 @@ public:
 		type = conflict_type::STANDARD;
 	}
 
-	void corridorConflict(int a1, int a2, int v1, int v2, int t3, int t4, int t3_, int t4_, int k)
+	void corridorConflict(int a1, int a2, int v1, int v2, int t1, int t2)
 	{
         constraint1.clear();
         constraint2.clear();
 		this->a1 = a1;
 		this->a2 = a2;
-		this->constraint1.emplace_back(a1, v1, t3, std::min(t3_ - 1, t4 + k), constraint_type::RANGE);
-		this->constraint2.emplace_back(a2, v2, t4, std::min(t4_ - 1, t3 + k), constraint_type::RANGE);
+		this->constraint1.emplace_back(a1, v1, 0, t1, constraint_type::RANGE);
+		this->constraint2.emplace_back(a2, v2, 0, t2, constraint_type::RANGE);
 		type = conflict_type::CORRIDOR;
 	}
 
@@ -99,7 +104,8 @@ public:
 		this->a1 = a1;
 		this->a2 = a2;
 		type = conflict_type::MUTEX;
-		p = conflict_priority::CARDINAL;
+		priority = conflict_priority::CARDINAL;
+		// TODO add constraints from mutex reasoning
 	}
 
 

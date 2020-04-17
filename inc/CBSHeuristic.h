@@ -131,7 +131,7 @@ public:
 	bool disjoint_splitting; // disjoint splittting
 	bool PC; // prioritize conflicts
 	conflict_selection conflict_seletion_rule;
-	node_selection node_selection_fule;
+	node_selection node_selection_rule;
 
 	double runtime_build_dependency_graph = 0;
 	double runtime_solve_MVC = 0;
@@ -158,6 +158,7 @@ protected:
 	int num_of_agents;
 
 	double time_limit;
+	int node_limit = 64;  // terminate the sub CBS solver if the number of its expanded nodes exceeds the node limit.
 	double start_time;
 
 	const vector<Path*>& paths;

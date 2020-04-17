@@ -3,25 +3,51 @@
 #include "MDD.h"
 
 
-
-
-
 std::ostream& operator<<(std::ostream& os, const Constraint& constraint)
 {
 	os << "<" << std::get<0>(constraint) << "," << std::get<1>(constraint) << "," <<
-		std::get<2>(constraint) << "," << std::get<3>(constraint) << "," << std::get<4>(constraint) << ">";
+		std::get<2>(constraint) << "," << std::get<3>(constraint) << ",";
+	switch (get<4>(constraint))
+	{
+		case constraint_type::VERTEX:
+			os << "V";
+			break;
+		case constraint_type::POSITIVE_VERTEX:
+			os << "V+";
+			break;
+		case constraint_type::EDGE:
+			os << "E";
+			break;
+		case constraint_type::POSITIVE_EDGE:
+			os <<"E+";
+			break;
+		case constraint_type::BARRIER:
+			os << "B";
+			break;
+		case constraint_type::RANGE:
+			os << "R";
+			break;
+		case constraint_type::GLENGTH:
+			os << "G";
+			break;
+		case constraint_type::LEQLENGTH:
+			os << "L";
+			break;
+	}
+	os << ">";
 	return os;
 }
 
 
-
-
 std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 {
-	switch (conflict.p)
+	switch (conflict.priority)
 	{
 		case conflict_priority::CARDINAL:
 			os << "cardinal ";
+			break;
+		case conflict_priority::PSEUDO_CARDINAL:
+			os << "pseudo-cardinal ";
 			break;
 		case conflict_priority::SEMI:
 			os << "semi-cardinal ";
@@ -63,44 +89,18 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 
 bool operator < (const Conflict& conflict1, const Conflict& conflict2) // return true if conflict2 has higher priority
 {
-	/*if (conflict1.type == conflict_type::TARGET && conflict2.type == conflict_type::TARGET)
+	if (conflict1.priority == conflict2.priority)
 	{
-		if (conflict1.p > conflict2.p)
-		    return true;
-		else if (conflict1.p < conflict2.p)
-		    return false;
-        else
-            return (conflict2.t < conflict1.t);
+		if (conflict1.type == conflict2.type)
+		{
+			if (conflict1.secondary_priority == conflict2.secondary_priority)
+			{
+				return rand() % 2;
+			}
+			return conflict1.secondary_priority > conflict2.secondary_priority;
+		}
+		return conflict1.type > conflict2.type;
 	}
-	else if (conflict1.type == conflict_type::TARGET)
-		return false;
-	else if (conflict2.type == conflict_type::TARGET)
-		return true;*/
-	
-	if (conflict1.p < conflict2.p)
-		return false;
-	else if (conflict1.p > conflict2.p)
-		return true;
-	else if (conflict1.type == conflict_type::MUTEX && conflict2.type != conflict_type::MUTEX)
-		return false;
-	else if (conflict1.type != conflict_type::MUTEX && conflict2.type == conflict_type::MUTEX)
-		return true;
-	else if (conflict1.type == conflict_type::TARGET && conflict2.type != conflict_type::TARGET)
-	    return false;
-    else if (conflict1.type != conflict_type::TARGET && conflict2.type == conflict_type::TARGET)
-        return true;
-	else if (conflict1.type == conflict_type::CORRIDOR && conflict2.type != conflict_type::CORRIDOR)
-        return false;
-    else if (conflict1.type != conflict_type::CORRIDOR && conflict2.type == conflict_type::CORRIDOR)
-        return true;
-	else if (conflict1.type == conflict_type::RECTANGLE && conflict2.type != conflict_type::RECTANGLE)
-		return false;
-	else if (conflict1.type != conflict_type::RECTANGLE && conflict2.type == conflict_type::RECTANGLE)
-		return true;
-	else if (conflict1.secondary_priority > conflict2.secondary_priority)
-		return false;
-	else if (conflict1.secondary_priority < conflict2.secondary_priority)
-		return true;
-	else return (rand() % 2);
+	return conflict1.priority > conflict2.priority;
 }
 

@@ -54,7 +54,8 @@ public:
 		{
 			return (n1 == n2) ||
 				(n1 && n2 && n1->location == n2->location && 
-					get<0>(n1->interval) == get<0>(n2->interval));
+					n1->wait_at_goal == n2->wait_at_goal &&
+					get<0>(n1->interval) == get<0>(n2->interval)); //TODO: do we need to compare timestep here?
 		}
 	};
 };
@@ -68,7 +69,8 @@ public:
 	// lowerbound is an underestimation of the length of the path in order to speed up the search.
 	Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
 		const vector<Path*>& paths, int agent, int lowerbound);
-	
+	int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound);
+
 	string getName() const { return "SIPP"; }
 
 	SIPP(const Instance& instance, int agent):
