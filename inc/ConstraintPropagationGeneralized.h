@@ -1,3 +1,4 @@
+#pragma once
 #include "ConstraintPropagation.h"
 
 class ConstraintPropagationGeneralized: public ConstraintPropagation

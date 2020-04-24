@@ -1,6 +1,7 @@
 #pragma once
 #include "IncrementalPairwiseMutexPropagation.hpp"
 #include "ConstraintPropagation.h"
+#include "ConstraintPropagationGeneralized.h"
 #include "MDD.h"
 
 enum mutex_strategy{N_MUTEX, MUTEX_C, MUTEX_NC };
@@ -21,6 +22,15 @@ public:
 
 private:
 
+  
+
+  shared_ptr<Conflict> iter_path(const vector<Path*> & paths, int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2, ConstraintPropagationGeneralized* cp);
+
+  void cache_constraint(ConstraintsHasher & c1, ConstraintsHasher & c2, shared_ptr<Conflict> constraint);
+  shared_ptr<Conflict> find_applicable_constraint(ConstraintsHasher & c1, ConstraintsHasher & c2, const vector<Path*> & paths);
+  bool has_constraint(ConstraintsHasher & c1, ConstraintsHasher & c2);
+
+
   bool constraint_applicable(const vector<Path*> & paths, shared_ptr<Conflict> conflict);
   bool constraint_applicable(const vector<Path*> & paths, list<Constraint>& constraint);
   const Instance& instance;
@@ -30,10 +40,15 @@ private:
 
   // (cons_hasher_0, cons_hasher_1) -> Constraint
   // Invariant: cons_hasher_0.a < cons_hasher_1.a
+  // unordered_map<ConstraintsHasher,
+  //               unordered_map<ConstraintsHasher, shared_ptr<Conflict>, ConstraintsHasher::Hasher, ConstraintsHasher::EqNode>,
+  //               ConstraintsHasher::Hasher, ConstraintsHasher::EqNode
+  //               > lookupTable;
   unordered_map<ConstraintsHasher,
-                unordered_map<ConstraintsHasher, shared_ptr<Conflict>, ConstraintsHasher::Hasher, ConstraintsHasher::EqNode>,
+                unordered_map<ConstraintsHasher, std::list<shared_ptr<Conflict>>, ConstraintsHasher::Hasher, ConstraintsHasher::EqNode>,
                 ConstraintsHasher::Hasher, ConstraintsHasher::EqNode
                 > lookupTable;
+
 
   shared_ptr<Conflict> findMutexConflict(const vector<Path*> & paths, int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2);
 };
