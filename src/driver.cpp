@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")
 		("rectangleReasoning", po::value<string>()->default_value("None"), "rectangle reasoning strategy (None, R, RM, Disjoint)")
 		("corridorReasoning", po::value<string>()->default_value("None"), " corridor reasoning strategy (None, C, Disjoint")
-		("mutexReasoning", po::value<bool>()->default_value(false), "Using mutex reasoning")
+		("mutexReasoning", po::value<string>()->default_value("None"), "mutex reasoning strategy (None, C, NC)")
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
 		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
 		("sipp", po::value<bool>()->default_value(false), "using sipp as the single agent solver")
@@ -115,6 +115,19 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
+	mutex_strategy m;
+	if (vm["mutexReasoning"].as<string>() == "None")
+		m = mutex_strategy::N_MUTEX;
+	else if (vm["mutexReasoning"].as<string>() == "C")
+		m = mutex_strategy::MUTEX_C;
+	else if (vm["mutexReasoning"].as<string>() == "NC")
+		m = mutex_strategy::MUTEX_NC;
+	else
+    {
+      cout << "WRONG mutex reasoning strategy!" << endl;
+      return -1;
+    }
+
 	conflict_selection conflict;
 	if (vm["conflictSelection"].as<string>() == "Random")
 		conflict = conflict_selection::RANDOM;
@@ -175,7 +188,7 @@ int main(int argc, char** argv)
 	cbs.setRectangleReasoning(r);
 	cbs.setCorridorReasoning(c);
 	cbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
-	cbs.setMutexReasoning(vm["mutexReasoning"].as<bool>());
+	cbs.setMutexReasoning(m);
 	cbs.setConflictSelectionRule(conflict);
 	cbs.setNodeSelectionRule(n);
 	//////////////////////////////////////////////////////////////////////

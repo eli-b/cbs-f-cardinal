@@ -325,7 +325,12 @@ bool ConstraintPropagation::mutexed(int level_0, int level_1){
   return true;
 }
 
+/*
+  return -1 -> PC
+  -2 -> AC
+  1  -> NC
 
+ */
 int ConstraintPropagation::_feasible(int level_0, int level_1){
   MDD* mdd_s = mdd0;
   MDD* mdd_l = mdd1;
@@ -527,7 +532,7 @@ std::pair<std::vector<Constraint>, std::vector<Constraint>> ConstraintPropagatio
       cons_vec_1.push_back(Constraint(1, it.second, -1, it.first, constraint_type::VERTEX));
     }
     // std::vector<std::pair<int, int>> cons_vec_1(cons_set_1.begin(), cons_set_1.end());
-    cons_vec_1.push_back(Constraint(0, goal_ptr_i->location,  -1, level_0 - 1, constraint_type::LEQLENGTH));
+    // cons_vec_1.push_back(Constraint(0, goal_ptr_i->location,  -1, level_0 - 1, constraint_type::LEQLENGTH));
 
 
     if (reversed){
@@ -608,7 +613,6 @@ std::pair<std::vector<Constraint>, std::vector<Constraint>> ConstraintPropagatio
 
   for (auto& it:cons_0){
     cons_vec_0.push_back({0, it->location, -1, it->level, constraint_type::VERTEX});
-    
   }
   for (auto& it:cons_1){
     cons_vec_1.push_back({1, it->location, -1, it->level, constraint_type::VERTEX});

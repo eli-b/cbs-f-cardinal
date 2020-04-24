@@ -2,7 +2,7 @@
 #include "MDD.h"
 #include "RectangleReasoning.h"
 #include "CorridorReasoning.h"
-
+#include "MutexReasoning.h"
 enum heuristics_type { ZERO, CG, DG, WDG, STRATEGY_COUNT };
 
 
@@ -127,7 +127,7 @@ public:
 	rectangle_strategy rectangle_reasoning; // using rectangle reasoning
 	corridor_strategy corridor_reasoning; // using corridor reasoning
 	bool target_reasoning; // using target reasoning
-	bool mutex_reasoning; // using mutex reasoning
+	mutex_strategy mutex_reasoning; // using mutex reasoning
 	bool disjoint_splitting; // disjoint splittting
 	bool PC; // prioritize conflicts
 	conflict_selection conflict_seletion_rule;

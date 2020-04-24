@@ -49,7 +49,7 @@ public:
 	void setRectangleReasoning(rectangle_strategy r) {rectangle_helper.strategy = r; heuristic_helper->rectangle_reasoning = r; }
 	void setCorridorReasoning(corridor_strategy c) {corridor_helper.strategy = c; heuristic_helper->corridor_reasoning = c; }
 	void setTargetReasoning(bool t) {target_reasoning = t; heuristic_helper->target_reasoning = t; }
-	void setMutexReasoning(bool m) {mutex_reasoning = m; heuristic_helper->mutex_reasoning = m; }
+	void setMutexReasoning(mutex_strategy m) {mutex_helper.strategy = m; heuristic_helper->mutex_reasoning = m; }
 	void setDisjointSplitting(bool d) {disjoint_splitting = d; heuristic_helper->disjoint_splitting = d; }
 	void setBypass(bool b) { bypass = b; } // 2-agent solver for heuristic calculation does not need bypass strategy.
 	void setConflictSelectionRule(conflict_selection c) { conflict_seletion_rule = c; heuristic_helper->conflict_seletion_rule = c; }
@@ -74,7 +74,6 @@ public:
 private:
 	bool target_reasoning; // using target reasoning
 	bool disjoint_splitting; // disjoint splittting
-	bool mutex_reasoning; // using mutex reasoning
 	bool bypass; // using Bypass1
 	bool PC; // prioritize conflicts
 	conflict_selection conflict_seletion_rule;

@@ -221,7 +221,12 @@ void CBS::computePriorityForConflict(Conflict& conflict, const CBSNode& node)
 				case conflict_type::RECTANGLE:
 				case conflict_type::TARGET:
 				case conflict_type::MUTEX:
-					conflict.secondary_priority = get<3>(conflict.constraint1.front());
+          if (conflict.priority == conflict_priority::MUTEX_NON){
+            
+            conflict.secondary_priority = - (int)conflict.constraint1.size() - (int)conflict.constraint2.size();
+          }else{
+            conflict.secondary_priority = get<3>(conflict.constraint1.front());
+          }
 					break;
 				case conflict_type::CORRIDOR:
 					conflict.secondary_priority = min(get<2>(conflict.constraint1.front()),
@@ -350,13 +355,13 @@ void CBS::classifyConflicts(CBSNode &node)
 		}
 
 		// Mutex reasoning
-		if (mutex_reasoning)
+		if (mutex_helper.strategy != mutex_strategy::N_MUTEX)
 		{
 			// TODO mutex reasoning is per agent pair, don't do duplicated work...
 			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
 			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
 
-			auto mutex_conflict = mutex_helper.run(a1, a2, node, mdd1, mdd2);
+			auto mutex_conflict = mutex_helper.run(paths, a1, a2, node, mdd1, mdd2);
 
 			if (mutex_conflict != nullptr)
 			{
@@ -765,7 +770,7 @@ string CBS::getSolverName() const
 		name += "+C";
 	if (target_reasoning)
 		name += "+T";
-	if (mutex_reasoning)
+	if (mutex_helper.strategy != mutex_strategy::N_MUTEX)
 		name += "+MP";
 	if (bypass)
 		name += "+BP";

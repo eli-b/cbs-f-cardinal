@@ -43,20 +43,23 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 {
 	switch (conflict.priority)
 	{
-		case conflict_priority::CARDINAL:
-			os << "cardinal ";
-			break;
-		case conflict_priority::PSEUDO_CARDINAL:
+  case conflict_priority::CARDINAL:
+    os << "cardinal ";
+    break;
+  case conflict_priority::PSEUDO_CARDINAL:
 			os << "pseudo-cardinal ";
 			break;
-		case conflict_priority::SEMI:
-			os << "semi-cardinal ";
-			break;
-		case conflict_priority::NON:
-			os << "non-cardinal ";
-			break;
-        case conflict_priority::PRIORITY_COUNT:
-            break;
+  case conflict_priority::SEMI:
+    os << "semi-cardinal ";
+    break;
+  case conflict_priority::MUTEX_NON:
+    os << "non-cardinal ";
+    break;
+  case conflict_priority::NON:
+    os << "non-cardinal ";
+    break;
+  case conflict_priority::PRIORITY_COUNT:
+    break;
     }
 	switch (conflict.type)
 	{

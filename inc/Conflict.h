@@ -4,7 +4,7 @@
 
 enum conflict_type { MUTEX, TARGET, CORRIDOR, RECTANGLE, STANDARD, TYPE_COUNT };
 
-enum conflict_priority { CARDINAL, PSEUDO_CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
+enum conflict_priority { CARDINAL, PSEUDO_CARDINAL, SEMI, MUTEX_NON, NON, UNKNOWN, PRIORITY_COUNT };
 // Pseudo-cardinal conflicts are semi-/non-caridnal conflicts between dependent agents. 
 // We prioritize them over normal semi-/non-caridnal conflicts 
 
@@ -39,6 +39,15 @@ public:
   // For mutex propagation
   int final_len_1;
   int final_len_2;
+
+  // For mutex propagation in Non-cardinal
+  // The actuall MDD node/edge which was used to generated the biclique;
+  int t1;
+  int loc1;
+  int loc1_to=-1;
+  int t2;
+  int loc2;
+  int loc2_to=-1;
 
 	void vertexConflict(int a1, int a2, int v, int t)
 	{
