@@ -324,3 +324,51 @@ std::pair<std::vector<Constraint>, std::vector<Constraint>> ConstraintPropagatio
 
   return {con_0, con_1};
 }
+
+int ConstraintPropagationGeneralized::bipartite_size(node_pair np1, node_pair np2){
+  boost::unordered_set<node_pair> nodes_from_mdd_0({np1});
+  boost::unordered_set<node_pair> nodes_from_mdd_1({np2});
+
+  for (edge_pair ep: general_mutexes){
+    if (ep.first == np1 && (ep.second.second == nullptr || counted_edges.find(ep.second) != counted_edges.end())){
+      nodes_from_mdd_1.insert(ep.second);
+    }
+    if (ep.second == np2 &&
+        (
+         ep.first.second == nullptr || counted_edges.find(ep.first) != counted_edges.end()
+         )
+        ){
+      nodes_from_mdd_0.insert(ep.first);
+    }
+  }
+
+  boost::unordered_set<edge_pair> edges;
+  for (edge_pair ep: general_mutexes){
+    if (nodes_from_mdd_0.find(ep.first) != nodes_from_mdd_0.end() &&
+        nodes_from_mdd_1.find(ep.second) != nodes_from_mdd_1.end()){
+      edges.insert(ep);
+    }
+  }
+
+  vector<node_pair> id_to_node_0(nodes_from_mdd_0.begin(), nodes_from_mdd_0.end());
+  vector<node_pair> id_to_node_1(nodes_from_mdd_1.begin(), nodes_from_mdd_1.end());
+
+  boost::unordered_map<node_pair, int> node_to_id_0;
+  for (int i = 0; i < id_to_node_0.size(); i++){
+    node_to_id_0[id_to_node_0[i]] = i;
+  }
+
+  boost::unordered_map<node_pair, int> node_to_id_1;
+  for (int i = 0; i < id_to_node_1.size(); i++){
+    node_to_id_1[id_to_node_1[i]] = i;
+  }
+
+  vector<pair<int,int>> id_edges;
+  id_edges.reserve(edges.size());
+  for (auto e:edges){
+    id_edges.push_back({node_to_id_0[e.first], node_to_id_1[e.second]});
+  }
+
+  return id_to_node_0.size() + id_to_node_1.size();
+  
+}

@@ -4,7 +4,7 @@
 
 enum conflict_type { MUTEX, TARGET, CORRIDOR, RECTANGLE, STANDARD, TYPE_COUNT };
 
-enum conflict_priority { CARDINAL, PSEUDO_CARDINAL, SEMI, MUTEX_NON, NON, UNKNOWN, PRIORITY_COUNT };
+enum conflict_priority { CARDINAL, PSEUDO_CARDINAL, MUTEX_SEMI, SEMI, MUTEX_NON, NON, UNKNOWN, PRIORITY_COUNT };
 // Pseudo-cardinal conflicts are semi-/non-caridnal conflicts between dependent agents. 
 // We prioritize them over normal semi-/non-caridnal conflicts 
 

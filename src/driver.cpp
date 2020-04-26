@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")
 		("rectangleReasoning", po::value<string>()->default_value("None"), "rectangle reasoning strategy (None, R, RM, Disjoint)")
 		("corridorReasoning", po::value<string>()->default_value("None"), " corridor reasoning strategy (None, C, Disjoint")
-		("mutexReasoning", po::value<string>()->default_value("None"), "mutex reasoning strategy (None, C, NC)")
+		("mutexReasoning", po::value<string>()->default_value("None"), "mutex reasoning strategy (None, C, NCK, NCG)")
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
 		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
 		("sipp", po::value<bool>()->default_value(false), "using sipp as the single agent solver")
@@ -120,8 +120,10 @@ int main(int argc, char** argv)
 		m = mutex_strategy::N_MUTEX;
 	else if (vm["mutexReasoning"].as<string>() == "C")
 		m = mutex_strategy::MUTEX_C;
-	else if (vm["mutexReasoning"].as<string>() == "NC")
-		m = mutex_strategy::MUTEX_NC;
+	else if (vm["mutexReasoning"].as<string>() == "NCK")
+		m = mutex_strategy::MUTEX_NC_FIRST_K;
+	else if (vm["mutexReasoning"].as<string>() == "NCG")
+		m = mutex_strategy::MUTEX_NC_GREEDY;
 	else
     {
       cout << "WRONG mutex reasoning strategy!" << endl;

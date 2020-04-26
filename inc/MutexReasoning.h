@@ -4,7 +4,7 @@
 #include "ConstraintPropagationGeneralized.h"
 #include "MDD.h"
 
-enum mutex_strategy{N_MUTEX, MUTEX_C, MUTEX_NC };
+enum mutex_strategy{N_MUTEX, MUTEX_C, MUTEX_NC_FIRST_K, MUTEX_NC_GREEDY };
 
 class MutexReasoning{
 public:
@@ -24,7 +24,8 @@ private:
 
   
 
-  shared_ptr<Conflict> iter_path(const vector<Path*> & paths, int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2, ConstraintPropagationGeneralized* cp);
+  shared_ptr<Conflict> iter_path_first_k(const vector<Path*> & paths, int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2, ConstraintPropagationGeneralized* cp);
+  shared_ptr<Conflict> iter_path_greedy(const vector<Path*> & paths, int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2, ConstraintPropagationGeneralized* cp);
 
   void cache_constraint(ConstraintsHasher & c1, ConstraintsHasher & c2, shared_ptr<Conflict> constraint);
   shared_ptr<Conflict> find_applicable_constraint(ConstraintsHasher & c1, ConstraintsHasher & c2, const vector<Path*> & paths);

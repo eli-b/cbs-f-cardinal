@@ -221,7 +221,9 @@ void CBS::computePriorityForConflict(Conflict& conflict, const CBSNode& node)
 				case conflict_type::RECTANGLE:
 				case conflict_type::TARGET:
 				case conflict_type::MUTEX:
-          if (conflict.priority == conflict_priority::MUTEX_NON){
+          if (conflict.priority == conflict_priority::MUTEX_NON ||
+              conflict.priority == conflict_priority::MUTEX_SEMI
+              ){
             
             conflict.secondary_priority = - (int)conflict.constraint1.size() - (int)conflict.constraint2.size();
           }else{

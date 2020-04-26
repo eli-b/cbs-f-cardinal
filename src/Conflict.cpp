@@ -49,6 +49,9 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
   case conflict_priority::PSEUDO_CARDINAL:
 			os << "pseudo-cardinal ";
 			break;
+  case conflict_priority::MUTEX_SEMI:
+    os << "semi-cardinal ";
+    break;
   case conflict_priority::SEMI:
     os << "semi-cardinal ";
     break;
