@@ -11,7 +11,7 @@ enum conflict_priority { CARDINAL, PSEUDO_CARDINAL, MUTEX_SEMI, SEMI, MUTEX_NON,
 enum constraint_type { LEQLENGTH, GLENGTH, RANGE, BARRIER, VERTEX, EDGE, 
 											POSITIVE_VERTEX, POSITIVE_EDGE, POSITIVE_BARRIER, POSITIVE_RANGE, CONSTRAINT_COUNT };
 
-enum conflict_selection {RANDOM, EARLIEST, CONFLICTS, MCONSTRAINTS, FCONSTRAINTS, WIDTH, SINGLETONS};
+enum conflict_selection {RANDOM, EARLIEST, CONFLICTS, MUTEX_SIZE, MCONSTRAINTS, FCONSTRAINTS, WIDTH, SINGLETONS};
 
 typedef std::tuple<int, int, int, int, constraint_type> Constraint;
 // <agent, loc, -1, t, VERTEX>

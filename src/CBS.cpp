@@ -210,13 +210,14 @@ shared_ptr<Conflict> CBS::chooseConflict(const CBSNode &node) const
 void CBS::computePriorityForConflict(Conflict& conflict, const CBSNode& node)
 {
 	switch (conflict_seletion_rule)
-	{
-		case conflict_selection::RANDOM:
-			conflict.secondary_priority = 0;
+    {
+    case conflict_selection::RANDOM:{
+      conflict.secondary_priority = 0;
 			break;
-		case conflict_selection::EARLIEST:
+    }
+		case conflict_selection::EARLIEST:{
 			switch (conflict.type)
-			{
+        {
 				case conflict_type::STANDARD:
 				case conflict_type::RECTANGLE:
 				case conflict_type::TARGET:
@@ -224,31 +225,59 @@ void CBS::computePriorityForConflict(Conflict& conflict, const CBSNode& node)
           if (conflict.priority == conflict_priority::MUTEX_NON ||
               conflict.priority == conflict_priority::MUTEX_SEMI
               ){
-            
+            // conflict.secondary_priority =  min(conflict.t1, conflict.t2 );
             conflict.secondary_priority = - (int)conflict.constraint1.size() - (int)conflict.constraint2.size();
+            
           }else{
             conflict.secondary_priority = get<3>(conflict.constraint1.front());
           }
 					break;
 				case conflict_type::CORRIDOR:
 					conflict.secondary_priority = min(get<2>(conflict.constraint1.front()),
-																				get<3>(conflict.constraint1.front()));
+                                            get<3>(conflict.constraint1.front()));
 					break;
-			}
+        }
 			break;
-		case conflict_selection::CONFLICTS:
+    }
+		case conflict_selection::CONFLICTS:{
 			int count[2] = {0, 0};
 			for (const auto& c : node.conflicts)
-			{
-				if (c->a1 == conflict.a1 || c->a2 == conflict.a1)
-					count[0]++;
-				if (c->a1 == conflict.a2 || c->a2 == conflict.a2)
-					count[1]++;
-			}
+        {
+          if (c->a1 == conflict.a1 || c->a2 == conflict.a1)
+            count[0]++;
+          if (c->a1 == conflict.a2 || c->a2 == conflict.a2)
+            count[1]++;
+        }
 			conflict.secondary_priority = count[0] + count[1];
 			break;
-		/*case conflict_selection::MCONSTRAINTS:
-			int count[2] = { 0, 0 };
+    }
+    case conflict_selection::MUTEX_SIZE:{
+      switch (conflict.type){
+      case conflict_type::STANDARD:
+      case conflict_type::RECTANGLE:
+      case conflict_type::TARGET:
+      case conflict_type::MUTEX:{
+        if (conflict.priority == conflict_priority::MUTEX_NON ||
+            conflict.priority == conflict_priority::MUTEX_SEMI
+            ){
+          conflict.secondary_priority = - (int)conflict.constraint1.size() - (int)conflict.constraint2.size();
+        }else{
+          // conflict.secondary_priority = get<3>(conflict.constraint1.front());
+          conflict.secondary_priority = - max(conflict.final_len_1, conflict.final_len_2);
+          }
+        break;
+      }
+      case conflict_type::CORRIDOR:{
+        conflict.secondary_priority = min(get<2>(conflict.constraint1.front()),
+                                          get<3>(conflict.constraint1.front()));
+        break;
+      }
+      }
+      break;
+    }
+
+      /*case conflict_selection::MCONSTRAINTS:
+      int count[2] = { 0, 0 };
 			auto curr = node;
 			while (curr != nullptr)
 			{
@@ -280,7 +309,7 @@ void CBS::computePriorityForConflict(Conflict& conflict, const CBSNode& node)
 			break;
 		case conflict_selection::SINGLETONS:
 			break;*/
-	}
+    }
 	return;
 }
 
