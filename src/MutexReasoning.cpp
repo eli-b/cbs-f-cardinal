@@ -19,7 +19,7 @@ shared_ptr<Conflict> MutexReasoning::run(const vector<Path*> & paths, int a1, in
   // Seems that there is no need to do the swapped...
 
 	auto conflict = findMutexConflict(paths, a1, a2, node, mdd_1, mdd_2);
-
+  
 	accumulated_runtime += (double)(clock() - t) / CLOCKS_PER_SEC;
 
 	return conflict;
@@ -29,7 +29,7 @@ shared_ptr<Conflict> MutexReasoning::findMutexConflict(const vector<Path*> & pat
   assert(a1 < a2);
 	ConstraintsHasher c_1(a1, &node);
 	ConstraintsHasher c_2(a2, &node);
-  bool use_general_mutex = (strategy == mutex_strategy::MUTEX_NC_FIRST_K) || ( strategy == mutex_strategy::MUTEX_NC_GREEDY );
+  bool use_general_mutex = (strategy == mutex_strategy::MUTEX_NC_FIRST_K) || ( strategy == mutex_strategy::MUTEX_NC_GREEDY ) || (strategy == mutex_strategy::MUTEX_NC_GREEDY_F);
 
   if (has_constraint(c_1, c_2)){
     if (!use_general_mutex){
@@ -45,11 +45,11 @@ shared_ptr<Conflict> MutexReasoning::findMutexConflict(const vector<Path*> & pat
   }
 
   ConstraintPropagation* cp;
-shared_ptr<Conflict> mutex_conflict = nullptr;
+  shared_ptr<Conflict> mutex_conflict = nullptr;
 
   if (use_general_mutex){
     cp = new ConstraintPropagationGeneralized(mdd_1, mdd_2);
-
+    
   }else{
     cp = new ConstraintPropagation(mdd_1, mdd_2);
   }
@@ -69,8 +69,10 @@ shared_ptr<Conflict> mutex_conflict = nullptr;
       mutex_conflict = iter_path_first_k(paths, a1, a2, node, mdd_1, mdd_2, cp_gen);
     }else if (strategy == MUTEX_NC_GREEDY){
       mutex_conflict = iter_path_greedy(paths, a1, a2, node, mdd_1, mdd_2, cp_gen);
+    }else if (strategy == MUTEX_NC_GREEDY_F){
+      mutex_conflict = iter_path_greedy_f(paths, a1, a2, node, mdd_1, mdd_2, cp_gen);
     }else{
-      cout << "Unkown startegy" << endl;
+      cout << "Unkown strategy" << endl;
       exit(1);
     }
 
@@ -255,48 +257,45 @@ shared_ptr<Conflict> MutexReasoning::iter_path_greedy(const vector<Path*> & path
 
   unordered_map<node_pair, int> edge_count;
 
-  vector <node_pair> np_sequence_1;
-  vector <node_pair> np_sequence_2;
-
-
-
-  // for (int i = max(p1->size(), p2->size()) - 1 ; i >= 0 ; i--){
-  MDDNode* prev = nullptr;
-  for (int i = 0; i < p1->size() ; i++){
-    auto pe1 = (*p1)[i];
-    MDDNode* n1 = mdd_1->find(pe1.location, i);
-
-    if (prev != nullptr){
-      np_sequence_1.push_back({prev, n1});
-    }
-    np_sequence_1.push_back({n1, nullptr});
-
-    prev = n1;
-  }
-  prev = nullptr;
-  for (int i = 0; i < p2->size() ; i++){
-    auto pe2 = (*p2)[i];
-    MDDNode* n2 = mdd_2->find(pe2.location, i);
-
-    if (prev != nullptr){
-      np_sequence_2.push_back({prev, n2});
-    }
-    np_sequence_2.push_back({n2, nullptr});
-
-    prev = n2;
-  }
+  vector <node_pair> np_sequence_1 = path_to_np_sequence(mdd_1, p1);
+  vector <node_pair> np_sequence_2 = path_to_np_sequence(mdd_2, p2);
 
   vector<edge_pair> semi_card_list;
-  for (const auto& np1: np_sequence_1){
-    if (cp_gen->has_generalized_mutex(np1, np_sequence_2[np_sequence_2.size() - 1])){
-      semi_card_list.push_back({np1, np_sequence_2[np_sequence_2.size() - 1]});
-    }
-  }
-  for (const auto& np2: np_sequence_2){
-    if (cp_gen->has_generalized_mutex(np_sequence_1[np_sequence_1.size() - 1], np2)){
-      semi_card_list.push_back({np_sequence_1[np_sequence_1.size() - 1], np2});
-    }
-  }
+  // for (const auto& np1: np_sequence_1){
+  //   if (cp_gen->has_generalized_mutex(np1, np_sequence_2[np_sequence_2.size() - 1])){
+  //     semi_card_list.push_back({np1, np_sequence_2[np_sequence_2.size() - 1]});
+  //   }
+  // }
+  // for (const auto& np2: np_sequence_2){
+  //   if (cp_gen->has_generalized_mutex(np_sequence_1[np_sequence_1.size() - 1], np2)){
+  //     semi_card_list.push_back({np_sequence_1[np_sequence_1.size() - 1], np2});
+  //   }
+  // }
+  // if (np_sequence_1.size() > np_sequence_2.size()){
+  //   int mdd_len_2 = 0;
+  //   for (int i = np_sequence_1.size() - 1; i >= np_sequence_2.size() - 1; i --){
+  //     if (np_sequence_1[i].second != nullptr && np_sequence_1[i].first->location == np_sequence_2[np_sequence_2.size() - 1].first->location){
+  //       // semi card e
+
+  //       mdd_len_2 = np_sequence_1[i].first->level;
+  //       break;
+  //     }
+  //   }
+  //   cout << mdd_len_2 << ",  " << np_sequence_2[np_sequence_2.size() - 1].first->level << endl;
+  // }else{
+  //   int mdd_len_1 = 0;
+  //   for (int i = np_sequence_2.size() - 1; i >= np_sequence_1.size() - 1; i --){
+  //     if (np_sequence_2[i].second != nullptr && np_sequence_2[i].first->location == np_sequence_1[np_sequence_1.size() - 1].first->location){
+  //       // semi card e
+
+  //       mdd_len_1 = np_sequence_2[i].first->level;
+  //       break;
+  //     }
+  //   }
+  //   cout << mdd_len_1 << ", " << np_sequence_1[np_sequence_1.size() - 1].first->level << endl;
+  // }
+
+  // semi_card_list.clear();
 
   if (!semi_card_list.empty()){
     // semi-card
@@ -382,19 +381,13 @@ shared_ptr<Conflict> MutexReasoning::iter_path_greedy(const vector<Path*> & path
   mutex_conflict = make_shared<Conflict>();
   mutex_conflict->mutexConflict(a1, a2);
   mutex_conflict->priority = semi_card_list.empty()? conflict_priority::MUTEX_NON : conflict_priority::MUTEX_SEMI;
-  if (center.first.second == nullptr){
-    mutex_conflict->t1 = center.first.first->level;
-    mutex_conflict->t2 = center.second.first->level;
-    mutex_conflict->loc1 = center.first.first->location;
-    mutex_conflict->loc2 = center.second.first->location;
-  }else{
-    mutex_conflict->t1 = center.first.first->level;
-    mutex_conflict->t2 = center.second.first->level;
-    mutex_conflict->loc1 = center.first.first->location;
-    mutex_conflict->loc2 = center.second.first->location;
-    mutex_conflict->loc1_to = center.first.second->location;
-    mutex_conflict->loc2_to = center.second.second->location;
-  }
+  mutex_conflict->t1 = center.first.first->level;
+  mutex_conflict->t2 = center.second.first->level;
+  mutex_conflict->loc1 = center.first.first->location;
+  mutex_conflict->loc2 = center.second.first->location;
+  mutex_conflict->loc1_to = center.first.second == nullptr? -1 : center.first.second->location;
+  mutex_conflict->loc2_to = center.second.second == nullptr? -1 : center.second.second->location;
+
   for (auto con: constraint.first){
     get<0>(con) = a1;
     mutex_conflict->constraint1.push_back(con);
@@ -407,6 +400,178 @@ shared_ptr<Conflict> MutexReasoning::iter_path_greedy(const vector<Path*> & path
   return mutex_conflict;
 }
 
+
+shared_ptr<Conflict> MutexReasoning::iter_path_greedy_f(const vector<Path*> & paths, int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2, ConstraintPropagationGeneralized* cp_gen){
+  shared_ptr<Conflict> mutex_conflict;
+  Path* p1 = paths[a1];
+  Path* p2 = paths[a2];
+  int graph_size = 0;
+  edge_pair center;
+
+  unordered_map<node_pair, int> edge_count;
+
+  vector <node_pair> np_sequence_1;
+  vector <node_pair> np_sequence_2;
+
+
+
+  // for (int i = max(p1->size(), p2->size()) - 1 ; i >= 0 ; i--){
+  MDDNode* prev = nullptr;
+  for (int i = 0; i < p1->size() ; i++){
+    auto pe1 = (*p1)[i];
+    MDDNode* n1 = mdd_1->find(pe1.location, i);
+
+    if (prev != nullptr){
+      np_sequence_1.push_back({prev, n1});
+    }
+    np_sequence_1.push_back({n1, nullptr});
+
+    prev = n1;
+  }
+  prev = nullptr;
+  for (int i = 0; i < p2->size() ; i++){
+    auto pe2 = (*p2)[i];
+    MDDNode* n2 = mdd_2->find(pe2.location, i);
+
+    if (prev != nullptr){
+      np_sequence_2.push_back({prev, n2});
+    }
+    np_sequence_2.push_back({n2, nullptr});
+
+    prev = n2;
+  }
+
+  vector<edge_pair> semi_card_list;
+  bool found_mutex = false;
+  for (const auto& np1: np_sequence_1){
+    if (cp_gen->has_generalized_mutex(np1, np_sequence_2[np_sequence_2.size() - 1])){
+      found_mutex = true;
+      semi_card_list.push_back({np1, np_sequence_2[np_sequence_2.size() - 1]});
+    }else if (found_mutex){
+      break;
+    }
+  }
+  found_mutex = false;
+  for (const auto& np2: np_sequence_2){
+    if (cp_gen->has_generalized_mutex(np_sequence_1[np_sequence_1.size() - 1], np2)){
+      found_mutex = true;
+      semi_card_list.push_back({np_sequence_1[np_sequence_1.size() - 1], np2});
+    }else if (found_mutex){
+      break;
+    }
+  }
+
+  semi_card_list.clear();
+
+  if (!semi_card_list.empty()){
+    // semi-card
+    cout << "semi card" << endl;
+    for (auto const &ep: semi_card_list){
+      edge_count[ep.first] = 0;
+      edge_count[ep.second] = 0;
+    }
+
+    for (const auto& ep: cp_gen->general_mutexes){
+      if (edge_count.find(ep.first) != edge_count.end()){
+        edge_count[ep.first] +=1;
+      }
+      if (edge_count.find(ep.second) != edge_count.end()){
+        edge_count[ep.second] +=1;
+      }
+    }
+
+    for (auto const &ep: semi_card_list){
+
+      int temp_graph_size = edge_count[ep.first] + edge_count[ep.second] - 2;
+      // cout << "size: " << temp_graph_size << "("<<cp_gen->bipartite_size( np1, np2) << ")" << endl;
+      cout << "size: " << temp_graph_size << endl;
+      if (graph_size < temp_graph_size){
+        graph_size = temp_graph_size;
+        center = {ep};
+      }
+    }
+
+  }else{
+    found_mutex = false;
+    int i_max = 0;
+    cout << "non-card" << endl;
+    // non-cardinal
+    for (int i = 0; i < max(np_sequence_1.size(), np_sequence_2.size()); i++){
+      i_max = i;
+      int i1 = i <= np_sequence_1.size()? i: np_sequence_1.size() - 1;
+      int i2 = i <= np_sequence_2.size()? i: np_sequence_2.size() - 1;
+
+      auto np1 = (np_sequence_1)[i1];
+      auto np2 = (np_sequence_2)[i2];
+      if (cp_gen->has_generalized_mutex(np1, np2)){
+        found_mutex = true;
+        edge_count[np1] = 0;
+        edge_count[np2] = 0;
+      }else if (found_mutex){
+        break;
+      }
+    }
+
+    for (const auto& ep: cp_gen->general_mutexes){
+      if (edge_count.find(ep.first) != edge_count.end()){
+        edge_count[ep.first] +=1;
+      }
+      if (edge_count.find(ep.second) != edge_count.end()){
+        edge_count[ep.second] +=1;
+      }
+    }
+
+    for (int i = 0; i < i_max; i++){
+      int i1 = i <= np_sequence_1.size()? i: np_sequence_1.size() - 1;
+      int i2 = i <= np_sequence_2.size()? i: np_sequence_2.size() - 1;
+
+      auto np1 = (np_sequence_1)[i1];
+      auto np2 = (np_sequence_2)[i2];
+      if (cp_gen->has_generalized_mutex(np1, np2)){
+        // int temp_graph_size = cp_gen->bipartite_size( np1, np2);
+        int temp_graph_size = edge_count[np1] + edge_count[np2] - 2;
+        // cout << "size: " << temp_graph_size << "("<<cp_gen->bipartite_size( np1, np2) << ")" << endl;
+        cout << "size: " << temp_graph_size << endl;
+        if (graph_size < temp_graph_size){
+          graph_size = temp_graph_size;
+          center = { np1, np2 };
+        }
+      }
+    }
+  }
+  if (graph_size == 0){
+    // TODO fix old mutex implementation (conflict after agent stop...)
+    // lookupTable[c_1][c_2] = nullptr;
+    return nullptr;
+  }
+
+
+  cout << "gen cons:" <<center.first.first->level << ((center.first.second == nullptr)? ", Vertex": ", Edge") << endl;
+  std::pair<std::vector<Constraint>, std::vector<Constraint>> constraint = cp_gen->generate_constraints(center.first, center.second, 0);
+
+  mutex_conflict = make_shared<Conflict>();
+  mutex_conflict->mutexConflict(a1, a2);
+  mutex_conflict->priority = semi_card_list.empty()? conflict_priority::MUTEX_NON : conflict_priority::MUTEX_SEMI;
+  mutex_conflict->t1 = center.first.first->level;
+  mutex_conflict->t2 = center.second.first->level;
+  mutex_conflict->loc1 = center.first.first->location;
+  mutex_conflict->loc2 = center.second.first->location;
+  mutex_conflict->loc1_to = center.first.second == nullptr? -1 : center.first.second->location;
+  mutex_conflict->loc2_to = center.second.second == nullptr? -1 : center.second.second->location;
+
+  for (auto con: constraint.first){
+    get<0>(con) = a1;
+    mutex_conflict->constraint1.push_back(con);
+  }
+
+  for (auto con: constraint.second){
+    get<0>(con) = a2;
+    mutex_conflict->constraint2.push_back(con);
+  }
+  return mutex_conflict;
+}
+
+
 void MutexReasoning::cache_constraint(ConstraintsHasher & c1, ConstraintsHasher & c2, shared_ptr<Conflict> constraint){
   lookupTable[c1][c2].push_back(constraint);
 }
@@ -415,6 +580,9 @@ shared_ptr<Conflict> MutexReasoning::find_applicable_constraint(ConstraintsHashe
   if (lookupTable.find(c1) != lookupTable.end()){
     if (lookupTable[c1].find(c2) != lookupTable[c1].end()){
       for (auto& constraint: lookupTable[c1][c2]){
+        if ((strategy == mutex_strategy::MUTEX_C) && constraint == nullptr){
+          return nullptr;
+        }
         if (constraint_applicable(paths, constraint)){
           return make_shared<Conflict>(*constraint);
         }
@@ -426,4 +594,31 @@ shared_ptr<Conflict> MutexReasoning::find_applicable_constraint(ConstraintsHashe
 
 bool MutexReasoning::has_constraint(ConstraintsHasher & c1, ConstraintsHasher & c2){
   return lookupTable.find(c1) != lookupTable.end() && lookupTable[c1].find(c2) != lookupTable[c1].end();
+}
+
+
+
+vector<node_pair> MutexReasoning::path_to_np_sequence(MDD* mdd, Path* path){
+  vector<node_pair> np_sequence;
+   MDDNode* prev = nullptr;
+  for (int i = 0; i < path->size() ; i++){
+    auto pe = (*path)[i];
+    MDDNode* n = mdd->find(pe.location, i);
+
+    if (prev != nullptr){
+      np_sequence.push_back({prev, n});
+    }
+    np_sequence.push_back({n, nullptr});
+
+    prev = n;
+  }
+  return np_sequence;
+}
+
+vector<edge_pair> MutexReasoning::compute_semi_card_list(ConstraintPropagationGeneralized* cp_gen, vector<node_pair>& np_sequence_1, vector<node_pair>& np_sequence_2){
+  // TODO
+  vector<edge_pair> to_check;
+
+  return to_check;
+
 }

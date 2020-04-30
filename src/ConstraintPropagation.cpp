@@ -524,7 +524,7 @@ std::pair<std::vector<Constraint>, std::vector<Constraint>> ConstraintPropagatio
       }
     }
 
-    Constraint length_con(0, goal_ptr_i->location, -1, level_0 - 1, constraint_type::GLENGTH);
+    Constraint length_con(0, goal_ptr_i->location, -1, level_0, constraint_type::GLENGTH);
     // std::pair<int, int> length_con = {-1, level_0};
 
     std::vector<Constraint>cons_vec_1;
