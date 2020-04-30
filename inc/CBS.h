@@ -54,7 +54,7 @@ public:
 	void setDisjointSplitting(bool d) {disjoint_splitting = d; heuristic_helper.disjoint_splitting = d; }
 	void setBypass(bool b) { bypass = b; } // 2-agent solver for heuristic calculation does not need bypass strategy.
 	void setConflictSelectionRule(conflict_selection c) { conflict_seletion_rule = c; heuristic_helper.conflict_seletion_rule = c; }
-	void setNodeSelectionRule(node_selection n) { node_selection_fule = n; heuristic_helper.node_selection_rule = n; }
+	void setNodeSelectionRule(node_selection n) { node_selection_rule = n; heuristic_helper.node_selection_rule = n; }
 	void setNodeLimit(int n) { node_limit = n; }
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// Runs the algorithm until the problem is solved or time is exhausted 
@@ -79,7 +79,7 @@ private:
 	bool bypass; // using Bypass1
 	bool PC; // prioritize conflicts
 	conflict_selection conflict_seletion_rule;
-	node_selection node_selection_fule;
+	node_selection node_selection_rule;
 
 	MDDTable mdd_helper;	
 	RectangleReasoning rectangle_helper;
@@ -130,11 +130,6 @@ private:
 		list<shared_ptr<Conflict>>& copy, const list<int>& excluded_agent) const;
 	void removeLowPriorityConflicts(list<shared_ptr<Conflict>>& conflicts) const;
 	//bool isCorridorConflict(std::shared_ptr<Conflict>& corridor, const std::shared_ptr<Conflict>& con, bool cardinal, ICBSNode* node);
-
-	// add heuristics for the high-level search
-	//int computeHeuristics(CBSNode& curr);
-	//bool buildDependenceGraph(CBSNode& node);
-	//int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
 
 	void computePriorityForConflict(Conflict& conflict, const CBSNode& node);
 

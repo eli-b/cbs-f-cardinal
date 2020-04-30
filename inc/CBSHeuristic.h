@@ -160,7 +160,8 @@ public:
 		}
 	}
 
-	int computeHeuristics(CBSNode& curr, double time_limit);
+	bool computeInformedHeuristics(CBSNode& curr, double time_limit); // this function is called when poping a CT node for the first time
+	void computeQuickHeuristics(CBSNode& curr); // this function is called when generating a CT node
 	void copyConflictGraph(CBSNode& child, const CBSNode& parent);
 	void clear() { lookupTable.clear(); }
 
@@ -179,7 +180,7 @@ private:
 	MDDTable& mdd_helper;
 
 
-
+	vector<int> buildConflictGraph(const CBSNode& curr) const;
 	void buildCardinalConflictGraph(CBSNode& curr, vector<int>& CG, int& num_of_CGedges);
 	bool buildDependenceGraph(CBSNode& node, vector<int>& CG, int& num_of_CGedges);
 	bool buildWeightedDependencyGraph(CBSNode& curr, vector<int>& CG);
@@ -188,13 +189,15 @@ private:
 	int solve2Agents(int a1, int a2, const CBSNode& node, bool cardinal);
 	bool SyncMDDs(const MDD &mdd1, const MDD& mdd2); 	// Match and prune MDD according to another MDD.
 
-	// int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
+	int minimumVertexCover(const vector<int>& CG);
 	int minimumVertexCover(const vector<int>& CG, int old_mvc, int cols, int num_of_edges);
 	bool KVertexCover(const vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
 	int greedyMatching(const vector<int>& CG, int cols);
 	int minimumWeightedVertexCover(const vector<int>& CG);
 	int weightedVertexCover(const vector<int>& CG);
 	int weightedVertexCover(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
+	int MVConAllConflicts(CBSNode& curr);
+	
 };
 
 

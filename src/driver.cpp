@@ -42,8 +42,8 @@ int main(int argc, char** argv)
 		("prioritizingConflicts", po::value<bool>()->default_value(true), "conflict prioirtization. If true, conflictSelection is used as a tie-breaking rule.")
 		("conflictSelection", po::value<string>()->default_value("Earliest"), 
 			"conflict selection (Random\n Earliest,\n Conflicts: most conflicts with others\n MConstraints: most constraints\n FConstraints: fewest constraints\n Width: thinest MDDs\n Singletons: most singletons in MDDs)")
-		("nodeSelection", po::value<string>()->default_value("Conflicts"),
-			"conflict selection (Random\n H: smallest h value\n Depth: depth-first manner\n Conflicts: most conflicts\n ConflictPairs: most conflictinng pairs of agents\n MVC: MVC on the conflict graph)")
+		("nodeSelection", po::value<string>()->default_value("ConflictPairs"),
+			"conflict selection (Random\n H: smallest h value\n Depth: depth-first manner\n Conflicts: fewest conflicts\n ConflictPairs: fewest conflictinng pairs of agents\n MVC: MVC on the conflict graph)")
 		("bypass", po::value<bool>()->default_value(false), "Bypass1")
 		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")
 		("rectangleReasoning", po::value<string>()->default_value("None"), "rectangle reasoning strategy (None, R, RM, Disjoint)")

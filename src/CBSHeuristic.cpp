@@ -5,42 +5,88 @@
 
 #define MAX_RUNTIME4PAIR 6000
 
-int CBSHeuristic::computeHeuristics(CBSNode& curr, double time_limit)
+
+void CBSHeuristic::computeQuickHeuristics(CBSNode& node) // for non-root node
 {
+	node.h_val = max(0, node.parent->g_val + node.parent->h_val - node.g_val); // pathmax
+	set<pair<int, int>> conflicting_agents;
+	switch (node_selection_rule)
+	{
+		case node_selection::NODE_H:
+			node.tie_breaking = node.h_val;
+			break;
+		case node_selection::NODE_DEPTH:
+			node.tie_breaking = - node.depth; // we use negative depth because we prefer nodes with larger depths
+			break;
+		case node_selection::NODE_CONFLICTS:
+			node.tie_breaking = (int)(node.conflicts.size() + node.unknownConf.size());
+			break;
+		case node_selection::NODE_CONFLICTPAIRS:
+			for (const auto& conflict : node.unknownConf)
+			{
+				auto agents = make_pair(min(conflict->a1, conflict->a2), max(conflict->a1, conflict->a2));
+				if (conflicting_agents.find(agents) == conflicting_agents.end())
+				{
+					conflicting_agents.insert(agents);
+				}
+			}
+			node.tie_breaking = (int)(node.conflicts.size() + conflicting_agents.size());
+			break;
+		case node_selection::NODE_MVC:
+			node.tie_breaking = MVConAllConflicts(node);
+			break;
+	}	
+	copyConflictGraph(node, *node.parent);
+}
+
+
+bool CBSHeuristic::computeInformedHeuristics(CBSNode& curr, double time_limit)
+{
+	curr.h_computed = true;
 	// create conflict graph
 	start_time = clock();
 	this->time_limit = time_limit;
 	int num_of_CGedges;
 	vector<int> HG(num_of_agents * num_of_agents, 0); // heuristic graph
-	int rst = -1;
+	int h = -1;
 	switch (type)
 	{
 	case heuristics_type::ZERO:
-		return 0;
+		h = 0;
+		break;
 	case heuristics_type::CG:
 		buildCardinalConflictGraph(curr, HG, num_of_CGedges);
 		// Minimum Vertex Cover
 		if (curr.parent == nullptr) // root node of CBS tree
-			rst = minimumVertexCover(HG, -1, num_of_agents, num_of_CGedges);
+			h = minimumVertexCover(HG, -1, num_of_agents, num_of_CGedges);
 		else
-			rst = minimumVertexCover(HG, curr.parent->h_val, num_of_agents, num_of_CGedges);
+			h = minimumVertexCover(HG, curr.parent->h_val, num_of_agents, num_of_CGedges);
 		break;
 	case heuristics_type::DG:
 		if (!buildDependenceGraph(curr, HG, num_of_CGedges))
-			return -1;
+			return false;
 		// Minimum Vertex Cover
 		if (curr.parent == nullptr) // root node of CBS tree
-			rst = minimumVertexCover(HG, -1, num_of_agents, num_of_CGedges);
+			h = minimumVertexCover(HG, -1, num_of_agents, num_of_CGedges);
 		else
-			rst = minimumVertexCover(HG, curr.parent->h_val, num_of_agents, num_of_CGedges);
+			h = minimumVertexCover(HG, curr.parent->h_val, num_of_agents, num_of_CGedges);
 		break;
 	case heuristics_type::WDG:
 		if (!buildWeightedDependencyGraph(curr, HG))
-			return -1;
-		rst = minimumWeightedVertexCover(HG);
+			return false;
+		h = minimumWeightedVertexCover(HG);
 		break;
 	}
-	return rst;
+	if (h < 0)
+		return false;
+
+	curr.h_val = max(h, curr.h_val); 
+
+	// update tie-breaking for node selection if necessary
+	if (node_selection_rule == node_selection::NODE_H)
+		curr.tie_breaking = curr.h_val;
+
+	return true;
 }
 
 
@@ -241,92 +287,100 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 }
 
 
-/*
-int CBSHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
+int CBSHeuristic::MVConAllConflicts(CBSNode& curr)
 {
-	HTableEntry newEntry(a1, a2, &node);
-	if (type != heuristics_type::CG)
-	{
-		HTable::const_iterator got = lookupTable[a1][a2].find(newEntry);
+	auto G = buildConflictGraph(curr);
+	return  minimumVertexCover(G);
+}
 
-		if (got != lookupTable[a1][a2].end())
+
+vector<int> CBSHeuristic::buildConflictGraph(const CBSNode& curr) const
+{
+	vector<int> G(num_of_agents * num_of_agents, 0);
+	for (const auto& conflict : curr.conflicts)
+	{
+		int a1 = conflict->a1;
+		int a2 = conflict->a2;
+		if (!G[a1 * num_of_agents + a2])
 		{
-			num_memoization++;
-			return got->second;
+			G[a1 * num_of_agents + a2] = true;
+			G[a2 * num_of_agents + a1] = true;
 		}
-
 	}
+	return G;
+}
 
-	int cost_shortestPath = (int)paths[a1]->size() + (int)paths[a2]->size() - 2;
-	// runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
-	if (screen > 2)
-	{
-		cout << "Agents " << a1 << " and " << a2 << " in node " << node.time_generated << " : ";
-	}
+int CBSHeuristic::minimumVertexCover(const vector<int>& CG)
+{
 	int rst = 0;
-	if (cardinal)
-		rst = 1;
-	else if (!mutex_reasoning && // no mutex reasoning, so we might miss some cardinal conflicts
-		(type == heuristics_type::DG || type == heuristics_type::WDG))
+	std::vector<bool> done(num_of_agents, false);
+	for (int i = 0; i < num_of_agents; i++)
 	{
-		// get mdds
-
-		const MDD* mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
-		const MDD* mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
-		if (mdd1->levels.size() > mdd2->levels.size()) // swap
+		if (done[i])
+			continue;
+		std::vector<int> indices;
+		indices.reserve(num_of_agents);
+		std::queue<int> Q;
+		Q.push(i);
+		done[i] = true;
+		while (!Q.empty())
 		{
-			const MDD* temp = mdd1;
-			mdd1 = mdd2;
-			mdd2 = temp;
+			int j = Q.front(); Q.pop();
+			indices.push_back(j);
+			for (int k = 0; k < num_of_agents; k++)
+			{
+				if (CG[j * num_of_agents + k] > 0)
+				{
+					if (!done[k])
+					{
+						Q.push(k);
+						done[k] = true;
+					}
+				}
+				else if (CG[k * num_of_agents + j] > 0)
+				{
+					if (!done[k])
+					{
+						Q.push(k);
+						done[k] = true;
+					}
+				}
+			}
 		}
-		if (!SyncMDDs(*mdd1, *mdd2))
-			rst = 1;
-		else
-			rst = 0;
-		num_merge_MDDs++;
-	}
-	if (type == heuristics_type::WDG && rst > 0)
-	{
-		vector<SingleAgentSolver*> engines(2);
-		engines[0] = search_engines[a1];
-		engines[1] = search_engines[a2];
-		vector<vector<PathEntry>> initial_paths(2);
-		initial_paths[0] = *paths[a1];
-		initial_paths[1] = *paths[a2];
-		int upperbound = (int)initial_paths[0].size() + (int)initial_paths[1].size() + 10;
-		vector<ConstraintTable> constraints{
-			ConstraintTable(initial_constraints[a1]),
-			ConstraintTable(initial_constraints[a2]) };
-		constraints[0].build(node, a1);
-		constraints[1].build(node, a2);
-		CBS cbs(engines, constraints, initial_paths, upperbound, screen);
-		cbs.setPrioritizeConflicts(PC);
-		cbs.setHeuristicType(heuristics_type::CG);
-		cbs.setDisjointSplitting(disjoint_splitting);
-		cbs.setBypass(false); // I guess that bypassing does not help two-agent path finding???
-		cbs.setRectangleReasoning(rectangle_reasoning);
-		cbs.setCorridorReasoning(corridor_reasoning);
-		cbs.setTargetReasoning(target_reasoning);
-		cbs.setMutexReasoning(mutex_reasoning);
-		cbs.setConflictSelectionRule(conflict_seletion_rule);
-		cbs.setNodeSelectionRule(node_selection_fule);
+		if ((int)indices.size() == 1) //one node -> no edges -> mvc = 0
+			continue;
+		else if ((int)indices.size() == 2) // two nodes -> only one edge -> mvc = 1
+		{
+			rst += 1; // add edge weight
+			continue;
+		}
 
-		double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-		cbs.solve(time_limit - runtime, max(rst, 0));
-		if (cbs.runtime >= time_limit - runtime) // time out
-			rst = (int)cbs.min_f_val - cost_shortestPath; // using lowerbound to approximate
-		else if (cbs.solution_cost  < 0) // no solution
-			rst = cbs.solution_cost;
-		else
-			rst = cbs.solution_cost - cost_shortestPath;
-		num_solve_2agent_problems++;
+		std::vector<int> subgraph(indices.size()  * indices.size(), 0);
+		int num_edges = 0;
+		for (int j = 0; j < (int)indices.size(); j++)
+		{
+			for (int k = j + 1; k < (int)indices.size(); k++)
+			{
+				subgraph[j * indices.size() + k] = CG[indices[j] * num_of_agents + indices[k]];
+				subgraph[k * indices.size() + j] = CG[indices[k] * num_of_agents + indices[j]];
+				if (subgraph[j * indices.size() + k] > 0)
+					num_edges++;
+			}
+		}
+		for (int i = 1; i < (int)indices.size(); i++)
+		{
+			if (KVertexCover(subgraph, (int)indices.size(), num_edges, i, (int)indices.size()))
+			{
+				rst += i;
+				break;
+			}
+			double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+			if (runtime > time_limit)
+				return -1; // run out of time
+		}
 	}
-	lookupTable[a1][a2][newEntry] = rst;
 	return rst;
 }
-*/
-
-
 
 
 int CBSHeuristic::minimumVertexCover(const std::vector<int>& CG, int old_mvc, int cols, int num_of_CGedges)

@@ -173,7 +173,7 @@ void CBS::findConflicts(CBSNode& curr)
 			}
 		}
 	}
-	curr.num_of_collisions = (int)(curr.unknownConf.size() + curr.conflicts.size());
+	// curr.tie_breaking = (int)(curr.unknownConf.size() + curr.conflicts.size());
 	runtime_detect_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
 }
 
@@ -410,9 +410,11 @@ void CBS::classifyConflicts(CBSNode &node)
 	}
 
 
-
 	// remove conflicts that cannot be chosen, to save some memory
-	removeLowPriorityConflicts(node.conflicts);
+	// except for the cases when we use num of conflcts as the tie-breaking rule for node selection
+	// since we need to know the total number of conflicts in this case.
+	if (node_selection_rule != node_selection::NODE_CONFLICTS)
+		removeLowPriorityConflicts(node.conflicts);
 }
 
 void CBS::removeLowPriorityConflicts(list<shared_ptr<Conflict>>& conflicts) const
@@ -568,37 +570,9 @@ bool CBS::generateChild(CBSNode*  node, CBSNode* parent)
 		}
 	}
 
-	//Estimate h value
-	node->h_val = 0;
-	/*if (parent->h_val  == 0);
-	else if (parent->conflictGraph.empty())
-	{
-	node->h_val = parent->h_val - 1; // stronger pathmax
-	}
-	else
-	{
-	int maxWeight = 0;
-	boost::unordered_map<int, int>::iterator got;
-	for (auto e : parent->conflictGraph)
-	{
-	if ((e.first / num_of_agents == agent || e.first % num_of_agents == agent) && e.second > maxWeight)
-	{
-	maxWeight = e.second;
-	if (maxWeight >= parent->h_val)
-	break;
-	}
-	}
-	if (maxWeight < parent->h_val)
-	node->h_val = parent->h_val - maxWeight; // stronger pathmax
-	}*/
-	node->h_val = max(node->h_val, parent->f_val - node->g_val); // pathmax
-	node->f_val = node->g_val + node->h_val;
-
-	findConflicts(*node);
-
-	heuristic_helper.copyConflictGraph(*node, *node->parent);
-
 	assert(!node->paths.empty());
+	findConflicts(*node);
+	heuristic_helper.computeQuickHeuristics(*node);
 	runtime_generate_child += (double)(clock() - t1) / CLOCKS_PER_SEC;
 	return true;
 }
@@ -609,7 +583,7 @@ inline void CBS::pushNode(CBSNode* node)
 	node->open_handle = open_list.push(node);
 	num_HL_generated++;
 	node->time_generated = num_HL_generated;
-	if (node->f_val <= focal_list_threshold)
+	if (node->g_val + node->h_val <= focal_list_threshold)
 		node->focal_handle = focal_list.push(node);
 	allNodes_table.push_back(node);
 }
@@ -633,18 +607,18 @@ void CBS::printPaths() const
 void CBS::updateFocalList()
 {
 	CBSNode* open_head = open_list.top();
-	if (open_head->f_val > min_f_val)
+	if (open_head->g_val + open_head->h_val > min_f_val)
 	{
 		if (screen == 3)
 		{
 			cout << "  Note -- FOCAL UPDATE!! from |FOCAL|=" << focal_list.size() << " with |OPEN|=" << open_list.size() << " to |FOCAL|=";
 		}
-		min_f_val = open_head->f_val;
+		min_f_val = open_head->g_val + open_head->h_val;
 		double new_focal_list_threshold = min_f_val * focal_w;
 		for (CBSNode* n : open_list)
 		{
-			if (n->f_val > focal_list_threshold &&
-				n->f_val <= new_focal_list_threshold)
+			if (n->g_val + n->h_val > focal_list_threshold &&
+				n->g_val + n->h_val <= new_focal_list_threshold)
 				n->focal_handle = focal_list.push(n);
 		}
 		focal_list_threshold = new_focal_list_threshold;
@@ -669,7 +643,7 @@ void CBS::printResults() const
 
 	cout << solution_cost << "," << runtime << "," <<
 		num_HL_expanded << "," << num_LL_expanded << "," << // HL_num_generated << "," << LL_num_generated << "," <<
-		min_f_val << "," << dummy_start->g_val << "," << dummy_start->f_val << "," <<
+		min_f_val << "," << dummy_start->g_val << "," << dummy_start->g_val + dummy_start->h_val << "," <<
 		endl;
 }
 
@@ -699,7 +673,7 @@ void CBS::saveResults(const string &fileName, const string &instanceName) const
 		num_HL_expanded << "," << num_HL_generated << "," <<
 		num_LL_expanded << "," << num_LL_generated << "," <<
 
-		solution_cost << "," << min_f_val << "," << dummy_start->g_val << "," << dummy_start->f_val << "," <<
+		solution_cost << "," << min_f_val << "," << dummy_start->g_val << "," << dummy_start->g_val + dummy_start->h_val << "," <<
 
 		num_adopt_bypass << "," <<
 
@@ -815,7 +789,7 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 		if (screen > 1)
 			cout << endl << "Pop " << *curr << endl;
 
-		if (curr->num_of_collisions == 0) //no conflicts
+		if (curr->unknownConf.size() + curr->conflicts.size() == 0) //no conflicts
 		{// found a solution (and finish the while look)
 			solution_found = true;
 			solution_cost = curr->g_val;
@@ -828,9 +802,8 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 
 		if (!curr->h_computed) // heuristics has not been computed yet
 		{
-			curr->h_computed = true;
 			runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
-			int h = heuristic_helper.computeHeuristics(*curr, time_limit - runtime);
+			bool succ = heuristic_helper.computeInformedHeuristics(*curr, time_limit - runtime);
 			runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
 			if (runtime > time_limit)
 			{  // timeout
@@ -838,27 +811,21 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 				solution_found = false;
 				break;
 			}
-			if (h < 0) // no solution, so prune this node
+			if (!succ) // no solution, so prune this node
 			{
 				curr->clear();
 				continue;
 			}
 
-			curr->h_val = max(h, curr->h_val); // use consistent h values
-			curr->f_val = curr->g_val + curr->h_val;
-
+			// reinsert the node
+			curr->open_handle = open_list.push(curr);
+			if (curr->g_val + curr->h_val <= focal_list_threshold)
+				curr->focal_handle = focal_list.push(curr);
 			if (screen == 2)
-				curr->printConflictGraph(num_of_agents);
-
-			if (curr->f_val > focal_list_threshold)
 			{
-				if (screen == 2)
-				{
-					cout << "	Reinsert " << *curr << endl;
-				}
-				curr->open_handle = open_list.push(curr);
-				continue;
+				cout << "	Reinsert " << *curr << endl;
 			}
+			continue;
 		}
 
 		//Expand the node
@@ -948,11 +915,11 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 					delete (child[i]);
 					continue;
 				}
-				if (child[i]->f_val == min_f_val && child[i]->num_of_collisions == 0) //no conflicts
+				if (child[i]->g_val + child[i]->h_val == min_f_val && curr->unknownConf.size() + curr->conflicts.size() == 0) //no conflicts
 				{// found a solution (and finish the while look)
 					break;
 				}
-				else if (bypass && child[i]->g_val == curr->g_val && child[i]->num_of_collisions < curr->num_of_collisions) // Bypass1
+				else if (bypass && child[i]->g_val == curr->g_val && child[i]->tie_breaking < curr->tie_breaking) // Bypass1
 				{
 					if (i == 1 && !solved[0])
 						continue;
@@ -960,7 +927,7 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 					num_adopt_bypass++;
 					curr->conflicts = child[i]->conflicts;
 					curr->unknownConf = child[i]->unknownConf;
-					curr->num_of_collisions = child[i]->num_of_collisions;
+					curr->tie_breaking = child[i]->tie_breaking;
 					curr->conflict = nullptr;
 					for (const auto& path : child[i]->paths) // update paths
 					{
@@ -1060,7 +1027,7 @@ CBS::CBS(vector<SingleAgentSolver*>& search_engines,
 	corridor_helper(search_engines, initial_constraints),
 	heuristic_helper(search_engines.size(), paths, search_engines, initial_constraints, mdd_helper)
 {
-	num_of_agents = search_engines.size();
+	num_of_agents = (int)search_engines.size();
 	mutex_helper.search_engines = search_engines;
 }
 
@@ -1148,16 +1115,13 @@ bool CBS::generateRoot()
 		{
 			paths[i] = &paths_found_initially[i];
 			dummy_start->makespan = max(dummy_start->makespan, paths_found_initially[i].size() - 1);
-			dummy_start->g_val += paths_found_initially[i].size() - 1;
+			dummy_start->g_val += (int)paths_found_initially[i].size() - 1;
 		}
 	}
 
 	// generate dummy start and update data structures		
 	dummy_start->h_val = 0;
-	dummy_start->f_val = dummy_start->g_val;
-
 	dummy_start->depth = 0;
-
 	dummy_start->open_handle = open_list.push(dummy_start);
 	dummy_start->focal_handle = focal_list.push(dummy_start);
 
@@ -1165,13 +1129,10 @@ bool CBS::generateRoot()
 	dummy_start->time_generated = num_HL_generated;
 	allNodes_table.push_back(dummy_start);
 	findConflicts(*dummy_start);
-
-	min_f_val = max(min_f_val, (double)dummy_start->f_val);
+	// We didn't compute the node-selection tie-breaking value for the root node
+	// since it does not need it.
+	min_f_val = max(min_f_val, (double)dummy_start->g_val);
 	focal_list_threshold = min_f_val * focal_w;
-	//if(h_type == heuristics_type::DG || h_type == heuristics_type::PAIR)
-	//	dummy_start->conflictGraph.resize(num_of_agents * num_of_agents, -1);
-	/*if (h_type == heuristics_type::DG && !EPEA4PAIR)
-	mdds_initially.resize(num_of_agents);*/
 
 	if (screen >= 2) // print start and goals
 	{
