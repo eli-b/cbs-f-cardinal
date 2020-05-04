@@ -392,7 +392,8 @@ void CBS::classifyConflicts(CBSNode &node)
 		if (rectangle_helper.strategy != rectangle_strategy::NR &&
 			(int)paths[con->a1]->size() > timestep &&
 			(int)paths[con->a2]->size() > timestep && //conflict happens before both agents reach their goal locations
-			type == constraint_type::VERTEX) // vertex conflict
+			type == constraint_type::VERTEX && // vertex conflict
+			con->priority != conflict_priority::CARDINAL) // not caridnal vertex conflict
 		{
 			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
 			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
