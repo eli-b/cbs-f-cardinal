@@ -168,6 +168,7 @@ public:
 private:
 	int screen = 0;
 	int num_of_agents;
+	int ILP_threshold = 3;
 	vector<vector<HTable> > lookupTable;
 
 	double time_limit;
@@ -195,7 +196,8 @@ private:
 	int greedyMatching(const vector<int>& CG, int cols);
 	int minimumWeightedVertexCover(const vector<int>& CG);
 	int weightedVertexCover(const vector<int>& CG);
-	int weightedVertexCover(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
+	int DPForWMVC(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
+	int ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_value);
 	int MVConAllConflicts(CBSNode& curr);
 	
 };

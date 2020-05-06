@@ -1,7 +1,8 @@
+#pragma warning(disable: 4996) // I added this line to disable error C4996 caused by CPLEX
 #include "CBSHeuristic.h"
 #include "CBS.h"
 #include <queue>
-
+#include <ilcplex/ilocplex.h>
 
 #define MAX_RUNTIME4PAIR 6000
 
@@ -513,8 +514,7 @@ int CBSHeuristic::minimumWeightedVertexCover(const vector<int>& HG)
 	return rst;
 }
 
-// branch and bound
-// enumerate all possible assignments and return the best one
+
 int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 {
 	int rst = 0;
@@ -566,7 +566,6 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 			rst += std::max(CG[indices[0] * num_of_agents + indices[1]], CG[indices[1] * num_of_agents + indices[0]]); // add edge weight
 			continue;
 		}
-		std::vector<int> x(num);
 		std::vector<int> G(num * num, 0);
 		for (int j = 0; j < num; j++)
 		{
@@ -575,8 +574,16 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 				G[j * num + k] = std::max(CG[indices[j] * num_of_agents + indices[k]], CG[indices[k] * num_of_agents + indices[j]]);
 			}
 		}
-		int best_so_far = MAX_COST;
-		rst += weightedVertexCover(x, 0, 0, G, range, best_so_far);
+		if (num > ILP_threshold) // solve by ILP
+		{
+			rst += ILPForWMVC(G, range); 
+		}
+		else // solve by dynamic programming
+		{
+			std::vector<int> x(num); 
+			int best_so_far = MAX_COST;
+			rst += DPForWMVC(x, 0, 0, G, range, best_so_far);
+		}
 		double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 		if (runtime > time_limit)
 			return -1; // run out of time
@@ -594,15 +601,15 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 		}
 	}
 	int best_so_far = INT_MAX;
-	int rst2 = weightedVertexCover(x, 0, 0, CG, range, best_so_far);
+	int rst2 = DPForWMVC(x, 0, 0, CG, range, best_so_far);
 	if( rst != rst2)
 		std::cout << "ERROR" <<std::endl;*/
 
 	return rst;
 }
 
-// recusive component of weighted vertex cover
-int CBSHeuristic::weightedVertexCover(std::vector<int>& x, int i, int sum, const std::vector<int>& CG, const std::vector<int>& range, int& best_so_far)
+// recusive component of dynamic programming for weighted vertex cover
+int CBSHeuristic::DPForWMVC(std::vector<int>& x, int i, int sum, const std::vector<int>& CG, const std::vector<int>& range, int& best_so_far)
 {
 	if (sum >= best_so_far)
 		return MAX_COST;
@@ -616,7 +623,7 @@ int CBSHeuristic::weightedVertexCover(std::vector<int>& x, int i, int sum, const
 	}
 	else if (range[i] == 0) // vertex i does not have any edges.
 	{
-		int rst = weightedVertexCover(x, i + 1, sum, CG, range, best_so_far);
+		int rst = DPForWMVC(x, i + 1, sum, CG, range, best_so_far);
 		if (rst < best_so_far)
 		{
 			best_so_far = rst;
@@ -641,7 +648,7 @@ int CBSHeuristic::weightedVertexCover(std::vector<int>& x, int i, int sum, const
 	for (int cost = min_cost; cost <= range[i]; cost++)
 	{
 		x[i] = cost;
-		int rst = weightedVertexCover(x, i + 1, sum + x[i], CG, range, best_so_far);
+		int rst = DPForWMVC(x, i + 1, sum + x[i], CG, range, best_so_far);
 		if (rst < best_so_far)
 		{
 			best_so_far = rst;
@@ -656,6 +663,54 @@ int CBSHeuristic::weightedVertexCover(std::vector<int>& x, int i, int sum, const
 	return best_so_far;
 }
 
+// integer linear programming for weighted vertex cover
+int CBSHeuristic::ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_value)
+{
+	int N = (int)node_max_value.size();
+	IloEnv env = IloEnv();
+	IloModel model = IloModel(env);
+	IloExpr sum_obj = IloExpr(env);
+	IloNumVarArray var(env);
+	IloRangeArray con(env);
+	for (int i = 0; i < N; i++)
+	{
+		var.add(IloNumVar(env, 0, node_max_value[i] + 1, ILOINT));
+		sum_obj += var[i];
+	}
+	model.add(IloMinimize(env, sum_obj));
+	for (int i = 0; i < N; i++)
+	{
+		for (int j = i + 1; j < N; j++)
+		{
+			if (CG[i * N + j] > 0)
+			{
+				con.add(var[i] + var[j] >= CG[i * N + j]);
+			}
+		}
+	}
+	model.add(con);
+	IloCplex cplex(env);
+	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+	cplex.setParam(IloCplex::TiLim, time_limit - runtime);
+	int solution_cost = -1;
+	cplex.extract(model);
+	cplex.setOut(env.getNullStream());
+	int rst = 0;
+	if (cplex.solve())
+		rst = (int)cplex.getObjValue();
+	else
+	{
+		runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+		if (time_limit > runtime + 1)
+		{
+			std::cout << "ERROR! remaining time = " << time_limit - runtime << " seconds" << endl;
+			cplex.exportModel("error.lp");
+			system("pause");
+		}
+	}
+	env.end();
+	return rst;
+}
 
 void CBSHeuristic::copyConflictGraph(CBSNode& child, const CBSNode& parent)
 {
