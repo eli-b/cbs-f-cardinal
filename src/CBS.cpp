@@ -207,72 +207,66 @@ shared_ptr<Conflict> CBS::chooseConflict(const CBSNode &node) const
 }
 
 
-void CBS::computePriorityForConflict(Conflict& conflict, const CBSNode& node)
+void CBS::computePriorityForConflict(Conflict& conflict, CBSNode& node)
 {
+	conflict.secondary_priority = 0;
 	switch (conflict_seletion_rule)
 	{
-		case conflict_selection::RANDOM:
-			conflict.secondary_priority = 0;
+	case conflict_selection::RANDOM:
+		break;
+	case conflict_selection::EARLIEST:
+		switch (conflict.type)
+		{
+		case conflict_type::STANDARD:
+		case conflict_type::RECTANGLE:
+		case conflict_type::TARGET:
+		case conflict_type::MUTEX:
+			conflict.secondary_priority = get<3>(conflict.constraint1.front());
 			break;
-		case conflict_selection::EARLIEST:
-			switch (conflict.type)
+		case conflict_type::CORRIDOR:
+			conflict.secondary_priority = min(get<2>(conflict.constraint1.front()),
+				get<3>(conflict.constraint1.front()));
+			break;
+		}
+		break;
+	case conflict_selection::CONFLICTS:
+		for (const auto& c : node.conflicts)
+		{
+			if (c->a1 == conflict.a1 || c->a2 == conflict.a1 || c->a1 == conflict.a2 || c->a2 == conflict.a2)
+				conflict.secondary_priority++;
+		}
+		for (const auto& c : node.unknownConf)
+		{
+			if (c->a1 == conflict.a1 || c->a2 == conflict.a1 || c->a1 == conflict.a2 || c->a2 == conflict.a2)
+				conflict.secondary_priority++;
+		}
+		break;
+	case conflict_selection::MCONSTRAINTS:
+		for (auto curr = &node; curr != nullptr; curr = curr->parent)
+		{
+			for (const auto& constraint : curr->constraints)
 			{
-				case conflict_type::STANDARD:
-				case conflict_type::RECTANGLE:
-				case conflict_type::TARGET:
-				case conflict_type::MUTEX:
-					conflict.secondary_priority = get<3>(conflict.constraint1.front());
-					break;
-				case conflict_type::CORRIDOR:
-					conflict.secondary_priority = min(get<2>(conflict.constraint1.front()),
-																				get<3>(conflict.constraint1.front()));
-					break;
+				if (get<0>(constraint) == conflict.a1 || get<0>(constraint) == conflict.a2)
+					conflict.secondary_priority--;
 			}
-			break;
-		case conflict_selection::CONFLICTS:
-			int count[2] = {0, 0};
-			for (const auto& c : node.conflicts)
+		}
+		break;
+	case conflict_selection::FCONSTRAINTS:
+		for (auto curr = &node; curr != nullptr; curr = curr->parent)
+		{
+			for (const auto& constraint : curr->constraints)
 			{
-				if (c->a1 == conflict.a1 || c->a2 == conflict.a1)
-					count[0]++;
-				if (c->a1 == conflict.a2 || c->a2 == conflict.a2)
-					count[1]++;
+				if (get<0>(constraint) == conflict.a1 || get<0>(constraint) == conflict.a2)
+					conflict.secondary_priority++;
 			}
-			conflict.secondary_priority = count[0] + count[1];
-			break;
-		/*case conflict_selection::MCONSTRAINTS:
-			int count[2] = { 0, 0 };
-			auto curr = node;
-			while (curr != nullptr)
-			{
-				if (get<0>(curr->constraints.front()) == conflict->a1)
-					count[0]++;
-				else if (get<0>(curr->constraints.front()) == conflict->a2)
-					count[1]++;
-				curr = curr->parent;
-			}
-			conflict.secondary_priority = - count[0] - count[1];
-			break;
-		case conflict_selection::FCONSTRAINTS:
-			int count[2] = { 0, 0 };
-			auto curr = node;
-			while (curr != nullptr)
-			{
-				for (const auto& constraint : curr->constraints)
-				{
-					if (get<0>(constraint) == conflict->a1)
-						count[0]++;
-					else if (get<0>(constraint) == conflict->a2)
-						count[1]++;
-				}
-				curr = curr->parent;
-			}
-			conflict.secondary_priority = count[0] + count[1];
-			break;
-		case conflict_selection::WIDTH:
-			break;
-		case conflict_selection::SINGLETONS:
-			break;*/
+		}
+		break;
+	case conflict_selection::WIDTH:
+		conflict.secondary_priority = mdd_helper.getAverageWidth(node, conflict.a1, paths[conflict.a1]->size()) +
+			mdd_helper.getAverageWidth(node, conflict.a2, paths[conflict.a2]->size());
+		break;
+	case conflict_selection::SINGLETONS:
+		break;
 	}
 	return;
 }

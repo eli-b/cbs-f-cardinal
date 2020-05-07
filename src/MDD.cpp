@@ -462,6 +462,14 @@ MDD * MDDTable::getMDD(CBSNode& node, int id, size_t mdd_levels)
 	return mdd;
 }
 
+double MDDTable::getAverageWidth(CBSNode& node, int agent, size_t mdd_levels)
+{
+	auto mdd = getMDD(node, agent, mdd_levels);
+	double width = 0;
+	for (const auto& level : mdd->levels)
+		width += level.size();
+	return width / mdd->levels.size();
+}
 
 void MDDTable::findSingletons(CBSNode& node, int agent, Path& path)
 {

@@ -40,9 +40,9 @@ int main(int argc, char** argv)
 		// params for CBS
 		("heuristics", po::value<string>()->default_value("CG"), "heuristics for the high-level search (Zero, CG,DG, WDG)")
 		("prioritizingConflicts", po::value<bool>()->default_value(true), "conflict prioirtization. If true, conflictSelection is used as a tie-breaking rule.")
-		("conflictSelection", po::value<string>()->default_value("Earliest"), 
+		("conflictSelection", po::value<string>()->default_value("Random"), 
 			"conflict selection (Random\n Earliest,\n Conflicts: most conflicts with others\n MConstraints: most constraints\n FConstraints: fewest constraints\n Width: thinest MDDs\n Singletons: most singletons in MDDs)")
-		("nodeSelection", po::value<string>()->default_value("ConflictPairs"),
+		("nodeSelection", po::value<string>()->default_value("Random"),
 			"conflict selection (Random\n H: smallest h value\n Depth: depth-first manner\n Conflicts: fewest conflicts\n ConflictPairs: fewest conflictinng pairs of agents\n MVC: MVC on the conflict graph)")
 		("bypass", po::value<bool>()->default_value(false), "Bypass1")
 		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")

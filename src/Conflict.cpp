@@ -87,6 +87,13 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 	return os;
 }
 
+
+// conflict selection
+// First compare the cardinality: cardinal > semi-cardinal > non-cardinal (This step can be skipped by the user)
+// Second compare the type: mutex > target > corridor > rectangle > vertex/edge
+// Third compare the user-specified tie-breaking rule: RANDOM, EARLIEST, CONFLICTS, MCONSTRAINTS, FCONSTRAINTS, WIDTH, SINGLETONS
+// Last break ties randomly
+// For all the values below, smaller is better
 bool operator < (const Conflict& conflict1, const Conflict& conflict2) // return true if conflict2 has higher priority
 {
 	if (conflict1.priority == conflict2.priority)

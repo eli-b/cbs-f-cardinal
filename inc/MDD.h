@@ -119,6 +119,7 @@ public:
 
 	MDD * getMDD(CBSNode& node, int agent, size_t mdd_levels);
 	void findSingletons(CBSNode& node, int agent, Path& path);
+	double getAverageWidth(CBSNode& node, int agent, size_t mdd_levels);
 	void clear();
 private:
 	int max_num_of_mdds = 10000;

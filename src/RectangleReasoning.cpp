@@ -8,7 +8,6 @@ shared_ptr<Conflict> RectangleReasoning::run(const vector<Path*>& paths, int tim
 	auto rectangle = findRectangleConflictByRM(paths, timestep, a1, a2, mdd1, mdd2);
 	accumulated_runtime += (double)(clock() - t) / CLOCKS_PER_SEC;
 	return rectangle;
-	// return findRectangleConflictByGR(paths, timestep, a1, a2, mdd1, mdd2);
 }
 
 

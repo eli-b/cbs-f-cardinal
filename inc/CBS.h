@@ -131,7 +131,7 @@ private:
 	void removeLowPriorityConflicts(list<shared_ptr<Conflict>>& conflicts) const;
 	//bool isCorridorConflict(std::shared_ptr<Conflict>& corridor, const std::shared_ptr<Conflict>& con, bool cardinal, ICBSNode* node);
 
-	void computePriorityForConflict(Conflict& conflict, const CBSNode& node);
+	void computePriorityForConflict(Conflict& conflict, CBSNode& node);
 
 	//update information
 	inline void updatePaths(CBSNode* curr);
