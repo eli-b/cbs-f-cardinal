@@ -168,7 +168,7 @@ public:
 private:
 	int screen = 0;
 	int num_of_agents;
-	int ILP_threshold = 3;
+	int ILP_threshold = 0;
 	vector<vector<HTable> > lookupTable;
 
 	double time_limit;
