@@ -429,7 +429,7 @@ std::pair<std::vector<Constraint>, std::vector<Constraint>> ConstraintPropagatio
       level_j = level_j_prev;
     }
 
-    // for level_j, we still need to consider consflict after i reach goal;
+    // for level_j, we still need to consider conflicts after i reach goal;
     MDDNode* goal_ptr_j = mdd_l->goalAt(level_1);
 
     int not_allowed_loc = goal_ptr_i->location;

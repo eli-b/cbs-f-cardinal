@@ -51,7 +51,7 @@ public:
   void increaseBy(const ConstraintTable&ct, int dLevel, SingleAgentSolver* solver);
   MDDNode* goalAt(int level);
 
-	MDD()= default;;
+	MDD()= default;
 	MDD(const MDD & cpy);
 	~MDD();
 };

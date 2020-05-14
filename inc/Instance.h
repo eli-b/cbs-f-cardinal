@@ -25,7 +25,7 @@ public:
 		list<int> getNeighbors(int curr) const;
 
 
-		inline int linearizeCoordinate(int row, int col) const { return ( this->num_of_cols * row + col); }
+		inline int linearizeCoordinate(int row, int col) const { return (this->num_of_cols * row + col); }
 		inline int getRowCoordinate(int id) const { return id / this->num_of_cols; }
 		inline int getColCoordinate(int id) const { return id % this->num_of_cols; }
 		inline pair<int, int> getCoordinate(int id) const { return make_pair(id / this->num_of_cols, id % this->num_of_cols); }

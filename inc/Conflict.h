@@ -5,8 +5,8 @@
 enum conflict_type { MUTEX, TARGET, CORRIDOR, RECTANGLE, STANDARD, TYPE_COUNT };
 
 enum conflict_priority { CARDINAL, PSEUDO_CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
-// Pseudo-cardinal conflicts are semi-/non-caridnal conflicts between dependent agents. 
-// We prioritize them over normal semi-/non-caridnal conflicts 
+// Pseudo-cardinal conflicts are semi-/non-cardinal conflicts between dependent agents.
+// We prioritize them over normal semi-/non-cardinal conflicts
 
 enum constraint_type { LEQLENGTH, GLENGTH, RANGE, BARRIER, VERTEX, EDGE, 
 											POSITIVE_VERTEX, POSITIVE_EDGE, POSITIVE_BARRIER, POSITIVE_RANGE, CONSTRAINT_COUNT };
@@ -34,7 +34,7 @@ public:
 	list<Constraint> constraint2;
 	conflict_type type;
 	conflict_priority priority = conflict_priority::UNKNOWN;
-	double secondary_priority = 0; // used as the tie-breaking creteria for conflict selection
+	double secondary_priority = 0; // used as the tie-breaking criteria for conflict selection
 
 	void vertexConflict(int a1, int a2, int v, int t)
 	{

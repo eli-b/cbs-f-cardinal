@@ -260,7 +260,7 @@ bool RectangleReasoning::ExtractBarriers(const MDD& mdd, int loc, int timestep,
 				barrier_end_y = instance.getColCoordinate(loc) + sign2 * (extent_U[i] - time_offset);
 			}
 			barrier_end_time = extent_U[i];
-			B.emplace_back(-1,  // for now, the agent index is not important,  so we just use -1 for simplexity.
+			B.emplace_back(-1,  // for now, the agent index is not important, so we just use -1 for simplicity.
 				instance.linearizeCoordinate(barrier_start_x, barrier_start_y),
 				instance.linearizeCoordinate(barrier_end_x, barrier_end_y), 
 				barrier_end_time, constraint_type::BARRIER);
@@ -490,7 +490,7 @@ int RectangleReasoning::classifyRectangleConflict(const pair<int, int>& s1, cons
 	if ((s2.first - s1.first) * (s1.first - g1.first) < 0 && (s2.second - s1.second) * (s1.second - g1.second) < 0) // s1 in the middle
 		return 0;
 	else if ((s1.first - s2.first) * (s2.first - g2.first) < 0 && (s1.second - s2.second) * (s2.second - g2.second) < 0) // s2 in the middle
-		return 0; 
+		return 0;
 
 	int cardinal1 = 0, cardinal2 = 0;
 	if ((s1.first == s2.first && (s1.second - s2.second) * (s2.second - Rg.second) >= 0) ||
@@ -794,7 +794,7 @@ bool RectangleReasoning::addModifiedHorizontalBarrierConstraint(int agent, const
 }
 
 
-// add a vertival modified barrier constraint
+// add a vertical modified barrier constraint
 bool RectangleReasoning::addModifiedVerticalBarrierConstraint(int agent, const MDD* mdd, int y,
 	int Ri_x, int Rg_x, int Rg_t, list<Constraint>& constraints)
 {

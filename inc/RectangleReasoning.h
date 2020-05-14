@@ -68,7 +68,7 @@ private:
 	bool addModifiedHorizontalBarrierConstraint(int agent, const MDD* mdd, int x,
 		int Ri_y, int Rg_y, int Rg_t, list<Constraint>& constraints);
 
-	// add a vertival modified barrier constraint
+	// add a vertical modified barrier constraint
 	bool addModifiedVerticalBarrierConstraint(int agent, const MDD* mdd, int y,
 		int Ri_x, int Rg_x, int Rg_t, list<Constraint>& constraints);
 

@@ -171,45 +171,37 @@ bool CBSHeuristic::buildDependenceGraph(CBSNode& node, vector<int>& CG, int& num
 }
 
 
-bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode& node, vector<int>& CG)
-{
-	for (const auto& conflict : node.conflicts)
-	{
-		int a1 = min(conflict->a1, conflict->a2);
-		int a2 = max(conflict->a1, conflict->a2);
-		int idx = a1 * num_of_agents + a2;
-		if (node.conflictGraph.find(idx) != node.conflictGraph.end())
-			continue;
-		auto got = lookupTable[a1][a2].find(HTableEntry(a1, a2, &node));
-		if (got != lookupTable[a1][a2].end()) // check the lookup table first
-		{
-			num_memoization++;
-			node.conflictGraph[idx] = got->second;
-		}
-		else if (rectangle_reasoning == rectangle_strategy::RM || mutex_reasoning)
-		{
-			node.conflictGraph[idx] = solve2Agents(a1, a2, node, false);
-			assert(node.conflictGraph[idx] >= 0);
-			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
-		}
-		else
-		{ 
-			bool cardinal = conflict->priority == conflict_priority::CARDINAL;
-			if (!cardinal) // using merging MDD methods before runing 2-agent instance
-			{
-				cardinal = dependent(a1, a2, node);
-			}
-			if (cardinal) // run 2-agent solver only for dependent agents
-			{
-				node.conflictGraph[idx] = solve2Agents(a1, a2, node, cardinal);		
-				assert(node.conflictGraph[idx] >= 1);
-			}
-			else
-			{
-				node.conflictGraph[idx] = 0;
-			}
-			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
-		}
+bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode &node, vector<int> &CG) {
+    for (const auto &conflict : node.conflicts) {
+        int a1 = min(conflict->a1, conflict->a2);
+        int a2 = max(conflict->a1, conflict->a2);
+        int idx = a1 * num_of_agents + a2;
+        if (node.conflictGraph.find(idx) != node.conflictGraph.end())
+            continue;
+        auto got = lookupTable[a1][a2].find(HTableEntry(a1, a2, &node));
+        if (got != lookupTable[a1][a2].end()) // check the lookup table first
+        {
+            num_memoization++;
+            node.conflictGraph[idx] = got->second;
+        } else if (rectangle_reasoning == rectangle_strategy::RM || mutex_reasoning) {
+            node.conflictGraph[idx] = solve2Agents(a1, a2, node, false);
+            assert(node.conflictGraph[idx] >= 0);
+            lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
+        } else {
+            bool cardinal = conflict->priority == conflict_priority::CARDINAL;
+            if (!cardinal) // using merging MDD methods before running 2-agent instance
+            {
+                cardinal = dependent(a1, a2, node);
+            }
+            if (cardinal) // run 2-agent solver only for dependent agents
+            {
+                node.conflictGraph[idx] = solve2Agents(a1, a2, node, cardinal);
+                assert(node.conflictGraph[idx] >= 1);
+            } else {
+                node.conflictGraph[idx] = 0;
+            }
+            lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
+        }
 
 		if (node.conflictGraph[idx] == MAX_COST) // no solution
 		{
@@ -612,40 +604,37 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 	return rst;
 }
 
-// recusive component of dynamic programming for weighted vertex cover
-int CBSHeuristic::DPForWMVC(std::vector<int>& x, int i, int sum, const std::vector<int>& CG, const std::vector<int>& range, int& best_so_far)
-{
-	if (sum >= best_so_far)
-		return MAX_COST;
-	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-	if (runtime > time_limit)
-		return -1; // run out of time
-	else if (i == (int)x.size())
-	{
-		best_so_far = sum;
-		return sum;
-	}
-	else if (range[i] == 0) // vertex i does not have any edges.
-	{
-		int rst = DPForWMVC(x, i + 1, sum, CG, range, best_so_far);
-		if (rst < best_so_far)
-		{
-			best_so_far = rst;
-		}
-		return best_so_far;
-	}
-	
-	int cols = x.size();
-	
-	// find minimum cost for this vertex
-	int min_cost = 0;
-	for (int j = 0; j < i; j++)
-	{
-		if (min_cost + x[j] < CG[j * cols + i]) // infeasible assignment
-		{
-			min_cost = CG[j * cols + i] - x[j]; // cost should be at least CG[i][j] - x[j];
-		}
-	}
+// recursive component of dynamic programming for weighted vertex cover
+int
+CBSHeuristic::DPForWMVC(std::vector<int> &x, int i, int sum, const std::vector<int> &CG, const std::vector<int> &range,
+                        int &best_so_far) {
+    if (sum >= best_so_far)
+        return MAX_COST;
+    double runtime = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+    if (runtime > time_limit)
+        return -1; // run out of time
+    else if (i == (int) x.size()) {
+        best_so_far = sum;
+        return sum;
+    } else if (range[i] == 0) // vertex i does not have any edges.
+    {
+        int rst = DPForWMVC(x, i + 1, sum, CG, range, best_so_far);
+        if (rst < best_so_far) {
+            best_so_far = rst;
+        }
+        return best_so_far;
+    }
+
+    int cols = x.size();
+
+    // find minimum cost for this vertex
+    int min_cost = 0;
+    for (int j = 0; j < i; j++) {
+        if (min_cost + x[j] < CG[j * cols + i]) // infeasible assignment
+        {
+            min_cost = CG[j * cols + i] - x[j]; // cost should be at least CG[i][j] - x[j];
+        }
+    }
 
 
 	int best_cost = -1;
