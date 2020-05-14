@@ -129,7 +129,7 @@ public:
 	corridor_strategy corridor_reasoning; // using corridor reasoning
 	bool target_reasoning; // using target reasoning
 	bool mutex_reasoning; // using mutex reasoning
-	bool disjoint_splitting; // disjoint splittting
+	bool disjoint_splitting; // disjoint splitting
 	bool PC; // prioritize conflicts
 	conflict_selection conflict_seletion_rule;
 	node_selection node_selection_rule;

@@ -18,7 +18,7 @@ void SingleAgentSolver::compute_heuristics()
 
 		Node() = default;
 		Node(int location, int value) : location(location), value(value) {}
-		// the following is used to comapre nodes in the OPEN list
+		// the following is used to compare nodes in the OPEN list
 		struct compare_node
 		{
 			// returns true if n1 > n2 (note -- this gives us *min*-heap).

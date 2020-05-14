@@ -1,4 +1,4 @@
-﻿#include <algorithm>    // std::shuffle
+#include <algorithm>    // std::shuffle
 #include <random>      // std::default_random_engine
 #include <chrono>       // std::chrono::system_clock
 #include "CBS.h"
@@ -210,7 +210,7 @@ shared_ptr<Conflict> CBS::chooseConflict(const CBSNode &node) const
 void CBS::computePriorityForConflict(Conflict& conflict, CBSNode& node)
 {
 	conflict.secondary_priority = 0;
-	switch (conflict_seletion_rule)
+	switch (conflict_selection_rule)
 	{
 	case conflict_selection::RANDOM:
 		break;

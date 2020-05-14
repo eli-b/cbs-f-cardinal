@@ -7,7 +7,7 @@ enum node_selection { NODE_RANDOM, NODE_H, NODE_DEPTH, NODE_CONFLICTS, NODE_CONF
 class CBSNode
 {
 public:
-	// the following is used to comapre nodes in the OPEN list
+	// the following is used to compare nodes in the OPEN list
 	struct compare_node 
 	{
 		bool operator()(const CBSNode* n1, const CBSNode* n2) const 
@@ -16,7 +16,7 @@ public:
 		}
 	};  // used by OPEN to compare nodes by f_val (top of the heap has min f_val)
 
-	// the following is used to comapre nodes in the FOCAL list
+	// the following is used to compare nodes in the FOCAL list
 	struct secondary_compare_node 
 	{
 		bool operator()(const CBSNode* n1, const CBSNode* n2) const 
@@ -33,7 +33,7 @@ public:
 	focal_handle_t focal_handle;
 
 	// The following is used by  for generating the hash value of a nodes
-	// this is needed because otherwise we'll have to define the specilized template inside std namespace
+	// this is needed because otherwise we'll have to define the specialized template inside std namespace
 	struct ICBSNodeHasher 
 	{
 		std::size_t operator()(const CBSNode* n) const {
@@ -57,7 +57,7 @@ public:
 
 	int g_val;
 	int h_val;
-	int depth; // depath of this CT node
+	int depth; // depth of this CT node
 	size_t makespan = 0; // makespan over all paths
 	int tie_breaking = 0; // tie breaking for node selection
 	bool h_computed = false;

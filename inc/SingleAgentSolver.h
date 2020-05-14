@@ -13,7 +13,7 @@ public:
 	int num_of_conflicts = 0;
 	bool in_openlist = false;
 	bool wait_at_goal; // the action is to wait at the goal vertex or not. This is used for >lenghth constraints
-	// the following is used to comapre nodes in the OPEN list
+	// the following is used to compare nodes in the OPEN list
 	struct compare_node
 	{
 		// returns true if n1 > n2 (note -- this gives us *min*-heap).
@@ -23,7 +23,7 @@ public:
 		}
 	};  // used by OPEN (heap) to compare nodes (top of the heap has min f-val, and then highest g-val)
 
-		// the following is used to comapre nodes in the FOCAL list
+		// the following is used to compare nodes in the FOCAL list
 	struct secondary_compare_node
 	{
 		bool operator()(const LLNode* n1, const LLNode* n2) const // returns true if n1 > n2
@@ -67,7 +67,7 @@ public:
 	uint64_t num_expanded = 0;
 	uint64_t num_generated = 0;
 
-	double runtime_build_CT = 0; // runtimr of building constraint table
+	double runtime_build_CT = 0; // runtime of building constraint table
 	double runtime_build_CAT = 0; // runtime of building conflict avoidance table
 
 	int start_location;
