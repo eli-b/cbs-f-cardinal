@@ -70,7 +70,7 @@ public:
 	}
 
 	bool rectangleConflict(int a1, int a2, const std::pair<int, int>& Rs, const std::pair<int, int>& Rg,
-	                         int Rg_t, const list<Constraint>& constraint1, const list<Constraint>& constraint2) // For RM
+	                       int Rg_t, const list<Constraint>& constraint1, const list<Constraint>& constraint2) // For RM
 	{
 		this->a1 = a1;
 		this->a2 = a2;

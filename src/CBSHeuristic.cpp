@@ -85,7 +85,7 @@ bool CBSHeuristic::computeInformedHeuristics(CBSNode& curr, double time_limit)
 	if (h < 0)
 		return false;
 
-	curr.h_val = max(h, curr.h_val); 
+	curr.h_val = max(h, curr.h_val);
 
 	// update tie-breaking for node selection if necessary
 	if (node_selection_rule == node_selection::NODE_H)
@@ -488,7 +488,7 @@ int CBSHeuristic::greedyMatching(const std::vector<int>& CG,  int cols)
 		int ep1, ep2;
 		for (int i = 0; i < cols; i++)
 		{
-			if(used[i])
+			if (used[i])
 				continue;
 			for (int j = i + 1; j < cols; j++)
 			{
@@ -580,11 +580,11 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 		}
 		if (num > ILP_threshold) // solve by ILP
 		{
-			rst += ILPForWMVC(G, range); 
+			rst += ILPForWMVC(G, range);
 		}
 		else // solve by dynamic programming
 		{
-			std::vector<int> x(num); 
+			std::vector<int> x(num);
 			int best_so_far = MAX_COST;
 			rst += DPForWMVC(x, 0, 0, G, range, best_so_far);
 		}
@@ -606,7 +606,7 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 	}
 	int best_so_far = INT_MAX;
 	int rst2 = DPForWMVC(x, 0, 0, CG, range, best_so_far);
-	if( rst != rst2)
+	if ( rst != rst2)
 		std::cout << "ERROR" <<std::endl;*/
 
 	return rst;
@@ -661,7 +661,7 @@ int CBSHeuristic::DPForWMVC(std::vector<int>& x, int i, int sum, const std::vect
 	}
 	if (best_cost >= 0)
 	{
-		x[i] = best_cost; 
+		x[i] = best_cost;
 	}
 
 	return best_so_far;
@@ -685,7 +685,7 @@ int CBSHeuristic::ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_
 
 	// set verbosity parameter 
 	SCIP_CALL(SCIPsetIntParam(scip, "display/verblevel", 5));
-	// SCIP_CALL( SCIPsetBoolParam(scip, "display/lpinfo", TRUE) ); 
+	// SCIP_CALL( SCIPsetBoolParam(scip, "display/lpinfo", TRUE) );
 
 	// disable scip output to stdout
 	SCIPmessagehdlrSetQuiet(SCIPgetMessagehdlr(scip), TRUE);

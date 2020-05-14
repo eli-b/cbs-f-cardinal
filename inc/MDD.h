@@ -8,7 +8,7 @@ public:
 	MDDNode(int currloc, MDDNode* parent)
 	{
 		location = currloc; 
-		if(parent == nullptr)
+		if (parent == nullptr)
 			level = 0;
 		else
 		{
