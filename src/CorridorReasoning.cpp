@@ -25,7 +25,7 @@ int CorridorReasoning::findCorridor(const shared_ptr<Conflict>& conflict,
 	tie(agent, loc2, loc1, t, type) = conflict->constraint1.back();
 	if (t < 1)
 		return 0;
-	if (loc1 < 0) // vertex conflcit
+	if (loc1 < 0) // vertex conflict
 	{
 		if (search_engines[0]->instance.getDegree(loc2) != 2)
 			return 0; // not a corridor 
@@ -37,8 +37,8 @@ int CorridorReasoning::findCorridor(const shared_ptr<Conflict>& conflict,
 			return 0; // not a corridor 	
 	}
 
-	endpoints_time[0] = getExitingTime(*paths[conflict->a1], t); ; // the first timestep when agent 1 exits the corridor 
-	endpoints_time[1] = getExitingTime(*paths[conflict->a2], t); ; // the first timestep when agent 2 exits the corridor 
+	endpoints_time[0] = getExitingTime(*paths[conflict->a1], t); // the first timestep when agent 1 exits the corridor
+	endpoints_time[1] = getExitingTime(*paths[conflict->a2], t); // the first timestep when agent 2 exits the corridor
 	endpoints[0] = paths[conflict->a1]->at(endpoints_time[0]).location; // the exit location for agent 1
 	endpoints[1] = paths[conflict->a2]->at(endpoints_time[1]).location; // the exit location for agent 2
 	if (endpoints[0] == endpoints[1]) // agents exit the corridor in the same direction
@@ -211,7 +211,7 @@ int CorridorReasoning::getCorridorLength(const vector<PathEntry>& path, int t_st
 		next = path[t].location;
 		if (next == curr) // wait
 			continue;
-		else if (next == prev) // turn aournd
+		else if (next == prev) // turn around
 			moveForward = !moveForward;
 		if (moveForward)
 		{

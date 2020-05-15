@@ -12,8 +12,8 @@ public:
 	/////////////////////////////////////////////////////////////////////////////////////
 	// stats
 	double runtime = 0;
-	double runtime_generate_child = 0; // runtimr of generating child nodes
-	double runtime_build_CT = 0; // runtimr of building constraint table
+	double runtime_generate_child = 0; // runtime of generating child nodes
+	double runtime_build_CT = 0; // runtime of building constraint table
 	double runtime_build_CAT = 0; // runtime of building conflict avoidance table
 	double runtime_path_finding = 0; // runtime of finding paths for single agents
 	double runtime_detect_conflicts = 0;
@@ -53,7 +53,7 @@ public:
 	void setMutexReasoning(bool m) {mutex_reasoning = m; heuristic_helper.mutex_reasoning = m; }
 	void setDisjointSplitting(bool d) {disjoint_splitting = d; heuristic_helper.disjoint_splitting = d; }
 	void setBypass(bool b) { bypass = b; } // 2-agent solver for heuristic calculation does not need bypass strategy.
-	void setConflictSelectionRule(conflict_selection c) { conflict_seletion_rule = c; heuristic_helper.conflict_seletion_rule = c; }
+	void setConflictSelectionRule(conflict_selection c) { conflict_selection_rule = c; heuristic_helper.conflict_seletion_rule = c; }
 	void setNodeSelectionRule(node_selection n) { node_selection_rule = n; heuristic_helper.node_selection_rule = n; }
 	void setNodeLimit(int n) { node_limit = n; }
 	////////////////////////////////////////////////////////////////////////////////////////////
@@ -74,11 +74,11 @@ public:
 
 private:
 	bool target_reasoning; // using target reasoning
-	bool disjoint_splitting; // disjoint splittting
+	bool disjoint_splitting; // disjoint splitting
 	bool mutex_reasoning; // using mutex reasoning
 	bool bypass; // using Bypass1
 	bool PC; // prioritize conflicts
-	conflict_selection conflict_seletion_rule;
+	conflict_selection conflict_selection_rule;
 	node_selection node_selection_rule;
 
 	MDDTable mdd_helper;	

@@ -8,7 +8,7 @@ public:
 	MDDNode(int currloc, MDDNode* parent)
 	{
 		location = currloc; 
-		if(parent == nullptr)
+		if (parent == nullptr)
 			level = 0;
 		else
 		{
@@ -51,7 +51,7 @@ public:
   void increaseBy(const ConstraintTable&ct, int dLevel, SingleAgentSolver* solver);
   MDDNode* goalAt(int level);
 
-	MDD()= default;;
+	MDD()= default;
 	MDD(const MDD & cpy);
 	~MDD();
 };

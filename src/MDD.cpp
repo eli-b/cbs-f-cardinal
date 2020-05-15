@@ -199,7 +199,7 @@ void MDD::deleteNode(MDDNode* node)
 
 void MDD::clear()
 {
-	if(levels.empty())
+	if (levels.empty())
 		return;
 	for (auto & level : levels)
 	{
@@ -211,9 +211,9 @@ void MDD::clear()
 
 MDDNode* MDD::find(int location, int level) const
 {
-	if(level < (int)levels.size())
+	if (level < (int)levels.size())
 		for (auto it : levels[level])
-			if(it->location == location)
+			if (it->location == location)
 				return it;
 	return nullptr;
 }
@@ -223,7 +223,7 @@ MDD::MDD(const MDD & cpy) // deep copy
 	levels.resize(cpy.levels.size());
 	auto root = new MDDNode(cpy.levels[0].front()->location, nullptr);
 	levels[0].push_back(root);
-	for(size_t t = 0; t < levels.size() - 1; t++)
+	for (size_t t = 0; t < levels.size() - 1; t++)
 	{
 		for (auto node = levels[t].begin(); node != levels[t].end(); ++node)
 		{
@@ -292,7 +292,7 @@ void MDD::increaseBy(const ConstraintTable&ct, int dLevel, SingleAgentSolver* so
 	// Backward
   for (int l = oldHeight; l < numOfLevels; l++){
     MDDNode* goal_node = nullptr;
-    for(auto it:levels[l]){
+    for (auto it:levels[l]){
       if (it->location == solver->goal_location){
         goal_node = it;
         break;

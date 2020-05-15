@@ -2,7 +2,7 @@
 #include"common.h"
 
 
-// Currently only works for undirected unweighted 4-nighbor grids
+// Currently only works for undirected unweighted 4-neighbor grids
 class Instance 
 {
 public:
@@ -25,7 +25,7 @@ public:
 		list<int> getNeighbors(int curr) const;
 
 
-		inline int linearizeCoordinate(int row, int col) const { return ( this->num_of_cols * row + col); }
+		inline int linearizeCoordinate(int row, int col) const { return (this->num_of_cols * row + col); }
 		inline int getRowCoordinate(int id) const { return id / this->num_of_cols; }
 		inline int getColCoordinate(int id) const { return id % this->num_of_cols; }
 		inline pair<int, int> getCoordinate(int id) const { return make_pair(id / this->num_of_cols, id % this->num_of_cols); }
@@ -81,7 +81,7 @@ private:
 
 	  void generateConnectedRandomGrid(int rows, int cols, int obstacles); // initialize new [rows x cols] map with random obstacles
 	  void generateRandomAgents(int warehouse_width);
-	  bool addObstacle(int obstacle); // add this obsatcle only if the map is still connected
+	  bool addObstacle(int obstacle); // add this obstacle only if the map is still connected
 	  bool isConnected(int start, int goal); // run BFS to find a path between start and goal, return true if a path exists.
 
 	  int randomWalk(int loc, int steps) const;

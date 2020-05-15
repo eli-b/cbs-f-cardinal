@@ -129,7 +129,7 @@ public:
 	corridor_strategy corridor_reasoning; // using corridor reasoning
 	bool target_reasoning; // using target reasoning
 	bool mutex_reasoning; // using mutex reasoning
-	bool disjoint_splitting; // disjoint splittting
+	bool disjoint_splitting; // disjoint splitting
 	bool PC; // prioritize conflicts
 	conflict_selection conflict_seletion_rule;
 	node_selection node_selection_rule;
@@ -139,7 +139,7 @@ public:
 
 	uint64_t num_merge_MDDs = 0;
 	uint64_t num_solve_2agent_problems = 0;
-	uint64_t num_memoization = 0; // number of times when memeorization helps
+	uint64_t num_memoization = 0; // number of times when memoization helps
 
 	CBSHeuristic(int num_of_agents,
 							const vector<Path*>& paths,
@@ -160,7 +160,7 @@ public:
 		}
 	}
 
-	bool computeInformedHeuristics(CBSNode& curr, double time_limit); // this function is called when poping a CT node for the first time
+	bool computeInformedHeuristics(CBSNode& curr, double time_limit); // this function is called when popping a CT node for the first time
 	void computeQuickHeuristics(CBSNode& curr); // this function is called when generating a CT node
 	void copyConflictGraph(CBSNode& child, const CBSNode& parent);
 	void clear() { lookupTable.clear(); }

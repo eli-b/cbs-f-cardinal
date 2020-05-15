@@ -1,7 +1,7 @@
 #include "ReservationTable.h"
 
 
-/*int ResevationTable::get_holding_time(int location)
+/*int ReservationTable::get_holding_time(int location)
 { 
 	auto it = constraints.find(location);
 	if (it != constraints.end())
@@ -101,7 +101,7 @@ void ReservationTable::insert2RT(size_t location, size_t t_min, size_t t_max)
     for (auto it = sit[location].begin(); it != sit[location].end();)
     {
         if (t_min >= get<1>(*it))
-			++it; 
+			++it;
         else if (t_max <= get<0>(*it))
             break;
        else  if (get<0>(*it) < t_min && get<1>(*it) <= t_max)
@@ -194,16 +194,16 @@ void ReservationTable::insertSoftConstraint2RT(size_t location, size_t t_min, si
 			++curr;
 		}
 	}
-}*/ // we cannot merge intervals for goal locations seperated by length_min
+}*/ // we cannot merge intervals for goal locations separated by length_min
 
 
-// update SIT at the gvien location
+// update SIT at the given location
 void ReservationTable::updateSIT(size_t location)
 {
 	if (sit.find(location) == sit.end())
 	{
 		// length constraints for the goal location
-		if (location == goal_location) // we need to divide the same intevals into 2 parts [0, length_min) and [length_min, length_max + 1)
+		if (location == goal_location) // we need to divide the same intervals into 2 parts [0, length_min) and [length_min, length_max + 1)
 		{
 			int latest_timestep = min(length_max, MAX_TIMESTEP - 1) + 1;
 			if (length_min > length_max) // the location is blocked for the entire time horizon
@@ -220,7 +220,7 @@ void ReservationTable::updateSIT(size_t location)
 		}
 
 		// negative constraints
-		const auto& it = ct.find(location); 
+		const auto& it = ct.find(location);
 		if (it != ct.end())
 		{
 			for (auto time_range : it->second)
@@ -286,7 +286,7 @@ list<Interval> ReservationTable::get_safe_intervals(size_t location, size_t lowe
 		return rst;
     }
 
-    for(auto interval : sit[location])
+    for (auto interval : sit[location])
     {
         if (lower_bound >= get<1>(interval))
             continue;
@@ -346,7 +346,7 @@ bool ReservationTable::find_safe_interval(Interval& interval, size_t location, s
 		interval = Interval(t_min, min(length_max, MAX_TIMESTEP - 1) + 1, 0);
 		return true;
     }
-    for( auto i : it->second)
+    for (auto i : it->second)
     {
         if ((int)get<0>(i) <= t_min && t_min < (int)get<1>(i))
         {

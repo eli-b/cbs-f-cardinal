@@ -32,7 +32,7 @@ Variants of Conflict-Based Search.
     * Least constraints
     * Width
     * Singletons
-    * Prioitized Conflicts (PC) with tie-breaking (*choose one*)
+    * Prioritized Conflicts (PC) with tie-breaking (*choose one*)
       * Random
       * Earliest
       * Most conflicts

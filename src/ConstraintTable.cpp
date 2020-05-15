@@ -109,7 +109,7 @@ void ConstraintTable::copy(const ConstraintTable& other)
 }
 
 
-// build the constraint table for the given agent at the give node 
+// build the constraint table for the given agent at the given node
 void ConstraintTable::build(const CBSNode& node, int agent)
 {
 	auto curr = &node;

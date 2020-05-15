@@ -1,4 +1,4 @@
-﻿#include <algorithm>    // std::shuffle
+#include <algorithm>    // std::shuffle
 #include <random>      // std::default_random_engine
 #include <chrono>       // std::chrono::system_clock
 #include "CBS.h"
@@ -210,7 +210,7 @@ shared_ptr<Conflict> CBS::chooseConflict(const CBSNode &node) const
 void CBS::computePriorityForConflict(Conflict& conflict, CBSNode& node)
 {
 	conflict.secondary_priority = 0;
-	switch (conflict_seletion_rule)
+	switch (conflict_selection_rule)
 	{
 	case conflict_selection::RANDOM:
 		break;
@@ -406,7 +406,7 @@ void CBS::classifyConflicts(CBSNode &node)
 
 
 	// remove conflicts that cannot be chosen, to save some memory
-	// except for the cases when we use num of conflcts as the tie-breaking rule for node selection
+	// except for the cases when we use num of conflicts as the tie-breaking rule for node selection
 	// since we need to know the total number of conflicts in this case.
 	if (node_selection_rule != node_selection::NODE_CONFLICTS)
 		removeLowPriorityConflicts(node.conflicts);
@@ -792,7 +792,7 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 			break;
 		}
 
-		if (PC) // priortize conflicts
+		if (PC) // prioritize conflicts
 			classifyConflicts(*curr);
 
 		if (!curr->h_computed) // heuristics has not been computed yet
@@ -1073,7 +1073,7 @@ bool CBS::generateRoot()
 	{
 		paths_found_initially.resize(num_of_agents);
 
-		//generate random permuattion of agent indices
+		// generate a random permutation of agent indices
 		vector<int> agents(num_of_agents);
 		for (int i = 0; i < num_of_agents; i++)
 		{

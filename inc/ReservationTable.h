@@ -37,7 +37,7 @@ private:
 	// void mergeIntervals(list<Interval >& intervals) const;
 
 	
-	void updateSIT(size_t location); // update SIT at the gvien location
+	void updateSIT(size_t location); // update SIT at the given location
 
 	int getNumOfConflictsForStep(size_t curr_id, size_t next_id, size_t next_timestep) const;
 };
