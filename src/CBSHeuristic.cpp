@@ -62,8 +62,8 @@ bool CBSHeuristic::computeInformedHeuristics(CBSNode& curr, double time_limit)
 	case heuristics_type::CG:
 		buildCardinalConflictGraph(curr, HG, num_of_CGedges);
 		// Minimum Vertex Cover
-		if (curr.parent == nullptr) // root node of CBS tree
-			h = minimumVertexCover(HG, -1, num_of_agents, num_of_CGedges);
+		if (curr.parent == nullptr || num_of_CGedges > ILP_edge_threshold) // root node of CBS tree or the CG is too large
+			h = minimumVertexCover(HG);
 		else
 			h = minimumVertexCover(HG, curr.parent->h_val, num_of_agents, num_of_CGedges);
 		break;
@@ -71,8 +71,8 @@ bool CBSHeuristic::computeInformedHeuristics(CBSNode& curr, double time_limit)
 		if (!buildDependenceGraph(curr, HG, num_of_CGedges))
 			return false;
 		// Minimum Vertex Cover
-		if (curr.parent == nullptr) // root node of CBS tree
-			h = minimumVertexCover(HG, -1, num_of_agents, num_of_CGedges);
+		if (curr.parent == nullptr || num_of_CGedges > ILP_edge_threshold) // root node of CBS tree or the CG is too large
+			h = minimumVertexCover(HG);
 		else
 			h = minimumVertexCover(HG, curr.parent->h_val, num_of_agents, num_of_CGedges);
 		break;
@@ -364,16 +364,27 @@ int CBSHeuristic::minimumVertexCover(const vector<int>& CG)
 					num_edges++;
 			}
 		}
-		for (int i = 1; i < (int)indices.size(); i++)
+		if (num_edges > ILP_edge_threshold)
 		{
-			if (KVertexCover(subgraph, (int)indices.size(), num_edges, i, (int)indices.size()))
-			{
-				rst += i;
-				break;
-			}
+			vector<int>ranges(indices.size(), 1);
+			rst += ILPForWMVC(subgraph, ranges);
 			double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 			if (runtime > time_limit)
 				return -1; // run out of time
+		}
+		else
+		{
+			for (int i = 1; i < (int)indices.size(); i++)
+			{
+				if (KVertexCover(subgraph, (int)indices.size(), num_edges, i, (int)indices.size()))
+				{
+					rst += i;
+					break;
+				}
+				double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+				if (runtime > time_limit)
+					return -1; // run out of time
+			}
 		}
 	}
 	return rst;
@@ -570,7 +581,7 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 				G[j * num + k] = std::max(CG[indices[j] * num_of_agents + indices[k]], CG[indices[k] * num_of_agents + indices[j]]);
 			}
 		}
-		if (num > ILP_threshold) // solve by ILP
+		if (num > ILP_node_threshold) // solve by ILP
 		{
 			rst += ILPForWMVC(G, range);
 		}

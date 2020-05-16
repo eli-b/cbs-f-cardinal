@@ -168,7 +168,8 @@ public:
 private:
 	int screen = 0;
 	int num_of_agents;
-	int ILP_threshold = 0;
+	int ILP_node_threshold = 5; // run ILP if #nodes in the conrflict graph is larger than the threshold
+	int ILP_edge_threshold = 10; // run ILP if #edges in the conrflict graph is larger than the threshold
 	vector<vector<HTable> > lookupTable;
 
 	double time_limit;
