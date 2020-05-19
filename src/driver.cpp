@@ -154,6 +154,12 @@ int main(int argc, char** argv)
 		cout << "WRONG node selection strategy!" << endl;
 		return -1;
 	}
+
+	if (n == node_selection::NODE_DEPTH && vm["bypass"].as<bool>()) // When using depth as the node tie breaking rule, we cannot use bypassing
+	{
+		cout << "When using bypassing, we cannot use DEPTH as the node tie breaking rule!" << endl;
+		return -1;
+	}
 	srand((int)time(0));
 
 	///////////////////////////////////////////////////////////////////////////
