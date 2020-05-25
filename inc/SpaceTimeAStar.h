@@ -1,4 +1,5 @@
-﻿#pragma once
+#pragma once
+
 #include "SingleAgentSolver.h"
 
 
@@ -6,8 +7,8 @@ class AStarNode: public LLNode
 {
 public:
 	// define a typedefs for handles to the heaps (allow up to quickly update a node in the heap)
-	typedef pairing_heap< AStarNode*, compare<LLNode::compare_node> >::handle_type open_handle_t;
-	typedef pairing_heap< AStarNode*, compare<LLNode::secondary_compare_node> >::handle_type focal_handle_t;
+	typedef pairing_heap<AStarNode*, compare<LLNode::compare_node>>::handle_type open_handle_t;
+	typedef pairing_heap<AStarNode*, compare<LLNode::secondary_compare_node>>::handle_type focal_handle_t;
 	open_handle_t open_handle;
 	focal_handle_t focal_handle;
 
@@ -70,19 +71,19 @@ public:
 	// minimizing the number of internal conflicts (that is conflicts with known_paths for other agents found so far).
 	// lowerbound is an underestimation of the length of the path in order to speed up the search.
 	Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
-						const vector<Path*>& paths, int agent, int lower_bound);
+				  const vector<Path*>& paths, int agent, int lower_bound);
 
 	int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound);
 
 	string getName() const { return "AStar"; }
 
-	SpaceTimeAStar(const Instance& instance, int agent):
-		SingleAgentSolver(instance, agent) {}
+	SpaceTimeAStar(const Instance& instance, int agent) :
+			SingleAgentSolver(instance, agent) {}
 
 private:
 	// define typedefs and handles for heap
-	typedef pairing_heap< AStarNode*, compare<AStarNode::compare_node> > heap_open_t;
-	typedef pairing_heap< AStarNode*, compare<AStarNode::secondary_compare_node> > heap_focal_t;
+	typedef pairing_heap<AStarNode*, compare<AStarNode::compare_node>> heap_open_t;
+	typedef pairing_heap<AStarNode*, compare<AStarNode::secondary_compare_node>> heap_focal_t;
 	heap_open_t open_list;
 	heap_focal_t focal_list;
 
@@ -94,7 +95,7 @@ private:
 	hashtable_t allNodes_table;
 
 	// Updates the path datamember
-	void updatePath(const LLNode* goal, vector<PathEntry> &path);
+	void updatePath(const LLNode* goal, vector<PathEntry>& path);
 	void updateFocalList();
 	inline AStarNode* popNode();
 	inline void pushNode(AStarNode* node);

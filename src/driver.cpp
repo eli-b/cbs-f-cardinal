@@ -57,7 +57,8 @@ int main(int argc, char** argv)
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 
-	if (vm.count("help")) {
+	if (vm.count("help"))
+	{
 		usage();
 		cout << desc << endl;
 		return 1;
@@ -72,7 +73,7 @@ int main(int argc, char** argv)
 		return -1;
 	}*/
 
-  heuristics_type h;
+	heuristics_type h;
 	if (vm["heuristics"].as<string>() == "Zero")
 		h = heuristics_type::ZERO;
 	else if (vm["heuristics"].as<string>() == "CG")
@@ -160,13 +161,13 @@ int main(int argc, char** argv)
 		cout << "When using bypassing, we cannot use DEPTH as the node tie breaking rule!" << endl;
 		return -1;
 	}
-	srand((int)time(0));
+	srand((int) time(0));
 
 	///////////////////////////////////////////////////////////////////////////
 	// load the instance
 	Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
-		vm["agentNum"].as<int>(),
-		vm["rows"].as<int>(), vm["cols"].as<int>(), vm["obs"].as<int>(), vm["warehouseWidth"].as<int>());
+					  vm["agentNum"].as<int>(),
+					  vm["rows"].as<int>(), vm["cols"].as<int>(), vm["obs"].as<int>(), vm["warehouseWidth"].as<int>());
 
 	srand(vm["seed"].as<int>());
 
@@ -196,7 +197,7 @@ int main(int argc, char** argv)
 		runtime += cbs.runtime;
 		if (cbs.solution_found)
 			break;
-		min_f_val = (int)cbs.min_f_val;
+		min_f_val = (int) cbs.min_f_val;
 		cbs.randomRoot = true;
 	}
 	cbs.runtime = runtime;
@@ -206,7 +207,6 @@ int main(int argc, char** argv)
 	return 0;
 
 }
-
 
 
 /*
