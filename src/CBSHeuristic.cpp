@@ -17,30 +17,30 @@ void CBSHeuristic::computeQuickHeuristics(CBSNode& node) // for non-root node
 	set<pair<int, int>> conflicting_agents;
 	switch (node_selection_rule)
 	{
-		case node_selection::NODE_H:
-			node.tie_breaking = node.h_val;
-			break;
-		case node_selection::NODE_DEPTH:
-			node.tie_breaking = - node.depth; // we use negative depth because we prefer nodes with larger depths
-			break;
-		case node_selection::NODE_CONFLICTS:
-			node.tie_breaking = (int)(node.conflicts.size() + node.unknownConf.size());
-			break;
-		case node_selection::NODE_CONFLICTPAIRS:
-			for (const auto& conflict : node.unknownConf)
+	case node_selection::NODE_H:
+		node.tie_breaking = node.h_val;
+		break;
+	case node_selection::NODE_DEPTH:
+		node.tie_breaking = -node.depth; // we use negative depth because we prefer nodes with larger depths
+		break;
+	case node_selection::NODE_CONFLICTS:
+		node.tie_breaking = (int) (node.conflicts.size() + node.unknownConf.size());
+		break;
+	case node_selection::NODE_CONFLICTPAIRS:
+		for (const auto& conflict : node.unknownConf)
+		{
+			auto agents = make_pair(min(conflict->a1, conflict->a2), max(conflict->a1, conflict->a2));
+			if (conflicting_agents.find(agents) == conflicting_agents.end())
 			{
-				auto agents = make_pair(min(conflict->a1, conflict->a2), max(conflict->a1, conflict->a2));
-				if (conflicting_agents.find(agents) == conflicting_agents.end())
-				{
-					conflicting_agents.insert(agents);
-				}
+				conflicting_agents.insert(agents);
 			}
-			node.tie_breaking = (int)(node.conflicts.size() + conflicting_agents.size());
-			break;
-		case node_selection::NODE_MVC:
-			node.tie_breaking = MVConAllConflicts(node);
-			break;
-	}	
+		}
+		node.tie_breaking = (int) (node.conflicts.size() + conflicting_agents.size());
+		break;
+	case node_selection::NODE_MVC:
+		node.tie_breaking = MVConAllConflicts(node);
+		break;
+	}
 	copyConflictGraph(node, *node.parent);
 }
 
@@ -112,7 +112,7 @@ void CBSHeuristic::buildCardinalConflictGraph(CBSNode& curr, vector<int>& CG, in
 			}
 		}
 	}
-	runtime_build_dependency_graph += (double)(clock() - start_time) / CLOCKS_PER_SEC;
+	runtime_build_dependency_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
 }
 
 
@@ -137,7 +137,7 @@ bool CBSHeuristic::buildDependenceGraph(CBSNode& node, vector<int>& CG, int& num
 			}
 			else
 			{
-				node.conflictGraph[idx] = dependent(a1, a2, node)? 1 : 0;
+				node.conflictGraph[idx] = dependent(a1, a2, node) ? 1 : 0;
 				lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
 			}
 		}
@@ -147,7 +147,7 @@ bool CBSHeuristic::buildDependenceGraph(CBSNode& node, vector<int>& CG, int& num
 		}
 		if ((clock() - start_time) / CLOCKS_PER_SEC > time_limit) // run out of time
 		{
-			runtime_build_dependency_graph += (double)(clock() - start_time) / CLOCKS_PER_SEC;
+			runtime_build_dependency_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
 			return false;
 		}
 	}
@@ -166,42 +166,50 @@ bool CBSHeuristic::buildDependenceGraph(CBSNode& node, vector<int>& CG, int& num
 			}
 		}
 	}
-	runtime_build_dependency_graph += (double)(clock() - start_time) / CLOCKS_PER_SEC;
+	runtime_build_dependency_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
 	return true;
 }
 
 
-bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode &node, vector<int> &CG) {
-    for (const auto &conflict : node.conflicts) {
-        int a1 = min(conflict->a1, conflict->a2);
-        int a2 = max(conflict->a1, conflict->a2);
-        int idx = a1 * num_of_agents + a2;
-        if (node.conflictGraph.find(idx) != node.conflictGraph.end())
-            continue;
-        auto got = lookupTable[a1][a2].find(HTableEntry(a1, a2, &node));
-        if (got != lookupTable[a1][a2].end()) // check the lookup table first
-        {
-            num_memoization++;
-            node.conflictGraph[idx] = got->second;
-        } else if (rectangle_reasoning == rectangle_strategy::RM || mutex_reasoning) {
-            node.conflictGraph[idx] = solve2Agents(a1, a2, node, false);
-            assert(node.conflictGraph[idx] >= 0);
-            lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
-        } else {
-            bool cardinal = conflict->priority == conflict_priority::CARDINAL;
-            if (!cardinal) // using merging MDD methods before running 2-agent instance
-            {
-                cardinal = dependent(a1, a2, node);
-            }
-            if (cardinal) // run 2-agent solver only for dependent agents
-            {
-                node.conflictGraph[idx] = solve2Agents(a1, a2, node, cardinal);
-                assert(node.conflictGraph[idx] >= 1);
-            } else {
-                node.conflictGraph[idx] = 0;
-            }
-            lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
-        }
+bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode& node, vector<int>& CG)
+{
+	for (const auto& conflict : node.conflicts)
+	{
+		int a1 = min(conflict->a1, conflict->a2);
+		int a2 = max(conflict->a1, conflict->a2);
+		int idx = a1 * num_of_agents + a2;
+		if (node.conflictGraph.find(idx) != node.conflictGraph.end())
+			continue;
+		auto got = lookupTable[a1][a2].find(HTableEntry(a1, a2, &node));
+		if (got != lookupTable[a1][a2].end()) // check the lookup table first
+		{
+			num_memoization++;
+			node.conflictGraph[idx] = got->second;
+		}
+		else if (rectangle_reasoning == rectangle_strategy::RM || mutex_reasoning)
+		{
+			node.conflictGraph[idx] = solve2Agents(a1, a2, node, false);
+			assert(node.conflictGraph[idx] >= 0);
+			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
+		}
+		else
+		{
+			bool cardinal = conflict->priority == conflict_priority::CARDINAL;
+			if (!cardinal) // using merging MDD methods before running 2-agent instance
+			{
+				cardinal = dependent(a1, a2, node);
+			}
+			if (cardinal) // run 2-agent solver only for dependent agents
+			{
+				node.conflictGraph[idx] = solve2Agents(a1, a2, node, cardinal);
+				assert(node.conflictGraph[idx] >= 1);
+			}
+			else
+			{
+				node.conflictGraph[idx] = 0;
+			}
+			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
+		}
 
 		if (node.conflictGraph[idx] == MAX_COST) // no solution
 		{
@@ -214,7 +222,7 @@ bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode &node, vector<int> &CG) 
 		}
 		if ((clock() - start_time) / CLOCKS_PER_SEC > time_limit) // run out of time
 		{
-			runtime_build_dependency_graph += (double)(clock() - start_time) / CLOCKS_PER_SEC;
+			runtime_build_dependency_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
 			return false;
 		}
 	}
@@ -231,7 +239,7 @@ bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode &node, vector<int> &CG) 
 			}
 		}
 	}
-	runtime_build_dependency_graph += (double)(clock() - start_time) / CLOCKS_PER_SEC;
+	runtime_build_dependency_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
 	return true;
 }
 
@@ -245,8 +253,8 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 	initial_paths[0] = *paths[a1];
 	initial_paths[1] = *paths[a2];
 	vector<ConstraintTable> constraints{
-		ConstraintTable(initial_constraints[a1]),
-		ConstraintTable(initial_constraints[a2]) };
+			ConstraintTable(initial_constraints[a1]),
+			ConstraintTable(initial_constraints[a2]) };
 	constraints[0].build(node, a1);
 	constraints[1].build(node, a2);
 	CBS cbs(engines, constraints, initial_paths, screen);
@@ -262,8 +270,8 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 	cbs.setNodeSelectionRule(node_selection_rule);
 	cbs.setNodeLimit(node_limit);
 
-	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-	int root_g = (int)initial_paths[0].size() - 1 + (int)initial_paths[1].size() - 1;
+	double runtime = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+	int root_g = (int) initial_paths[0].size() - 1 + (int) initial_paths[1].size() - 1;
 	int lowerbound = root_g;
 	int upperbound = MAX_COST;
 	if (cardinal)
@@ -272,8 +280,8 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 	num_solve_2agent_problems++;
 	int rst;
 	if (cbs.runtime > time_limit - runtime || cbs.num_HL_expanded > node_limit) // time out or node out
-		rst = (int)cbs.min_f_val - root_g; // using lowerbound to approximate
-	else if (cbs.solution_cost  < 0) // no solution
+		rst = (int) cbs.min_f_val - root_g; // using lowerbound to approximate
+	else if (cbs.solution_cost < 0) // no solution
 		rst = MAX_COST;
 	else
 	{
@@ -287,7 +295,7 @@ int CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 int CBSHeuristic::MVConAllConflicts(CBSNode& curr)
 {
 	auto G = buildConflictGraph(curr);
-	return  minimumVertexCover(G);
+	return minimumVertexCover(G);
 }
 
 
@@ -344,19 +352,19 @@ int CBSHeuristic::minimumVertexCover(const vector<int>& CG)
 				}
 			}
 		}
-		if ((int)indices.size() == 1) //one node -> no edges -> mvc = 0
+		if ((int) indices.size() == 1) //one node -> no edges -> mvc = 0
 			continue;
-		else if ((int)indices.size() == 2) // two nodes -> only one edge -> mvc = 1
+		else if ((int) indices.size() == 2) // two nodes -> only one edge -> mvc = 1
 		{
 			rst += 1; // add edge weight
 			continue;
 		}
 
-		std::vector<int> subgraph(indices.size()  * indices.size(), 0);
+		std::vector<int> subgraph(indices.size() * indices.size(), 0);
 		int num_edges = 0;
-		for (int j = 0; j < (int)indices.size(); j++)
+		for (int j = 0; j < (int) indices.size(); j++)
 		{
-			for (int k = j + 1; k < (int)indices.size(); k++)
+			for (int k = j + 1; k < (int) indices.size(); k++)
 			{
 				subgraph[j * indices.size() + k] = CG[indices[j] * num_of_agents + indices[k]];
 				subgraph[k * indices.size() + j] = CG[indices[k] * num_of_agents + indices[j]];
@@ -366,22 +374,22 @@ int CBSHeuristic::minimumVertexCover(const vector<int>& CG)
 		}
 		if (num_edges > ILP_edge_threshold)
 		{
-			vector<int>ranges(indices.size(), 1);
+			vector<int> ranges(indices.size(), 1);
 			rst += ILPForWMVC(subgraph, ranges);
-			double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+			double runtime = (double) (clock() - start_time) / CLOCKS_PER_SEC;
 			if (runtime > time_limit)
 				return -1; // run out of time
 		}
 		else
 		{
-			for (int i = 1; i < (int)indices.size(); i++)
+			for (int i = 1; i < (int) indices.size(); i++)
 			{
-				if (KVertexCover(subgraph, (int)indices.size(), num_edges, i, (int)indices.size()))
+				if (KVertexCover(subgraph, (int) indices.size(), num_edges, i, (int) indices.size()))
 				{
 					rst += i;
 					break;
 				}
-				double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+				double runtime = (double) (clock() - start_time) / CLOCKS_PER_SEC;
 				if (runtime > time_limit)
 					return -1; // run out of time
 			}
@@ -399,9 +407,9 @@ int CBSHeuristic::minimumVertexCover(const std::vector<int>& CG, int old_mvc, in
 		return num_of_CGedges;
 	// Compute #CG nodes that have edges
 	int num_of_CGnodes = 0;
-	for (int i = 0; i <  cols; i++)
+	for (int i = 0; i < cols; i++)
 	{
-		for (int j = 0; j <  cols; j++)
+		for (int j = 0; j < cols; j++)
 		{
 			if (CG[i * cols + j] > 0)
 			{
@@ -421,7 +429,7 @@ int CBSHeuristic::minimumVertexCover(const std::vector<int>& CG, int old_mvc, in
 				break;
 			}
 		}
-        assert(rst>0);
+		assert(rst > 0);
 	}
 	else
 	{
@@ -432,14 +440,14 @@ int CBSHeuristic::minimumVertexCover(const std::vector<int>& CG, int old_mvc, in
 		else
 			rst = old_mvc + 1;
 	}
-	runtime_solve_MVC += (double)(clock() - t) / CLOCKS_PER_SEC;
+	runtime_solve_MVC += (double) (clock() - t) / CLOCKS_PER_SEC;
 	return rst;
 }
 
 // Whether there exists a k-vertex cover solution
 bool CBSHeuristic::KVertexCover(const std::vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols)
 {
-	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+	double runtime = (double) (clock() - start_time) / CLOCKS_PER_SEC;
 	if (runtime > time_limit)
 		return true; // run out of time
 	if (num_of_CGedges == 0)
@@ -481,11 +489,11 @@ bool CBSHeuristic::KVertexCover(const std::vector<int>& CG, int num_of_CGnodes, 
 	return false;
 }
 
-int CBSHeuristic::greedyMatching(const std::vector<int>& CG,  int cols)
+int CBSHeuristic::greedyMatching(const std::vector<int>& CG, int cols)
 {
 	int rst = 0;
 	std::vector<bool> used(cols, false);
-	while(1)
+	while (1)
 	{
 		int maxWeight = 0;
 		int ep1, ep2;
@@ -517,7 +525,7 @@ int CBSHeuristic::minimumWeightedVertexCover(const vector<int>& HG)
 {
 	clock_t t = clock();
 	int rst = weightedVertexCover(HG);
-	runtime_solve_MVC += (double)(clock() - t) / CLOCKS_PER_SEC;
+	runtime_solve_MVC += (double) (clock() - t) / CLOCKS_PER_SEC;
 	return rst;
 }
 
@@ -553,7 +561,7 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 						Q.push(k);
 						done[k] = true;
 					}
-				}		
+				}
 				else if (CG[k * num_of_agents + j] > 0)
 				{
 					range[num] = std::max(range[num], CG[k * num_of_agents + j]);
@@ -566,7 +574,7 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 			}
 			num++;
 		}
-		if (num  == 1) // no edges
+		if (num == 1) // no edges
 			continue;
 		else if (num == 2) // only one edge
 		{
@@ -591,7 +599,7 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 			int best_so_far = MAX_COST;
 			rst += DPForWMVC(x, 0, 0, G, range, best_so_far);
 		}
-		double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+		double runtime = (double) (clock() - start_time) / CLOCKS_PER_SEC;
 		if (runtime > time_limit)
 			return -1; // run out of time
 	}
@@ -617,35 +625,40 @@ int CBSHeuristic::weightedVertexCover(const std::vector<int>& CG)
 
 // recursive component of dynamic programming for weighted vertex cover
 int
-CBSHeuristic::DPForWMVC(std::vector<int> &x, int i, int sum, const std::vector<int> &CG, const std::vector<int> &range,
-                        int &best_so_far) {
-    if (sum >= best_so_far)
-        return MAX_COST;
-    double runtime = (double) (clock() - start_time) / CLOCKS_PER_SEC;
-    if (runtime > time_limit)
-        return -1; // run out of time
-    else if (i == (int) x.size()) {
-        best_so_far = sum;
-        return sum;
-    } else if (range[i] == 0) // vertex i does not have any edges.
-    {
-        int rst = DPForWMVC(x, i + 1, sum, CG, range, best_so_far);
-        if (rst < best_so_far) {
-            best_so_far = rst;
-        }
-        return best_so_far;
-    }
+CBSHeuristic::DPForWMVC(std::vector<int>& x, int i, int sum, const std::vector<int>& CG, const std::vector<int>& range,
+						int& best_so_far)
+{
+	if (sum >= best_so_far)
+		return MAX_COST;
+	double runtime = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+	if (runtime > time_limit)
+		return -1; // run out of time
+	else if (i == (int) x.size())
+	{
+		best_so_far = sum;
+		return sum;
+	}
+	else if (range[i] == 0) // vertex i does not have any edges.
+	{
+		int rst = DPForWMVC(x, i + 1, sum, CG, range, best_so_far);
+		if (rst < best_so_far)
+		{
+			best_so_far = rst;
+		}
+		return best_so_far;
+	}
 
-    int cols = x.size();
+	int cols = x.size();
 
-    // find minimum cost for this vertex
-    int min_cost = 0;
-    for (int j = 0; j < i; j++) {
-        if (min_cost + x[j] < CG[j * cols + i]) // infeasible assignment
-        {
-            min_cost = CG[j * cols + i] - x[j]; // cost should be at least CG[i][j] - x[j];
-        }
-    }
+	// find minimum cost for this vertex
+	int min_cost = 0;
+	for (int j = 0; j < i; j++)
+	{
+		if (min_cost + x[j] < CG[j * cols + i]) // infeasible assignment
+		{
+			min_cost = CG[j * cols + i] - x[j]; // cost should be at least CG[i][j] - x[j];
+		}
+	}
 
 
 	int best_cost = -1;
@@ -670,7 +683,7 @@ CBSHeuristic::DPForWMVC(std::vector<int> &x, int i, int sum, const std::vector<i
 // integer linear programming for weighted vertex cover
 int CBSHeuristic::ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_value)
 {
-	int N = (int)node_max_value.size();
+	int N = (int) node_max_value.size();
 
 	// initialize SCIP environment 
 	SCIP* scip = NULL;
@@ -691,7 +704,7 @@ int CBSHeuristic::ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_
 	SCIPmessagehdlrSetQuiet(SCIPgetMessagehdlr(scip), TRUE);
 
 	// set runtime limit
-	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+	double runtime = (double) (clock() - start_time) / CLOCKS_PER_SEC;
 	SCIP_CALL(SCIPsetRealParam(scip, "limits/time", time_limit - runtime));
 
 	// create empty problem 
@@ -701,21 +714,21 @@ int CBSHeuristic::ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_
 	// SCIP_CALL(SCIPsetObjsense(scip, SCIP_OBJSENSE_MINIMIZE));
 
 	// add variables 
-	vector< SCIP_VAR* > vars(N);
+	vector<SCIP_VAR*> vars(N);
 	for (int i = 0; i < N; ++i)
 	{
 		std::string s = std::to_string(i);
-		char const *pchar = s.c_str();  //use char const* as target type
+		char const* pchar = s.c_str();  //use char const* as target type
 		SCIP_CALL(SCIPcreateVar(scip,
-			&vars[i],                   // returns new index
-			pchar,               // name
-			0,                    // lower bound
-			node_max_value[i] + 1,                    // upper bound
-			1,             // objective
-			SCIP_VARTYPE_INTEGER,   // variable type
-			true,                   // initial
-			false,                  // forget the rest ...
-			NULL, NULL, NULL, NULL, NULL));
+								&vars[i],                   // returns new index
+								pchar,               // name
+								0,                    // lower bound
+								node_max_value[i] + 1,                    // upper bound
+								1,             // objective
+								SCIP_VARTYPE_INTEGER,   // variable type
+								true,                   // initial
+								false,                  // forget the rest ...
+								NULL, NULL, NULL, NULL, NULL));
 		SCIP_CALL(SCIPaddVar(scip, vars[i]));
 	}
 
@@ -729,27 +742,27 @@ int CBSHeuristic::ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_
 			{
 				SCIP_CONS* con;
 				SCIP_VAR* var[2] = { vars[i], vars[j] };
-				double coeff[2] = {1, 1};
+				double coeff[2] = { 1, 1 };
 				std::string s = std::to_string(i * N + j);
-				char const *pchar = s.c_str();  //use char const* as target type
-				SCIP_CALL(SCIPcreateConsLinear(scip, &con, 
-					pchar,					// name of the constraint
-					2,							// number of variables to be added to the constraint 
-					var,						// array of SCIP_VAR pointers to variables 
-					coeff,					// array of values of the coeffcients 
-					CG[i * N + j],    // lhs 
-					SCIPinfinity(scip),                    // rhs 
-					true,                   // initial: set this to TRUE if you want the constraint to occur in the root problem 
-					true,                  // separate: set this to TRUE if you would like the handler to separate, e.g. generate cuts 
-					true,                   // enforce: set this to TRUE if you would like the handler to enforce solutions. This means that when the handler declares an LP or pseudo solution as infeasible, it can resolve infeasibility by adding cuts, reducing the domain of a variable, performing a branching, etc. 
-					true,                   // check: set this to TRUE if the constraint handler should check solutions 
-					true,                   // propagate: set this to TRUE if you want to propagate solutions, this means tighten variables domains based on constraint information 
-					false,                  // local: set this to TRUE if the constraint is only locally valid, e.g., generated in a branch and bound node 
-					false,                   // modifiable: set this to TRUE if the constraint may be modified during solution process, e.g. new variables may be added (colum generation) 
-					false,                  // dynamic: set this to TRUE if this constraint is subject to aging, this means it will be removed after being inactive for a while (you should also say TRUE to removable in that case) removable set this to TRUE to allow the deletion of the relaxation of the constraint from the LP 
-					false,                  // removable 
-					false));               // stickingatnode: set this to TRUE if you want the constraint to be kept at the node it was added 
-				
+				char const* pchar = s.c_str();  //use char const* as target type
+				SCIP_CALL(SCIPcreateConsLinear(scip, &con,
+											   pchar,                    // name of the constraint
+											   2,                            // number of variables to be added to the constraint
+											   var,                        // array of SCIP_VAR pointers to variables
+											   coeff,                    // array of values of the coeffcients
+											   CG[i * N + j],    // lhs
+											   SCIPinfinity(scip),                    // rhs
+											   true,                   // initial: set this to TRUE if you want the constraint to occur in the root problem
+											   true,                  // separate: set this to TRUE if you would like the handler to separate, e.g. generate cuts
+											   true,                   // enforce: set this to TRUE if you would like the handler to enforce solutions. This means that when the handler declares an LP or pseudo solution as infeasible, it can resolve infeasibility by adding cuts, reducing the domain of a variable, performing a branching, etc.
+											   true,                   // check: set this to TRUE if the constraint handler should check solutions
+											   true,                   // propagate: set this to TRUE if you want to propagate solutions, this means tighten variables domains based on constraint information
+											   false,                  // local: set this to TRUE if the constraint is only locally valid, e.g., generated in a branch and bound node
+											   false,                   // modifiable: set this to TRUE if the constraint may be modified during solution process, e.g. new variables may be added (colum generation)
+											   false,                  // dynamic: set this to TRUE if this constraint is subject to aging, this means it will be removed after being inactive for a while (you should also say TRUE to removable in that case) removable set this to TRUE to allow the deletion of the relaxation of the constraint from the LP
+											   false,                  // removable
+											   false));               // stickingatnode: set this to TRUE if you want the constraint to be kept at the node it was added
+
 				// add the vars belonging to field in this row to the constraint
 				// SCIP_CALL(SCIPaddCoefLinear(scip, con, vars[i], 1));
 				// SCIP_CALL(SCIPaddCoefLinear(scip, con, vars[j], 1));
@@ -768,7 +781,7 @@ int CBSHeuristic::ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_
 	//SCIP_CALL(SCIPprintStatistics(scip, NULL));
 	//SCIP_CALL(SCIPprintBestSol(scip, NULL, FALSE));
 	// get the best found solution from scip
-	SCIP_SOL * sol = SCIPgetBestSol(scip);
+	SCIP_SOL* sol = SCIPgetBestSol(scip);
 	int rst = -1;
 	if (sol != NULL) // solved successfully
 	{
@@ -848,10 +861,12 @@ void CBSHeuristic::copyConflictGraph(CBSNode& child, const CBSNode& parent)
 	if (type == heuristics_type::DG || type == heuristics_type::WDG)
 	{
 		unordered_set<int> changed;
-		for (const auto& p : child.paths) {
+		for (const auto& p : child.paths)
+		{
 			changed.insert(p.first);
 		}
-		for (auto e : parent.conflictGraph) {
+		for (auto e : parent.conflictGraph)
+		{
 			if (changed.find(e.first / num_of_agents) == changed.end() &&
 				changed.find(e.first % num_of_agents) == changed.end())
 				child.conflictGraph[e.first] = e.second;
@@ -871,7 +886,7 @@ bool CBSHeuristic::dependent(int a1, int a2, CBSNode& node) // return true if th
 }
 
 // return true if the joint MDD exists.
-bool CBSHeuristic::SyncMDDs(const MDD &mdd, const MDD& other) // assume mdd.levels <= other.levels
+bool CBSHeuristic::SyncMDDs(const MDD& mdd, const MDD& other) // assume mdd.levels <= other.levels
 {
 	if (other.levels.size() <= 1) // Either of the MDDs was already completely pruned already
 		return false;
@@ -908,7 +923,8 @@ bool CBSHeuristic::SyncMDDs(const MDD &mdd, const MDD& other) // assume mdd.leve
 					{
 						if ((*node)->location == childOfParentCoexistingNode->location) // vertex conflict
 							continue;
-						else if ((*node)->location == parentCoexistingNode->location && (*parent)->location == childOfParentCoexistingNode->location) // edge conflict
+						else if ((*node)->location == parentCoexistingNode->location &&
+								 (*parent)->location == childOfParentCoexistingNode->location) // edge conflict
 							continue;
 						//validParent = true;
 

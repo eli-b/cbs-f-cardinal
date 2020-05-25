@@ -1,4 +1,5 @@
 #pragma once
+
 #include "MDD.h"
 #include "RectangleReasoning.h"
 #include "CorridorReasoning.h"
@@ -17,7 +18,7 @@ struct HTableEntry // look-up table entry
 
 	struct EqNode
 	{
-		bool operator() (const HTableEntry& h1, const HTableEntry& h2) const
+		bool operator()(const HTableEntry& h1, const HTableEntry& h2) const
 		{
 			std::set<Constraint> cons1[2], cons2[2];
 			const CBSNode* curr = h1.n;
@@ -25,14 +26,16 @@ struct HTableEntry // look-up table entry
 			{
 				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
 					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE) {
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE)
+				{
 					for (auto con : curr->constraints)
 					{
 						cons1[0].insert(con);
 						cons2[0].insert(con);
 					}
 				}
-				else {
+				else
+				{
 					if (get<0>(curr->constraints.front()) == h1.a1)
 						for (auto con : curr->constraints)
 							cons1[0].insert(con);
@@ -48,14 +51,16 @@ struct HTableEntry // look-up table entry
 			{
 				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
 					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE) {
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE)
+				{
 					for (auto con : curr->constraints)
 					{
 						cons1[1].insert(con);
 						cons2[1].insert(con);
 					}
 				}
-				else {
+				else
+				{
 					if (get<0>(curr->constraints.front()) == h2.a1)
 						for (auto con : curr->constraints)
 							cons1[1].insert(con);
@@ -92,22 +97,22 @@ struct HTableEntry // look-up table entry
 					for (auto con : curr->constraints)
 					{
 						cons1_hash += 3 * std::hash<int>()(std::get<0>(con)) +
-							5 * std::hash<int>()(std::get<1>(con)) +
-							7 * std::hash<int>()(std::get<2>(con)) +
-							11 * std::hash<int>()(std::get<3>(con));
+									  5 * std::hash<int>()(std::get<1>(con)) +
+									  7 * std::hash<int>()(std::get<2>(con)) +
+									  11 * std::hash<int>()(std::get<3>(con));
 					}
 				}
 				else if (get<0>(curr->constraints.front()) == entry.a2 ||
-					get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE)
+						 get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
+						 get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
+						 get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE)
 				{
 					for (auto con : curr->constraints)
 					{
 						cons2_hash += 3 * std::hash<int>()(std::get<0>(con)) +
-							5 * std::hash<int>()(std::get<1>(con)) +
-							7 * std::hash<int>()(std::get<2>(con)) +
-							11 * std::hash<int>()(std::get<3>(con));
+									  5 * std::hash<int>()(std::get<1>(con)) +
+									  7 * std::hash<int>()(std::get<2>(con)) +
+									  11 * std::hash<int>()(std::get<3>(con));
 					}
 				}
 				curr = curr->parent;
@@ -142,12 +147,13 @@ public:
 	uint64_t num_memoization = 0; // number of times when memoization helps
 
 	CBSHeuristic(int num_of_agents,
-							const vector<Path*>& paths,
-							vector<SingleAgentSolver*>& search_engines,
-							const vector<ConstraintTable>& initial_constraints,
-							MDDTable& mdd_helper) : num_of_agents(num_of_agents),
-		paths(paths), search_engines(search_engines), initial_constraints(initial_constraints), mdd_helper(mdd_helper) {}
-	
+				 const vector<Path*>& paths,
+				 vector<SingleAgentSolver*>& search_engines,
+				 const vector<ConstraintTable>& initial_constraints,
+				 MDDTable& mdd_helper) :
+	 	num_of_agents(num_of_agents), paths(paths), search_engines(search_engines),
+	 	initial_constraints(initial_constraints), mdd_helper(mdd_helper) {}
+
 	void init()
 	{
 		if (type == heuristics_type::DG || type == heuristics_type::WDG)
@@ -170,7 +176,7 @@ private:
 	int num_of_agents;
 	int ILP_node_threshold = 5; // run ILP if #nodes in the conrflict graph is larger than the threshold
 	int ILP_edge_threshold = 10; // run ILP if #edges in the conrflict graph is larger than the threshold
-	vector<vector<HTable> > lookupTable;
+	vector<vector<HTable>> lookupTable;
 
 	double time_limit;
 	int node_limit = 64;  // terminate the sub CBS solver if the number of its expanded nodes exceeds the node limit.
@@ -189,7 +195,7 @@ private:
 
 	bool dependent(int a1, int a2, CBSNode& node); // return true if the two agents are dependent
 	int solve2Agents(int a1, int a2, const CBSNode& node, bool cardinal);
-	bool SyncMDDs(const MDD &mdd1, const MDD& mdd2); 	// Match and prune MDD according to another MDD.
+	bool SyncMDDs(const MDD& mdd1, const MDD& mdd2);  // Match and prune MDD according to another MDD.
 
 	int minimumVertexCover(const vector<int>& CG);
 	int minimumVertexCover(const vector<int>& CG, int old_mvc, int cols, int num_of_edges);

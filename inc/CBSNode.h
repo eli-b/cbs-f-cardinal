@@ -1,4 +1,5 @@
 #pragma once
+
 #include "common.h"
 #include "Conflict.h"
 
@@ -27,8 +28,8 @@ public:
 		}
 	};  // used by FOCAL to compare nodes by tie_breaking value (top of the heap has min tie_breaking value)
 
-	typedef boost::heap::pairing_heap< CBSNode*, boost::heap::compare<CBSNode::compare_node> >::handle_type open_handle_t;
-	typedef boost::heap::pairing_heap< CBSNode*, boost::heap::compare<CBSNode::secondary_compare_node> >::handle_type focal_handle_t;
+	typedef boost::heap::pairing_heap<CBSNode*, boost::heap::compare<CBSNode::compare_node>>::handle_type open_handle_t;
+	typedef boost::heap::pairing_heap<CBSNode*, boost::heap::compare<CBSNode::secondary_compare_node>>::handle_type focal_handle_t;
 	open_handle_t open_handle;
 	focal_handle_t focal_handle;
 
@@ -36,24 +37,25 @@ public:
 	// this is needed because otherwise we'll have to define the specialized template inside std namespace
 	struct ICBSNodeHasher 
 	{
-		std::size_t operator()(const CBSNode* n) const {
+		std::size_t operator()(const CBSNode* n) const
+		{
 			return std::hash<uint64_t>()(n->time_generated);
 		}
 	};
 
 	// conflicts in the current paths
-	list<shared_ptr<Conflict> > conflicts;
-	list<shared_ptr<Conflict> > unknownConf;
-	
+	list<shared_ptr<Conflict>> conflicts;
+	list<shared_ptr<Conflict>> unknownConf;
+
 	// The chosen conflict
 	shared_ptr<Conflict> conflict;
 
 	boost::unordered_map<int, int> conflictGraph; //<edge index, weight> // TODO: This can be deleted.
 	CBSNode* parent;
 
-	list< pair< int, Path> > paths; // new paths
+	list<pair<int, Path>> paths; // new paths
 	list<Constraint> constraints; // new constraints
-	
+
 
 	int g_val;
 	int h_val;
@@ -82,7 +84,7 @@ struct ConstraintsHasher // Hash a CT node by constraints on one agent
 
 	struct EqNode
 	{
-		bool operator() (const ConstraintsHasher& c1, const ConstraintsHasher& c2) const
+		bool operator()(const ConstraintsHasher& c1, const ConstraintsHasher& c2) const
 		{
 			if (c1.a != c2.a)
 				return false;
@@ -94,7 +96,8 @@ struct ConstraintsHasher // Hash a CT node by constraints on one agent
 				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
 					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
 					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE ||
-					get<0>(curr->constraints.front()) == c1.a) {
+					get<0>(curr->constraints.front()) == c1.a)
+				{
 					for (auto con : curr->constraints)
 						cons1.insert(con);
 				}
@@ -106,7 +109,8 @@ struct ConstraintsHasher // Hash a CT node by constraints on one agent
 				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
 					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
 					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE ||
-					get<0>(curr->constraints.front()) == c2.a) {
+					get<0>(curr->constraints.front()) == c2.a)
+				{
 					for (auto con : curr->constraints)
 						cons2.insert(con);
 				}
@@ -134,9 +138,9 @@ struct ConstraintsHasher // Hash a CT node by constraints on one agent
 					for (auto con : curr->constraints)
 					{
 						cons_hash += 3 * std::hash<int>()(std::get<0>(con)) +
-							5 * std::hash<int>()(std::get<1>(con)) +
-							7 * std::hash<int>()(std::get<2>(con)) +
-							11 * std::hash<int>()(std::get<3>(con));
+									 5 * std::hash<int>()(std::get<1>(con)) +
+									 7 * std::hash<int>()(std::get<2>(con)) +
+									 11 * std::hash<int>()(std::get<3>(con));
 					}
 				}
 				curr = curr->parent;

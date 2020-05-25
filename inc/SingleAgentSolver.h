@@ -1,4 +1,5 @@
-﻿#pragma once
+#pragma once
+
 #include "Instance.h"
 #include "ConstraintTable.h"
 
@@ -23,7 +24,7 @@ public:
 		}
 	};  // used by OPEN (heap) to compare nodes (top of the heap has min f-val, and then highest g-val)
 
-		// the following is used to compare nodes in the FOCAL list
+	// the following is used to compare nodes in the FOCAL list
 	struct secondary_compare_node
 	{
 		bool operator()(const LLNode* n1, const LLNode* n2) const // returns true if n1 > n2
@@ -48,6 +49,7 @@ public:
 		num_of_conflicts(num_of_conflicts), in_openlist(in_openlist), wait_at_goal(false) {}
 
 	inline double getFVal() const { return g_val + h_val; }
+
 	void copy(const LLNode& other)
 	{
 		location = other.location;
@@ -77,10 +79,11 @@ public:
 	{
 		return max(get_DH_heuristic(from, to), instance.getManhattanDistance(from, to));
 	}
+
 	const Instance& instance;
 
 	virtual Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
-		const vector<Path*>& paths, int agent, int lower_bound) = 0;
+						  const vector<Path*>& paths, int agent, int lower_bound) = 0;
 	virtual int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound) = 0;
 	virtual string getName() const = 0;
 
@@ -98,10 +101,11 @@ public:
 		compute_heuristics();
 	}
 
-  virtual ~SingleAgentSolver(){} 
+	virtual ~SingleAgentSolver() {}
 
 protected:
 	void compute_heuristics();
+
 	int get_DH_heuristic(int from, int to) const { return abs(my_heuristic[from] - my_heuristic[to]); }
 };
 

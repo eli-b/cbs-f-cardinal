@@ -1,4 +1,5 @@
 #pragma once
+
 #include <tuple>
 #include <list>
 #include <vector>
@@ -45,11 +46,12 @@ struct PathEntry
 {
 	int location = -1;
 	// bool single = false;
-  int mdd_width;
+	int mdd_width;
 
-  bool is_single() const {
-    return mdd_width == 1;
-  }
+	bool is_single() const
+	{
+		return mdd_width == 1;
+	}
 	// PathEntry(int loc = -1) { location = loc; single = false; }
 };
 
