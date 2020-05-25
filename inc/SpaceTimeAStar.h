@@ -53,11 +53,12 @@ public:
 	{
 		bool operator()(const AStarNode* s1, const AStarNode* s2) const
 		{
-			return (s1 == s2) || (s1 && s2 &&
-                        s1->location == s2->location &&
-                        s1->timestep == s2->timestep &&
-						s1->wait_at_goal == s2->wait_at_goal) &&
-						s1->unsatisfied_positive_constraint_sets == s2->unsatisfied_positive_constraint_sets;
+			return (s1 == s2) ||
+				   (s1 && s2 &&
+					s1->location == s2->location &&
+					s1->timestep == s2->timestep &&
+					s1->wait_at_goal == s2->wait_at_goal &&
+					s1->unsatisfied_positive_constraint_sets == s2->unsatisfied_positive_constraint_sets);
 		}
 	};
 };
