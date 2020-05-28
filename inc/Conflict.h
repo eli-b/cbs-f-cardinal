@@ -1,4 +1,5 @@
 #pragma once
+
 #include "common.h"
 
 
@@ -8,8 +9,11 @@ enum conflict_priority { CARDINAL, PSEUDO_CARDINAL, SEMI, NON, UNKNOWN, PRIORITY
 // Pseudo-cardinal conflicts are semi-/non-cardinal conflicts between dependent agents.
 // We prioritize them over normal semi-/non-cardinal conflicts
 
-enum constraint_type { LEQLENGTH, GLENGTH, RANGE, BARRIER, VERTEX, EDGE, 
-											POSITIVE_VERTEX, POSITIVE_EDGE, CONSTRAINT_COUNT };
+enum constraint_type
+{
+	LEQLENGTH, GLENGTH, RANGE, BARRIER, VERTEX, EDGE,
+	POSITIVE_VERTEX, POSITIVE_EDGE, CONSTRAINT_COUNT
+};
 
 enum conflict_selection {RANDOM, EARLIEST, CONFLICTS, MCONSTRAINTS, FCONSTRAINTS, WIDTH, SINGLETONS};
 
@@ -38,8 +42,8 @@ public:
 
 	void vertexConflict(int a1, int a2, int v, int t)
 	{
-        constraint1.clear();
-        constraint2.clear();
+		constraint1.clear();
+		constraint2.clear();
 		this->a1 = a1;
 		this->a2 = a2;
 		this->constraint1.emplace_back(a1, v, -1, t, constraint_type::VERTEX);
@@ -49,8 +53,8 @@ public:
 		
 	void edgeConflict(int a1, int a2, int v1, int v2, int t)
 	{
-        constraint1.clear();
-        constraint2.clear();
+		constraint1.clear();
+		constraint2.clear();
 		this->a1 = a1;
 		this->a2 = a2;
 		this->constraint1.emplace_back(a1, v1, v2, t, constraint_type::EDGE);
@@ -60,8 +64,8 @@ public:
 
 	void corridorConflict(int a1, int a2, int v1, int v2, int t1, int t2)
 	{
-        constraint1.clear();
-        constraint2.clear();
+		constraint1.clear();
+		constraint2.clear();
 		this->a1 = a1;
 		this->a2 = a2;
 		this->constraint1.emplace_back(a1, v1, 0, t1, constraint_type::RANGE);
@@ -70,7 +74,7 @@ public:
 	}
 
 	bool rectangleConflict(int a1, int a2, const std::pair<int, int>& Rs, const std::pair<int, int>& Rg,
-	                       int Rg_t, const list<Constraint>& constraint1, const list<Constraint>& constraint2) // For RM
+						   int Rg_t, const list<Constraint>& constraint1, const list<Constraint>& constraint2) // For RM
 	{
 		this->a1 = a1;
 		this->a2 = a2;
@@ -83,8 +87,8 @@ public:
 
 	void targetConflict(int a1, int a2, int v, int t)
 	{
-        constraint1.clear();
-        constraint2.clear();
+		constraint1.clear();
+		constraint2.clear();
 		this->a1 = a1;
 		this->a2 = a2;
 		this->constraint1.emplace_back(a1, v, -1, t, constraint_type::LEQLENGTH);
@@ -109,4 +113,4 @@ public:
 
 std::ostream& operator<<(std::ostream& os, const Conflict& conflict);
 
-bool operator < (const Conflict& conflict1, const Conflict& conflict2);
+bool operator<(const Conflict& conflict1, const Conflict& conflict2);

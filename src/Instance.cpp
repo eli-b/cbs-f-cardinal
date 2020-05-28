@@ -6,9 +6,9 @@
 
 int RANDOM_WALK_STEPS = 100000;
 
-Instance::Instance(const string& map_fname, const string& agent_fname, 
-	int num_of_agents, int num_of_rows, int num_of_cols, int num_of_obstacles, int warehouse_width):
-	map_fname(map_fname), agent_fname(agent_fname), num_of_agents(num_of_agents)
+Instance::Instance(const string& map_fname, const string& agent_fname,
+				   int num_of_agents, int num_of_rows, int num_of_cols, int num_of_obstacles, int warehouse_width) :
+		map_fname(map_fname), agent_fname(agent_fname), num_of_agents(num_of_agents)
 {
 	bool succ = loadMap();
 	if (!succ)
@@ -76,7 +76,7 @@ void Instance::generateRandomAgents(int warehouse_width)
 	{
 		// Choose random start locations
 		int k = 0;
-		while ( k < num_of_agents)
+		while (k < num_of_agents)
 		{
 			int x = rand() % num_of_rows, y = rand() % num_of_cols;
 			int start = linearizeCoordinate(x, y);
@@ -163,10 +163,11 @@ bool Instance::addObstacle(int obstacle)
 			start++;
 		else if (goal <= start)
 			goal = start + 1;
-		else if (x[goal] < 0 || x[goal] >= num_of_rows || y[goal] < 0 || y[goal] >= num_of_cols 
-			|| my_map[linearizeCoordinate(x[goal], y[goal])])
+		else if (x[goal] < 0 || x[goal] >= num_of_rows || y[goal] < 0 || y[goal] >= num_of_cols
+				 || my_map[linearizeCoordinate(x[goal], y[goal])])
 			goal++;
-		else if (isConnected(linearizeCoordinate(x[start], y[start]), linearizeCoordinate(x[goal], y[goal]))) // cannot find a path from start to goal 
+		else if (isConnected(linearizeCoordinate(x[start], y[start]),
+							 linearizeCoordinate(x[goal], y[goal]))) // cannot find a path from start to goal
 		{
 			start = goal;
 			goal++;
@@ -219,16 +220,16 @@ void Instance::generateConnectedRandomGrid(int rows, int cols, int obstacles)
 
 	// add padding
 	i = 0;
-	for (j = 0; j<num_of_cols; j++)
+	for (j = 0; j < num_of_cols; j++)
 		my_map[linearizeCoordinate(i, j)] = true;
 	i = num_of_rows - 1;
-	for (j = 0; j<num_of_cols; j++)
+	for (j = 0; j < num_of_cols; j++)
 		my_map[linearizeCoordinate(i, j)] = true;
 	j = 0;
-	for (i = 0; i<num_of_rows; i++)
+	for (i = 0; i < num_of_rows; i++)
 		my_map[linearizeCoordinate(i, j)] = true;
 	j = num_of_cols - 1;
-	for (i = 0; i<num_of_rows; i++)
+	for (i = 0; i < num_of_rows; i++)
 		my_map[linearizeCoordinate(i, j)] = true;
 
 	// add obstacles uniformly at random
@@ -252,18 +253,18 @@ bool Instance::loadMap()
 	if (!myfile.is_open())
 		return false;
 	string line;
-	tokenizer< char_separator<char> >::iterator beg;
+	tokenizer<char_separator<char>>::iterator beg;
 	getline(myfile, line);
 	if (line[0] == 't') // Nathan's benchmark
 	{
 		char_separator<char> sep(" ");
 		getline(myfile, line);
-		tokenizer< char_separator<char> > tok(line, sep);
+		tokenizer<char_separator<char>> tok(line, sep);
 		beg = tok.begin();
 		beg++;
 		num_of_rows = atoi((*beg).c_str()); // read number of rows
 		getline(myfile, line);
-		tokenizer< char_separator<char> > tok2(line, sep);
+		tokenizer<char_separator<char>> tok2(line, sep);
 		beg = tok2.begin();
 		beg++;
 		num_of_cols = atoi((*beg).c_str()); // read number of cols
@@ -272,7 +273,7 @@ bool Instance::loadMap()
 	else // my benchmark
 	{
 		char_separator<char> sep(",");
-		tokenizer< char_separator<char> > tok(line, sep);
+		tokenizer<char_separator<char>> tok(line, sep);
 		beg = tok.begin();
 		num_of_rows = atoi((*beg).c_str()); // read number of rows
 		beg++;
@@ -281,9 +282,11 @@ bool Instance::loadMap()
 	map_size = num_of_cols * num_of_rows;
 	my_map.resize(map_size, false);
 	// read map (and start/goal locations)
-	for (int i = 0; i < num_of_rows; i++) {
+	for (int i = 0; i < num_of_rows; i++)
+	{
 		getline(myfile, line);
-		for (int j = 0; j < num_of_cols; j++) {
+		for (int j = 0; j < num_of_cols; j++)
+		{
 			my_map[linearizeCoordinate(i, j)] = (line[j] != '.');
 		}
 	}
@@ -301,7 +304,7 @@ bool Instance::loadMap()
 
 void Instance::printMap() const
 {
-	for (int i = 0; i< num_of_rows; i++)
+	for (int i = 0; i < num_of_rows; i++)
 	{
 		for (int j = 0; j < num_of_cols; j++)
 		{
@@ -346,9 +349,9 @@ bool Instance::loadAgents()
 	using namespace boost;
 
 	string line;
-	ifstream myfile (agent_fname.c_str());
-	if (!myfile.is_open()) 
-	return false;
+	ifstream myfile(agent_fname.c_str());
+	if (!myfile.is_open())
+		return false;
 
 	getline(myfile, line);
 	if (line[0] == 'v') // Nathan's benchmark
@@ -364,13 +367,13 @@ bool Instance::loadAgents()
 		for (int i = 0; i < num_of_agents; i++)
 		{
 			getline(myfile, line);
-			tokenizer< char_separator<char> > tok(line, sep);
-			tokenizer< char_separator<char> >::iterator beg = tok.begin();
+			tokenizer<char_separator<char>> tok(line, sep);
+			tokenizer<char_separator<char>>::iterator beg = tok.begin();
 			beg++; // skip the first number
 			beg++; // skip the map name
 			beg++; // skip the columns
 			beg++; // skip the rows
-				   // read start [row,col] for agent i
+			// read start [row,col] for agent i
 			int col = atoi((*beg).c_str());
 			beg++;
 			int row = atoi((*beg).c_str());
@@ -386,16 +389,16 @@ bool Instance::loadAgents()
 	else // My benchmark
 	{
 		char_separator<char> sep(",");
-		tokenizer< char_separator<char> > tok(line, sep);
-		tokenizer< char_separator<char> >::iterator beg = tok.begin();
+		tokenizer<char_separator<char>> tok(line, sep);
+		tokenizer<char_separator<char>>::iterator beg = tok.begin();
 		num_of_agents = atoi((*beg).c_str());
 		start_locations.resize(num_of_agents);
 		goal_locations.resize(num_of_agents);
-		for (int i = 0; i<num_of_agents; i++)
+		for (int i = 0; i < num_of_agents; i++)
 		{
 			getline(myfile, line);
-			tokenizer< char_separator<char> > col_tok(line, sep);
-			tokenizer< char_separator<char> >::iterator c_beg = col_tok.begin();
+			tokenizer<char_separator<char>> col_tok(line, sep);
+			tokenizer<char_separator<char>>::iterator c_beg = col_tok.begin();
 			pair<int, int> curr_pair;
 			// read start [row,col] for agent i
 			int row = atoi((*c_beg).c_str());
@@ -418,35 +421,35 @@ bool Instance::loadAgents()
 
 void Instance::printAgents() const
 {
-  for (int i = 0; i < num_of_agents; i++) 
-  {
-    cout << "Agent" << i << " : S=(" << getRowCoordinate(start_locations[i]) << "," << getColCoordinate(start_locations[i]) 
-				<< ") ; G=(" << getRowCoordinate(goal_locations[i]) << "," << getColCoordinate(goal_locations[i]) << ")" << endl;
-  }
+	for (int i = 0; i < num_of_agents; i++)
+	{
+		cout << "Agent" << i << " : S=(" << getRowCoordinate(start_locations[i]) << "," << getColCoordinate(start_locations[i])
+			 << ") ; G=(" << getRowCoordinate(goal_locations[i]) << "," << getColCoordinate(goal_locations[i]) << ")" << endl;
+	}
 }
 
 
 void Instance::saveAgents() const
 {
-  ofstream myfile;
-  myfile.open(agent_fname);
-  if (!myfile.is_open())
-  {
-	  cout << "Fail to save the agents to " << agent_fname << endl;
-	  return;
-  }
-  myfile << num_of_agents << endl;
-  for (int i = 0; i < num_of_agents; i++)
-    myfile << getRowCoordinate(start_locations[i]) << "," << getColCoordinate(start_locations[i]) << ","
-           << getRowCoordinate(goal_locations[i]) << "," << getColCoordinate(goal_locations[i]) << "," << endl;
-  myfile.close();
+	ofstream myfile;
+	myfile.open(agent_fname);
+	if (!myfile.is_open())
+	{
+		cout << "Fail to save the agents to " << agent_fname << endl;
+		return;
+	}
+	myfile << num_of_agents << endl;
+	for (int i = 0; i < num_of_agents; i++)
+		myfile << getRowCoordinate(start_locations[i]) << "," << getColCoordinate(start_locations[i]) << ","
+			   << getRowCoordinate(goal_locations[i]) << "," << getColCoordinate(goal_locations[i]) << "," << endl;
+	myfile.close();
 }
 
 
 list<int> Instance::getNeighbors(int curr) const
 {
 	list<int> neighbors;
-	int candidates[4] = {curr + 1, curr - 1, curr + num_of_cols, curr - num_of_cols};
+	int candidates[4] = { curr + 1, curr - 1, curr + num_of_cols, curr - num_of_cols };
 	for (int next : candidates)
 	{
 		if (validMove(curr, next))

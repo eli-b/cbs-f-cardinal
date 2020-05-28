@@ -1,4 +1,5 @@
 #pragma once
+
 #include "CBSHeuristic.h"
 #include "RectangleReasoning.h"
 #include "CorridorReasoning.h"
@@ -37,7 +38,6 @@ public:
 	CBSNode* goal_node = nullptr;
 
 
-
 	bool solution_found = false;
 	int solution_cost = -2;
 	double min_f_val;
@@ -45,17 +45,18 @@ public:
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	// set params
-	void setHeuristicType(heuristics_type h) {heuristic_helper.type = h; }
-	void setPrioritizeConflicts(bool p) {PC = p;	heuristic_helper.PC = p; }
-	void setRectangleReasoning(bool r) {rectangle_helper.use_rectangle_reasoning = r; heuristic_helper.rectangle_reasoning = r; }
-	void setCorridorReasoning(bool c) {corridor_helper.use_corridor_reasoning = c; heuristic_helper.corridor_reasoning = c; }
-	void setTargetReasoning(bool t) {target_reasoning = t; heuristic_helper.target_reasoning = t; }
-	void setMutexReasoning(bool m) {mutex_reasoning = m; heuristic_helper.mutex_reasoning = m; }
-	void setDisjointSplitting(bool d) {disjoint_splitting = d; heuristic_helper.disjoint_splitting = d; }
-	void setBypass(bool b) { bypass = b; } // 2-agent solver for heuristic calculation does not need bypass use_rectangle_reasoning.
+	void setHeuristicType(heuristics_type h) { heuristic_helper.type = h; }
+	void setPrioritizeConflicts(bool p) { PC = p; heuristic_helper.PC = p; }
+	void setRectangleReasoning(bool r) { rectangle_helper.use_rectangle_reasoning = r; heuristic_helper.rectangle_reasoning = r; }
+	void setCorridorReasoning(bool c) { corridor_helper.use_corridor_reasoning = c; heuristic_helper.corridor_reasoning = c; }
+	void setTargetReasoning(bool t) { target_reasoning = t; heuristic_helper.target_reasoning = t; }
+	void setMutexReasoning(bool m) { mutex_reasoning = m; heuristic_helper.mutex_reasoning = m; }
+	void setDisjointSplitting(bool d) { disjoint_splitting = d; heuristic_helper.disjoint_splitting = d; }
+	void setBypass(bool b) { bypass = b; } // 2-agent solver for heuristic calculation does not need bypass strategy.
 	void setConflictSelectionRule(conflict_selection c) { conflict_selection_rule = c; heuristic_helper.conflict_seletion_rule = c; }
 	void setNodeSelectionRule(node_selection n) { node_selection_rule = n; heuristic_helper.node_selection_rule = n; }
 	void setNodeLimit(int n) { node_limit = n; }
+
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// Runs the algorithm until the problem is solved or time is exhausted 
 	bool solve(double time_limit, int cost_lowerbound = 0, int cost_upperbound = MAX_COST);
@@ -68,7 +69,7 @@ public:
 	~CBS();
 
 	// Save results
-	void saveResults(const string &fileName, const string &instanceName) const;
+	void saveResults(const string& fileName, const string& instanceName) const;
 
 	void clear(); // used for rapid random  restart
 
@@ -87,8 +88,8 @@ private:
 	MutexReasoning mutex_helper;
 	CBSHeuristic heuristic_helper;
 
-	pairing_heap< CBSNode*, compare<CBSNode::compare_node> > open_list;
-	pairing_heap< CBSNode*, compare<CBSNode::secondary_compare_node> > focal_list;
+	pairing_heap<CBSNode*, compare<CBSNode::compare_node>> open_list;
+	pairing_heap<CBSNode*, compare<CBSNode::secondary_compare_node>> focal_list;
 	list<CBSNode*> allNodes_table;
 
 
@@ -111,23 +112,23 @@ private:
 	vector<Path*> paths;
 	vector<Path> paths_found_initially;  // contain initial paths found
 	// vector<MDD*> mdds_initially;  // contain initial paths found
-	vector < SingleAgentSolver* > search_engines;  // used to find (single) agents' paths and mdd
+	vector<SingleAgentSolver*> search_engines;  // used to find (single) agents' paths and mdd
 
 
 	// high level search
-	bool findPathForSingleAgent(CBSNode*  node, int ag, int lower_bound = 0);
+	bool findPathForSingleAgent(CBSNode* node, int ag, int lower_bound = 0);
 	bool generateChild(CBSNode* child, CBSNode* curr);
 	bool generateRoot();
 
 	//conflicts
 	void findConflicts(CBSNode& curr);
 	void findConflicts(CBSNode& curr, int a1, int a2);
-	shared_ptr<Conflict> chooseConflict(const CBSNode &node) const;
-	void classifyConflicts(CBSNode &parent);
+	shared_ptr<Conflict> chooseConflict(const CBSNode& node) const;
+	void classifyConflicts(CBSNode& parent);
 	// void copyConflicts(const list<shared_ptr<Conflict>>& conflicts,
 	// 	list<shared_ptr<Conflict>>& copy, int excluded_agent) const;
 	void copyConflicts(const list<shared_ptr<Conflict>>& conflicts,
-		list<shared_ptr<Conflict>>& copy, const list<int>& excluded_agent) const;
+					   list<shared_ptr<Conflict>>& copy, const list<int>& excluded_agent) const;
 	void removeLowPriorityConflicts(list<shared_ptr<Conflict>>& conflicts) const;
 	//bool isCorridorConflict(std::shared_ptr<Conflict>& corridor, const std::shared_ptr<Conflict>& con, bool cardinal, ICBSNode* node);
 
@@ -143,7 +144,7 @@ private:
 	// print and save
 	void printPaths() const;
 	void printResults() const;
-	void printConflicts(const CBSNode &curr) const;
+	void printConflicts(const CBSNode& curr) const;
 
 	bool validateSolution() const;
 	inline int getAgentLocation(int agent_id, size_t timestep) const;

@@ -1,7 +1,7 @@
 #include "SpaceTimeAStar.h"
 
 
-void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry> &path)
+void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry>& path)
 {
 	path.resize(goal->g_val + 1);
 	const LLNode* curr = goal;
@@ -20,7 +20,7 @@ void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry> &path)
 // minimizing the number of internal conflicts (that is conflicts with known_paths for other agents found so far).
 // lowerbound is an underestimation of the length of the path in order to speed up the search.
 Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
-	const vector<Path*>& paths, int agent, int lowerbound)
+							  const vector<Path*>& paths, int agent, int lowerbound)
 {
 	num_expanded = 0;
 	num_generated = 0;
@@ -28,16 +28,17 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 	auto starrt_time = clock();
 	ConstraintTable constraint_table(initial_constraints);
 	constraint_table.build(node, agent);
-	runtime_build_CT = (double)(clock() - starrt_time) / CLOCKS_PER_SEC;
-    if (constraint_table.length_min >= MAX_TIMESTEP || constraint_table.length_min > constraint_table.length_max || // the agent cannot reach its goal location
+	runtime_build_CT = (double) (clock() - starrt_time) / CLOCKS_PER_SEC;
+	if (constraint_table.length_min >= MAX_TIMESTEP || constraint_table.length_min > constraint_table.length_max ||  // the agent cannot reach
+																													 // its goal location
 		constraint_table.constrained(start_location, 0)) // the agent cannot stay at its start location
-    {
-        return Path();
-    }
+	{
+		return Path();
+	}
 
 	starrt_time = clock();
 	constraint_table.buildCAT(agent, paths, node.makespan + 1);
-	runtime_build_CAT = (double)(clock() - starrt_time) / CLOCKS_PER_SEC;
+	runtime_build_CAT = (double) (clock() - starrt_time) / CLOCKS_PER_SEC;
 
 	if (constraint_table.getNumOfLandmarks() > 0)
 	{
@@ -226,7 +227,7 @@ Path SpaceTimeAStar::findShortestPath(ConstraintTable& constraint_table, const p
 	start->focal_handle = focal_list.push(start);
 	start->in_openlist = true;
 	allNodes_table.insert(start);
-	min_f_val = (int)start->getFVal();
+	min_f_val = (int) start->getFVal();
 	int holding_time = constraint_table.getHoldingTime(); // the earliest timestep that the agent can hold its goal location. The length_min is considered here.
 	lower_bound = max(holding_time - start_state.second, max(min_f_val, lowerbound));
 
@@ -271,14 +272,14 @@ Path SpaceTimeAStar::findShortestPath(ConstraintTable& constraint_table, const p
 			if (next_g_val + next_h_val > constraint_table.length_max)
 				continue;
 			int next_internal_conflicts = curr->num_of_conflicts +
-				constraint_table.getNumOfConflictsForStep(curr->location, next_location, next_timestep);
+										  constraint_table.getNumOfConflictsForStep(curr->location, next_location, next_timestep);
 
 			// generate (maybe temporary) node
 			auto next = new AStarNode(next_location, next_g_val, next_h_val,
-				curr, next_timestep, next_internal_conflicts, false);
+									  curr, next_timestep, next_internal_conflicts, false);
 			if (next_location == goal_location && curr->location == goal_location)
 				next->wait_at_goal = true;
-			
+
 			// try to retrieve it from the hash table
 			auto it = allNodes_table.find(next);
 			if (it == allNodes_table.end())
@@ -292,7 +293,7 @@ Path SpaceTimeAStar::findShortestPath(ConstraintTable& constraint_table, const p
 			auto existing_next = *it;
 			if (existing_next->getFVal() > next->getFVal() || // if f-val decreased through this new path
 				(existing_next->getFVal() == next->getFVal() &&
-					existing_next->num_of_conflicts > next->num_of_conflicts)) // or it remains the same but there's fewer conflicts
+				 existing_next->num_of_conflicts > next->num_of_conflicts)) // or it remains the same but there's fewer conflicts
 			{
 				if (!existing_next->in_openlist) // if its in the closed list (reopen)
 				{
@@ -314,7 +315,7 @@ Path SpaceTimeAStar::findShortestPath(ConstraintTable& constraint_table, const p
 					if (existing_next->getFVal() > next_g_val + next_h_val)
 						update_open = true;
 
-					existing_next->copy(*next);	// update existing node
+					existing_next->copy(*next);  // update existing node
 
 					if (update_open)
 						open_list.increase(existing_next->open_handle);  // increase because f-val improved
@@ -324,8 +325,7 @@ Path SpaceTimeAStar::findShortestPath(ConstraintTable& constraint_table, const p
 						focal_list.update(existing_next->focal_handle);  // should we do update? yes, because number of conflicts may go up or down			
 				}
 			}
-
-			delete(next);  // not needed anymore -- we already generated it before
+			delete next;  // not needed anymore -- we already generated it before
 		}  // end for loop that generates successors
 	}  // end while loop
 
@@ -414,7 +414,7 @@ Path SpaceTimeAStar::findPath(ConstraintTable& constraint_table, const pair<int,
 					focal_list.update(existing_next->focal_handle);		
 				}
 			}
-			delete(next);  // not needed anymore -- we already generated it before
+			delete next;  // not needed anymore -- we already generated it before
 		}  // end for loop that generates successors
 	}  // end while loop
 
@@ -426,7 +426,8 @@ Path SpaceTimeAStar::findPath(ConstraintTable& constraint_table, const pair<int,
 int SpaceTimeAStar::getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound)
 {
 	int length = MAX_TIMESTEP;
-	if (constraint_table.length_min >= MAX_TIMESTEP || constraint_table.length_min > constraint_table.length_max || // the agent cannot reach its goal location
+	if (constraint_table.length_min >= MAX_TIMESTEP || constraint_table.length_min > constraint_table.length_max ||  // the agent cannot reach
+																													 // its goal location
 		constraint_table.constrained(start, 0)) // the agent cannot stay at its start location
 	{
 		return length;
@@ -470,8 +471,9 @@ int SpaceTimeAStar::getTravelTime(int start, int end, const ConstraintTable& con
 					next->open_handle = open_list.push(next);
 					allNodes_table.insert(next);
 				}
-				else {  // update existing node's g_val if needed (only in the heap)
-					delete(next);  // not needed anymore -- we already generated it before
+				else
+				{  // update existing node's g_val if needed (only in the heap)
+					delete next;  // not needed anymore -- we already generated it before
 					auto existing_next = *it;
 					if (existing_next->g_val > next_g_val)
 					{
@@ -512,7 +514,7 @@ void SpaceTimeAStar::updateFocalList()
 	auto open_head = open_list.top();
 	if (open_head->getFVal() > min_f_val)
 	{
-		int new_min_f_val = (int)open_head->getFVal();
+		int new_min_f_val = (int) open_head->getFVal();
 		int new_lower_bound = max(lower_bound, new_min_f_val);
 		for (auto n : open_list)
 		{

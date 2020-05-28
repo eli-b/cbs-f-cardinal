@@ -35,15 +35,18 @@ int main(int argc, char** argv)
 		("rows", po::value<int>()->default_value(0), "number of rows")
 		("cols", po::value<int>()->default_value(0), "number of columns")
 		("obs", po::value<int>()->default_value(0), "number of obstacles")
-		("warehouseWidth", po::value<int>()->default_value(0), "width of working stations on both sides, for generating instacnes")
+		("warehouseWidth", po::value<int>()->default_value(0), "width of working stations on both sides, for generating instances")
 
 		// params for CBS
 		("heuristics", po::value<string>()->default_value("CG"), "heuristics for the high-level search (Zero, CG,DG, WDG)")
-		("prioritizingConflicts", po::value<bool>()->default_value(true), "conflict prioirtization. If true, conflictSelection is used as a tie-breaking rule.")
-		("conflictSelection", po::value<string>()->default_value("Random"), 
-			"conflict selection (Random\n Earliest,\n Conflicts: most conflicts with others\n MConstraints: most constraints\n FConstraints: fewest constraints\n Width: thinnest MDDs\n Singletons: most singletons in MDDs)")
+		("prioritizingConflicts", po::value<bool>()->default_value(true),
+		 "conflict prioritization. If true, conflictSelection is used as a tie-breaking rule.")
+		("conflictSelection", po::value<string>()->default_value("Random"),
+		 "conflict selection (Random\n Earliest\n Conflicts: most conflicts with others\n MConstraints: most constraints\n "
+   		 "FConstraints: fewest constraints\n Width: thinnest MDDs\n Singletons: most singletons in MDDs)")
 		("nodeSelection", po::value<string>()->default_value("Random"),
-			"conflict selection (Random\n H: smallest h value\n Depth: depth-first manner\n Conflicts: fewest conflicts\n ConflictPairs: fewest conflicting pairs of agents\n MVC: MVC on the conflict graph)")
+		 "conflict selection (Random\n H: smallest h value\n Depth: depth-first manner\n Conflicts: fewest conflicts\n "
+   		 "ConflictPairs: fewest conflicting pairs of agents\n MVC: MVC on the conflict graph)")
 		("bypass", po::value<bool>()->default_value(false), "Bypass1")
 		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")
 		("rectangleReasoning", po::value<bool>()->default_value(false), "Using rectangle reasoning")
@@ -57,7 +60,8 @@ int main(int argc, char** argv)
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 
-	if (vm.count("help")) {
+	if (vm.count("help"))
+	{
 		usage();
 		cout << desc << endl;
 		return 1;
@@ -72,7 +76,7 @@ int main(int argc, char** argv)
 		return -1;
 	}*/
 
-  heuristics_type h;
+	heuristics_type h;
 	if (vm["heuristics"].as<string>() == "Zero")
 		h = heuristics_type::ZERO;
 	else if (vm["heuristics"].as<string>() == "CG")
@@ -132,13 +136,13 @@ int main(int argc, char** argv)
 		cout << "When using bypassing, we cannot use DEPTH as the node tie breaking rule!" << endl;
 		return -1;
 	}
-	srand((int)time(0));
+	srand((int) time(0));
 
 	///////////////////////////////////////////////////////////////////////////
 	// load the instance
 	Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
-		vm["agentNum"].as<int>(),
-		vm["rows"].as<int>(), vm["cols"].as<int>(), vm["obs"].as<int>(), vm["warehouseWidth"].as<int>());
+					  vm["agentNum"].as<int>(),
+					  vm["rows"].as<int>(), vm["cols"].as<int>(), vm["obs"].as<int>(), vm["warehouseWidth"].as<int>());
 
 	srand(vm["seed"].as<int>());
 
@@ -168,7 +172,7 @@ int main(int argc, char** argv)
 		runtime += cbs.runtime;
 		if (cbs.solution_found)
 			break;
-		min_f_val = (int)cbs.min_f_val;
+		min_f_val = (int) cbs.min_f_val;
 		cbs.randomRoot = true;
 	}
 	cbs.runtime = runtime;
@@ -178,7 +182,6 @@ int main(int argc, char** argv)
 	return 0;
 
 }
-
 
 
 /*
