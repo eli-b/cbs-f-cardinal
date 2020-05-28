@@ -45,7 +45,7 @@ struct PathEntry
 {
 	int location = -1;
 	// bool single = false;
-  int mdd_width;
+  int mdd_width; // TODO:: Myabe this can be deleted as we always build/look for MDDs when we classify conflicts 
 
   bool is_single() const {
     return mdd_width == 1;

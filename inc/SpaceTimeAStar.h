@@ -11,7 +11,7 @@ public:
 	open_handle_t open_handle;
 	focal_handle_t focal_handle;
 
-	list<int> unsatisfied_positive_constraint_sets; // store the idx of satisfied positive constraint sets
+	// list<int> unsatisfied_positive_constraint_sets; // store the idx of satisfied positive constraint sets
 
 
 	AStarNode() : LLNode() {}
@@ -55,8 +55,7 @@ public:
 			return (s1 == s2) || (s1 && s2 &&
                         s1->location == s2->location &&
                         s1->timestep == s2->timestep &&
-						s1->wait_at_goal == s2->wait_at_goal) &&
-						s1->unsatisfied_positive_constraint_sets == s2->unsatisfied_positive_constraint_sets;
+						s1->wait_at_goal == s2->wait_at_goal);
 		}
 	};
 };
@@ -92,6 +91,10 @@ private:
 	// define typedef for hash_map
 	typedef unordered_set<AStarNode*, AStarNode::NodeHasher, AStarNode::eqnode> hashtable_t;
 	hashtable_t allNodes_table;
+
+	// find path
+	Path findShortestPath(ConstraintTable& constraint_table, const pair<int, int> start_state, int lowerbound);
+	Path findPath(ConstraintTable& constraint_table, const pair<int, int> start, const pair<int, int> goal);
 
 	// Updates the path datamember
 	void updatePath(const LLNode* goal, vector<PathEntry> &path);

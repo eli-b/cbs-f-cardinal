@@ -1,12 +1,10 @@
 #pragma once
 #include "MDD.h"
 
-enum rectangle_strategy { NR, R, RM, DISJOINTR };
-
 class RectangleReasoning
 {
 public:
-	rectangle_strategy strategy;
+	bool use_rectangle_reasoning;
 	double accumulated_runtime = 0;
 
 	RectangleReasoning(const Instance& instance) : instance(instance) {}

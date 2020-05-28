@@ -47,12 +47,12 @@ public:
 	// set params
 	void setHeuristicType(heuristics_type h) {heuristic_helper.type = h; }
 	void setPrioritizeConflicts(bool p) {PC = p;	heuristic_helper.PC = p; }
-	void setRectangleReasoning(rectangle_strategy r) {rectangle_helper.strategy = r; heuristic_helper.rectangle_reasoning = r; }
-	void setCorridorReasoning(corridor_strategy c) {corridor_helper.strategy = c; heuristic_helper.corridor_reasoning = c; }
+	void setRectangleReasoning(bool r) {rectangle_helper.use_rectangle_reasoning = r; heuristic_helper.rectangle_reasoning = r; }
+	void setCorridorReasoning(bool c) {corridor_helper.use_corridor_reasoning = c; heuristic_helper.corridor_reasoning = c; }
 	void setTargetReasoning(bool t) {target_reasoning = t; heuristic_helper.target_reasoning = t; }
 	void setMutexReasoning(bool m) {mutex_reasoning = m; heuristic_helper.mutex_reasoning = m; }
 	void setDisjointSplitting(bool d) {disjoint_splitting = d; heuristic_helper.disjoint_splitting = d; }
-	void setBypass(bool b) { bypass = b; } // 2-agent solver for heuristic calculation does not need bypass strategy.
+	void setBypass(bool b) { bypass = b; } // 2-agent solver for heuristic calculation does not need bypass use_rectangle_reasoning.
 	void setConflictSelectionRule(conflict_selection c) { conflict_selection_rule = c; heuristic_helper.conflict_seletion_rule = c; }
 	void setNodeSelectionRule(node_selection n) { node_selection_rule = n; heuristic_helper.node_selection_rule = n; }
 	void setNodeLimit(int n) { node_limit = n; }

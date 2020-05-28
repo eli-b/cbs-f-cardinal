@@ -369,7 +369,7 @@ void CBS::classifyConflicts(CBSNode &node)
 		}
 
 		// Corridor reasoning
-		if (corridor_helper.strategy != corridor_strategy::NC)
+		if (corridor_helper.use_corridor_reasoning)
 		{
 			auto corridor = corridor_helper.run(con, paths, cardinal1 && cardinal2, node);
 			if (corridor != nullptr)
@@ -383,7 +383,7 @@ void CBS::classifyConflicts(CBSNode &node)
 
 
 		// Rectangle reasoning
-		if (rectangle_helper.strategy != rectangle_strategy::NR &&
+		if (rectangle_helper.use_rectangle_reasoning &&
 			(int)paths[con->a1]->size() > timestep &&
 			(int)paths[con->a2]->size() > timestep && //conflict happens before both agents reach their goal locations
 			type == constraint_type::VERTEX && // vertex conflict
@@ -728,9 +728,9 @@ string CBS::getSolverName() const
 	case STRATEGY_COUNT:
 		break;
 	}
-	if (rectangle_helper.strategy != rectangle_strategy::NR)
+	if (rectangle_helper.use_rectangle_reasoning)
 		name += "+R";
-	if (corridor_helper.strategy != corridor_strategy::NC)
+	if (corridor_helper.use_corridor_reasoning)
 		name += "+C";
 	if (target_reasoning)
 		name += "+T";
@@ -874,23 +874,6 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 			{
 				child[0]->constraints = curr->conflict->constraint1;
 				child[1]->constraints = curr->conflict->constraint2;
-				if (curr->conflict->type == conflict_type::RECTANGLE && rectangle_helper.strategy == rectangle_strategy::DISJOINTR)
-				{
-					int i = (bool)(rand() % 2);
-					for (const auto constraint : child[1 - i]->constraints)
-					{
-						child[i]->constraints.emplace_back(get<0>(constraint), get<1>(constraint), get<2>(constraint), get<3>(constraint), 
-																							constraint_type::POSITIVE_BARRIER);
-					}
-				}
-				else if (curr->conflict->type == conflict_type::CORRIDOR && corridor_helper.strategy == corridor_strategy::DISJOINTC)
-				{
-					int i = (bool)(rand() % 2);
-					assert(child[1 - i]->constraints.size() == 1);
-					auto constraint = child[1 - i]->constraints.front();
-					child[i]->constraints.emplace_back(get<0>(constraint), get<1>(constraint), get<2>(constraint), get<3>(constraint),
-						constraint_type::POSITIVE_RANGE);
-				}
 			}
 
 			if (screen > 1)

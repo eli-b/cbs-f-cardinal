@@ -3,12 +3,11 @@
 #include "Instance.h"
 #include "SingleAgentSolver.h"
 
-enum corridor_strategy { NC, C, DISJOINTC };
 
 class CorridorReasoning
 {
 public:
-	corridor_strategy strategy;
+	bool use_corridor_reasoning;
 	double accumulated_runtime;
 
 	CorridorReasoning(const vector<SingleAgentSolver*>& search_engines,

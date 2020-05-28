@@ -173,48 +173,26 @@ void ConstraintTable::build(const CBSNode& node, int agent)
 					insert2CT(x, y, t, t + 1);
 				break;
 			case constraint_type::BARRIER:
-			case constraint_type::POSITIVE_BARRIER:
 				for (auto constraint : curr->constraints)
 				{
 					tie(a, x, y, t, type) = constraint;
 					if (a == agent)
 					{
-						auto states = decodeBarrier(x, y, t);
-						if (type == constraint_type::BARRIER) // barrier constraint
+						auto states = decodeBarrier(x, y, t); // state = (location, timestep)
+						for (const auto& state : states)
 						{
-							for (const auto& state : states)
-							{
-								insert2CT(state.first, state.second, state.second + 1);
-							}
-						}
-						else
-						{
-							assert(type == constraint_type::POSITIVE_BARRIER); // positive barrier constraint
-							positive_constraint_sets.push_back(states);
+							insert2CT(state.first, state.second, state.second + 1);
 						}
 					}
 			   }
 				break;
 			case constraint_type::RANGE:
-			case constraint_type::POSITIVE_RANGE:
 				for (auto constraint : curr->constraints)
 				{
 					tie(a, x, y, t, type) = constraint;
 					if (a == agent)
 					{
-						if (type == constraint_type::RANGE)
-						{
-							insert2CT(x, y, t + 1); // the agent cannot stay at x from timestep y to timestep t.
-						}
-						else
-						{
-							assert(type == constraint_type::POSITIVE_RANGE);
-							positive_constraint_sets.emplace_back();
-							for (int i = y; i <= t; i++)
-							{
-								positive_constraint_sets.back().emplace_back(x, i);
-							}
-						}
+						insert2CT(x, y, t + 1); // the agent cannot stay at x from timestep y to timestep t.
 					}
 				}
 				break;
@@ -229,11 +207,11 @@ void ConstraintTable::build(const CBSNode& node, int agent)
 
 
 // build the conflict avoidance table
-void ConstraintTable::buildCAT(int agent, const vector<Path*>& paths, size_t cat_size)
+void ConstraintTable::buildCAT(int agent, const vector<Path*>& paths, size_t _cat_size)
 {
 	if (length_min >= MAX_TIMESTEP || length_min > length_max) // the agent cannot reach its goal location
 		return; // don't have to build CAT
-  cat_size = std::max(cat_size, (size_t)latest_timestep);
+	cat_size = std::max(_cat_size, (size_t)latest_timestep);
 	if (map_size < map_size_threshold)
 	{
 		// cat_small.resize(cat_size * map_size, false);
@@ -385,28 +363,4 @@ int ConstraintTable::getHoldingTime()
 			rst = max(rst, (int)landmark.first + 1);
 	}
 	return rst;
-}
-
-
-// return false if one of the positive constraints can never be satisfied, otherwise return true.
-bool ConstraintTable::updateUnsatisfiedPositiveConstraintSet(const list<int>& old_set, list<int>& new_set, int location, int timestep) const
-{
-	for (auto i : old_set)
-	{
-		new_set.push_back(i);
-		if (positive_constraint_sets[i].front().second <= timestep && timestep <= positive_constraint_sets[i].back().second)
-		{
-			for (const auto& state : positive_constraint_sets[i])
-			{
-				if (state.second == timestep && state.first == location)
-				{
-					new_set.pop_back();
-					break;
-				}
-			}
-		}
-		else if (positive_constraint_sets[i].back().second < timestep)
-			return false;
-	}
-	return true;
 }

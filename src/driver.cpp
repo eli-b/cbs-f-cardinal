@@ -46,8 +46,8 @@ int main(int argc, char** argv)
 			"conflict selection (Random\n H: smallest h value\n Depth: depth-first manner\n Conflicts: fewest conflicts\n ConflictPairs: fewest conflicting pairs of agents\n MVC: MVC on the conflict graph)")
 		("bypass", po::value<bool>()->default_value(false), "Bypass1")
 		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")
-		("rectangleReasoning", po::value<string>()->default_value("None"), "rectangle reasoning strategy (None, R, RM, Disjoint)")
-		("corridorReasoning", po::value<string>()->default_value("None"), " corridor reasoning strategy (None, C, Disjoint")
+		("rectangleReasoning", po::value<bool>()->default_value(false), "Using rectangle reasoning")
+		("corridorReasoning", po::value<bool>()->default_value(false), "Using corridor reasoning")
 		("mutexReasoning", po::value<bool>()->default_value(false), "Using mutex reasoning")
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
 		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
@@ -84,34 +84,6 @@ int main(int argc, char** argv)
 	else
 	{
 		cout << "WRONG heuristics strategy!" << endl;
-		return -1;
-	}
-
-	rectangle_strategy r;
-	if (vm["rectangleReasoning"].as<string>() == "None")
-		r = rectangle_strategy::NR;
-	else if (vm["rectangleReasoning"].as<string>() == "R")
-		r = rectangle_strategy::R;
-	else if (vm["rectangleReasoning"].as<string>() == "RM")
-		r = rectangle_strategy::RM;
-	else if (vm["rectangleReasoning"].as<string>() == "Disjoint")
-		r = rectangle_strategy::DISJOINTR;
-	else
-	{
-		cout << "WRONG rectangle reasoning strategy!" << endl;
-		return -1;
-	}
-
-	corridor_strategy c;
-	if (vm["corridorReasoning"].as<string>() == "None")
-		c = corridor_strategy::NC;
-	else if (vm["corridorReasoning"].as<string>() == "C")
-		c = corridor_strategy::C;
-	else if (vm["corridorReasoning"].as<string>() == "Disjoint")
-		c = corridor_strategy::DISJOINTC;
-	else
-	{
-		cout << "WRONG corridor reasoning strategy!" << endl;
 		return -1;
 	}
 
@@ -178,8 +150,8 @@ int main(int argc, char** argv)
 	cbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
 	cbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
 	cbs.setBypass(vm["bypass"].as<bool>());
-	cbs.setRectangleReasoning(r);
-	cbs.setCorridorReasoning(c);
+	cbs.setRectangleReasoning(vm["rectangleReasoning"].as<bool>());
+	cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
 	cbs.setHeuristicType(h);
 	cbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
 	cbs.setMutexReasoning(vm["mutexReasoning"].as<bool>());

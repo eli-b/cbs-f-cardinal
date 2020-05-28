@@ -183,7 +183,7 @@ bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode &node, vector<int> &CG) 
         {
             num_memoization++;
             node.conflictGraph[idx] = got->second;
-        } else if (rectangle_reasoning == rectangle_strategy::RM || mutex_reasoning) {
+        } else if (rectangle_reasoning || mutex_reasoning) {
             node.conflictGraph[idx] = solve2Agents(a1, a2, node, false);
             assert(node.conflictGraph[idx] >= 0);
             lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];

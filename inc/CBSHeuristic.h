@@ -125,8 +125,8 @@ class CBSHeuristic
 {
 public:
 	heuristics_type type;
-	rectangle_strategy rectangle_reasoning; // using rectangle reasoning
-	corridor_strategy corridor_reasoning; // using corridor reasoning
+	bool rectangle_reasoning; // using rectangle reasoning
+	bool corridor_reasoning; // using corridor reasoning
 	bool target_reasoning; // using target reasoning
 	bool mutex_reasoning; // using mutex reasoning
 	bool disjoint_splitting; // disjoint splitting
