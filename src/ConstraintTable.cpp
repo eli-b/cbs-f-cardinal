@@ -213,7 +213,7 @@ void ConstraintTable::buildCAT(int agent, const vector<Path*>& paths, size_t _ca
 	if (map_size < map_size_threshold)
 	{
 		// cat_small.resize(cat_size * map_size, false);
-		cat_small.resize(cat_size, vector<size_t>(map_size, false));
+		cat_small.resize(cat_size, vector<bool>(map_size, false));
 		for (size_t ag = 0; ag < paths.size(); ag++)
 		{
 			if (ag == agent || paths[ag] == nullptr)

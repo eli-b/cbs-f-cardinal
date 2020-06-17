@@ -48,7 +48,7 @@ protected:
 private:
 	size_t map_size_threshold = 10000;
 	vector<list<size_t>> cat_large; // conflict avoidance table for large maps
-	vector<vector<size_t>> cat_small; // conflict avoidance table for small maps
+	vector<vector<bool>> cat_small; // conflict avoidance table for small maps
 
 };
 
