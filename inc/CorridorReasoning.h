@@ -9,7 +9,7 @@ class CorridorReasoning
 {
 public:
 	bool use_corridor_reasoning;
-	double accumulated_runtime;
+	double accumulated_runtime = 0;
 
 	CorridorReasoning(const vector<SingleAgentSolver*>& search_engines,
 					  const vector<ConstraintTable>& initial_constraints) :
