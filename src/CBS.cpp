@@ -336,12 +336,12 @@ void CBS::classifyConflicts(CBSNode& node)
 			con->priority = conflict_priority::NON;
 		}
 
-		if (con->priority == conflict_priority::CARDINAL && heuristic_helper.type == heuristics_type::ZERO)
+		/*if (con->priority == conflict_priority::CARDINAL && heuristic_helper.type == heuristics_type::ZERO)
 		{
 			computePriorityForConflict(*con, node);
 			node.conflicts.push_back(con);
 			return;
-		}
+		}*/
 
 		// Mutex reasoning
 		if (mutex_reasoning)
@@ -954,27 +954,27 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 						}
 					}
 				}
-				switch (curr->conflict->type)
-				{
-				case conflict_type::RECTANGLE:
-					num_rectangle_conflicts++;
-					break;
-				case conflict_type::CORRIDOR:
-					num_corridor_conflicts++;
-					break;
-				case conflict_type::TARGET:
-					num_target_conflicts++;
-					break;
-				case conflict_type::STANDARD:
-					num_standard_conflicts++;
-					break;
-				case conflict_type::MUTEX:
-					num_mutex_conflicts++;
-					break;
-				}
-				curr->clear();
 			}
 		}
+		switch (curr->conflict->type)
+		{
+		case conflict_type::RECTANGLE:
+			num_rectangle_conflicts++;
+			break;
+		case conflict_type::CORRIDOR:
+			num_corridor_conflicts++;
+			break;
+		case conflict_type::TARGET:
+			num_target_conflicts++;
+			break;
+		case conflict_type::STANDARD:
+			num_standard_conflicts++;
+			break;
+		case conflict_type::MUTEX:
+			num_mutex_conflicts++;
+			break;
+		}
+		curr->clear();
 	}  // end of while loop
 
 
