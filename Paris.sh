@@ -1,5 +1,5 @@
 #!/bin/sh
-echo "Runing experiments"
+echo "Running experiments"
 
 name="Paris_1_256"
 map="../instances/$name.map"

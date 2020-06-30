@@ -29,8 +29,8 @@ void CBSNode::printConflictGraph(int num_of_agents) const
 
 std::ostream& operator<<(std::ostream& os, const CBSNode& node)
 {
-	os << "Node " << node.time_generated << " (" << node.f_val << " = " << node.g_val << " + " <<
-		node.h_val << " ) with " << node.num_of_collisions << " conflicts and " <<
-		node.paths.size() << " new paths ";
+	os << "Node " << node.time_generated << " (" << node.g_val + node.h_val << " = " << node.g_val << " + " <<
+	   node.h_val << " ) with " << node.conflicts.size() + node.unknownConf.size() << " conflicts and " <<
+	   node.paths.size() << " new paths ";
 	return os;
 }

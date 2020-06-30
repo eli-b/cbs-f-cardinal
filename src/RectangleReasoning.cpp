@@ -2,18 +2,17 @@
 
 
 shared_ptr<Conflict> RectangleReasoning::run(const vector<Path*>& paths, int timestep,
-	int a1, int a2, const MDD* mdd1, const MDD* mdd2)
+											 int a1, int a2, const MDD* mdd1, const MDD* mdd2)
 {
 	clock_t t = clock();
 	auto rectangle = findRectangleConflictByRM(paths, timestep, a1, a2, mdd1, mdd2);
-	accumulated_runtime += (double)(clock() - t) / CLOCKS_PER_SEC;
+	accumulated_runtime += (double) (clock() - t) / CLOCKS_PER_SEC;
 	return rectangle;
-	// return findRectangleConflictByGR(paths, timestep, a1, a2, mdd1, mdd2);
 }
 
 
 shared_ptr<Conflict> RectangleReasoning::findRectangleConflictByGR(const vector<Path*>& paths, int timestep,
-	int a1, int a2, const MDD* mdd1, const MDD* mdd2)
+																   int a1, int a2, const MDD* mdd1, const MDD* mdd2)
 {
 	assert(timestep > 0);
 	int from1 = (*paths[a1])[timestep - 1].location;
@@ -27,8 +26,8 @@ shared_ptr<Conflict> RectangleReasoning::findRectangleConflictByGR(const vector<
 	list<Constraint> B1;
 	int t_start = getStartCandidate(*paths[a1], loc - from1, loc - from2, timestep);
 	int t_end = getGoalCandidate(*paths[a1], loc - from1, loc - from2, timestep);
-	bool haveBarriers = ExtractBarriers(*mdd1, loc, timestep, loc - from1, loc - from2, 
-		paths[a1]->at(t_start).location, paths[a1]->at(t_end).location, t_start, B1);
+	bool haveBarriers = ExtractBarriers(*mdd1, loc, timestep, loc - from1, loc - from2,
+										paths[a1]->at(t_start).location, paths[a1]->at(t_end).location, t_start, B1);
 	if (!haveBarriers)
 		return nullptr;
 
@@ -37,7 +36,7 @@ shared_ptr<Conflict> RectangleReasoning::findRectangleConflictByGR(const vector<
 	t_end = getGoalCandidate(*paths[a2], loc - from1, loc - from2, timestep);
 
 	haveBarriers = ExtractBarriers(*mdd2, loc, timestep, loc - from2, loc - from1,
-		paths[a2]->at(t_start).location, paths[a2]->at(t_end).location, t_start, B2);
+								   paths[a2]->at(t_start).location, paths[a2]->at(t_end).location, t_start, B2);
 	if (!haveBarriers)
 		return nullptr;
 
@@ -83,77 +82,76 @@ shared_ptr<Conflict> RectangleReasoning::findRectangleConflictByGR(const vector<
 
 
 shared_ptr<Conflict> RectangleReasoning::findRectangleConflictByRM(const vector<Path*>& paths, int timestep,
-        int a1, int a2, const MDD* mdd1, const MDD* mdd2)
+																   int a1, int a2, const MDD* mdd1, const MDD* mdd2)
 {
-    shared_ptr<Conflict> rectangle = nullptr;
-    //Rectangle reasoning for semi and non cardinal vertex conflicts
-    list<int>	s1s = getStartCandidates(*paths[a1], timestep);
-    list<int>	g1s = getGoalCandidates(*paths[a1], timestep);
-    list<int>	s2s = getStartCandidates(*paths[a2], timestep);
-    list<int>	g2s = getGoalCandidates(*paths[a2], timestep);
+	shared_ptr<Conflict> rectangle = nullptr;
+	//Rectangle reasoning for semi and non cardinal vertex conflicts
+	list<int> s1s = getStartCandidates(*paths[a1], timestep);
+	list<int> g1s = getGoalCandidates(*paths[a1], timestep);
+	list<int> s2s = getStartCandidates(*paths[a2], timestep);
+	list<int> g2s = getGoalCandidates(*paths[a2], timestep);
 	pair<int, int> location = instance.getCoordinate(paths[a1]->at(timestep).location);
 
-    // Try all possible combinations
-    int type = -1;
-    int area = 0;
-    for (int t1_start : s1s)
-    {
-        for (int t1_end : g1s)
-        {
+	// Try all possible combinations
+	int type = -1;
+	int area = 0;
+	for (int t1_start : s1s)
+	{
+		for (int t1_end : g1s)
+		{
 			auto s1 = instance.getCoordinate(paths[a1]->at(t1_start).location);
 			auto g1 = instance.getCoordinate(paths[a1]->at(t1_end).location);
-            if (instance.getManhattanDistance(s1, g1) !=  t1_end - t1_start)
-                continue;
-            for (int t2_start : s2s)
-            {
-                for (int t2_end : g2s)
-                {
-                    auto s2 = instance.getCoordinate(paths[a2]->at(t2_start).location);
-                    auto g2 = instance.getCoordinate(paths[a2]->at(t2_end).location);
-                    if (instance.getManhattanDistance(s2, g2) != t2_end - t2_start)
-                        continue;
-                    if (!isRectangleConflict(s1, s2, g1, g2))
-                        continue;
-                    auto Rg = getRg(s1, g1, g2);
-                    auto Rs = getRs(s1, s2, g1);
-                    int new_area = (abs(Rs.first - Rg.first) + 1) * (abs(Rs.second - Rg.second) + 1);
-                    int new_type = classifyRectangleConflict(s1, s2, g1, g2, Rg);
-                    if (new_type > type || (new_type == type && new_area > area))
-                    {
-                        int Rg_t = timestep + abs(Rg.first - location.first) + abs(Rg.second - location.second);
+			if (instance.getManhattanDistance(s1, g1) != t1_end - t1_start)
+				continue;
+			for (int t2_start : s2s)
+			{
+				for (int t2_end : g2s)
+				{
+					auto s2 = instance.getCoordinate(paths[a2]->at(t2_start).location);
+					auto g2 = instance.getCoordinate(paths[a2]->at(t2_end).location);
+					if (instance.getManhattanDistance(s2, g2) != t2_end - t2_start)
+						continue;
+					if (!isRectangleConflict(s1, s2, g1, g2))
+						continue;
+					auto Rg = getRg(s1, g1, g2);
+					auto Rs = getRs(s1, s2, g1);
+					int new_area = (abs(Rs.first - Rg.first) + 1) * (abs(Rs.second - Rg.second) + 1);
+					int new_type = classifyRectangleConflict(s1, s2, g1, g2, Rg);
+					if (new_type > type || (new_type == type && new_area > area))
+					{
+						int Rg_t = timestep + abs(Rg.first - location.first) + abs(Rg.second - location.second);
 						list<Constraint> constraint1;
 						list<Constraint> constraint2;
-						bool succ = addModifiedBarrierConstraints(a1, a2, Rs, Rg, s1, s2, 
-							Rg_t, mdd1, mdd2, constraint1, constraint2);
-                        if (succ && blocked(*paths[a1], constraint1) && blocked(*paths[a2], constraint2))
-                        {
+						bool succ = addModifiedBarrierConstraints(a1, a2, Rs, Rg, s1, s2,
+																  Rg_t, mdd1, mdd2, constraint1, constraint2);
+						if (succ && blocked(*paths[a1], constraint1) && blocked(*paths[a2], constraint2))
+						{
 							type = new_type;
 							area = new_area;
 							rectangle = shared_ptr<Conflict>(new Conflict());
 							rectangle->rectangleConflict(a1, a2, Rs, Rg, Rg_t, constraint1, constraint2);
-                            if (type == 2)
+							if (type == 2)
 							{
 								rectangle->priority = conflict_priority::CARDINAL;
 								return rectangle;
 							}
-                            else if (type == 1) // && !findRectangleConflict(parent.parent, *conflict))
+							else if (type == 1) // && !findRectangleConflict(parent.parent, *conflict))
 								rectangle->priority = conflict_priority::SEMI;
-                            else //if (type == 0 && !findRectangleConflict(parent.parent, *conflict))
+							else //if (type == 0 && !findRectangleConflict(parent.parent, *conflict))
 								rectangle->priority = conflict_priority::NON;
-                        }
-                    }
-                }
-            }
-        }
-    }
+						}
+					}
+				}
+			}
+		}
+	}
 
-    return rectangle;
+	return rectangle;
 }
 
 
-
 bool RectangleReasoning::ExtractBarriers(const MDD& mdd, int loc, int timestep,
-					int dir1, int dir2, int start, int goal, int start_time, list<Constraint>& B)
+										 int dir1, int dir2, int start, int goal, int start_time, list<Constraint>& B)
 {
 	int num_barrier;
 	int sign1 = dir1 / abs(dir1);
@@ -179,12 +177,12 @@ bool RectangleReasoning::ExtractBarriers(const MDD& mdd, int loc, int timestep,
 	if (abs(dir1) == 1) //vertical barriers
 	{
 		barrier_time = timestep + sign1 * (instance.getColCoordinate(n->location) - instance.getColCoordinate(loc))
-			+ sign2 * (instance.getRowCoordinate(n->location) - instance.getRowCoordinate(loc));
+					   + sign2 * (instance.getRowCoordinate(n->location) - instance.getRowCoordinate(loc));
 	}
 	else
 	{
 		barrier_time = timestep + sign1 * (instance.getRowCoordinate(n->location) - instance.getRowCoordinate(loc))
-			+ sign2 * (instance.getColCoordinate(n->location) - instance.getColCoordinate(loc));
+					   + sign2 * (instance.getColCoordinate(n->location) - instance.getColCoordinate(loc));
 	}
 	if (barrier_time == 0)
 	{
@@ -213,14 +211,14 @@ bool RectangleReasoning::ExtractBarriers(const MDD& mdd, int loc, int timestep,
 			if (abs(dir1) == 1) //vertical barriers
 			{
 				barrier_id = sign1 * (instance.getColCoordinate(n->location) - instance.getColCoordinate(start));
-				barrier_time = timestep + sign1 * (instance.getColCoordinate(n->location) - instance.getColCoordinate(loc)) 
-															+ sign2 * (instance.getRowCoordinate(n->location) - instance.getRowCoordinate(loc));
+				barrier_time = timestep + sign1 * (instance.getColCoordinate(n->location) - instance.getColCoordinate(loc))
+							   + sign2 * (instance.getRowCoordinate(n->location) - instance.getRowCoordinate(loc));
 			}
 			else
 			{
 				barrier_id = sign1 * (instance.getRowCoordinate(n->location) - instance.getRowCoordinate(start));
 				barrier_time = timestep + sign1 * (instance.getRowCoordinate(n->location) - instance.getRowCoordinate(loc))
-															+ sign2 * (instance.getColCoordinate(n->location) - instance.getColCoordinate(loc));
+							   + sign2 * (instance.getColCoordinate(n->location) - instance.getColCoordinate(loc));
 			}
 			if (0 <= barrier_id && barrier_id < num_barrier && !block[barrier_id] && barrier_time == n->level)
 			{
@@ -250,7 +248,7 @@ bool RectangleReasoning::ExtractBarriers(const MDD& mdd, int loc, int timestep,
 				barrier_end_y = barrier_start_y;
 				int time_offset = timestep + i - sign1 * (instance.getColCoordinate(loc) - instance.getColCoordinate(start));
 				barrier_start_x = instance.getRowCoordinate(loc) + sign2 * (extent_L[i] - time_offset);
-				barrier_end_x = instance.getRowCoordinate(loc) + sign2 * (extent_U[i] - time_offset);				
+				barrier_end_x = instance.getRowCoordinate(loc) + sign2 * (extent_U[i] - time_offset);
 			}
 			else
 			{
@@ -261,10 +259,10 @@ bool RectangleReasoning::ExtractBarriers(const MDD& mdd, int loc, int timestep,
 				barrier_end_y = instance.getColCoordinate(loc) + sign2 * (extent_U[i] - time_offset);
 			}
 			barrier_end_time = extent_U[i];
-			B.emplace_back(-1,  // for now, the agent index is not important,  so we just use -1 for simplexity.
-				instance.linearizeCoordinate(barrier_start_x, barrier_start_y),
-				instance.linearizeCoordinate(barrier_end_x, barrier_end_y), 
-				barrier_end_time, constraint_type::BARRIER);
+			B.emplace_back(-1,  // for now, the agent index is not important, so we just use -1 for simplicity.
+						   instance.linearizeCoordinate(barrier_start_x, barrier_start_y),
+						   instance.linearizeCoordinate(barrier_end_x, barrier_end_y),
+						   barrier_end_time, constraint_type::BARRIER);
 		}
 	}
 	return !B.empty();
@@ -322,8 +320,8 @@ pair<int, int> RectangleReasoning::getIntersection(const Constraint& b1, const C
 		return make_pair(b2_l.first, b1_l.second);
 }
 
-bool RectangleReasoning::blockedNodes(const vector<PathEntry>& path, 
-	const pair<int, int>& Rs, const pair<int, int>& Rg, int Rg_t, int dir)
+bool RectangleReasoning::blockedNodes(const vector<PathEntry>& path,
+									  const pair<int, int>& Rs, const pair<int, int>& Rg, int Rg_t, int dir)
 {
 	pair<int, int> b_l;
 	if (abs(dir) == 1)
@@ -337,7 +335,7 @@ bool RectangleReasoning::blockedNodes(const vector<PathEntry>& path,
 		b_l.second = Rg.second;
 	}
 
-	int t_max = min(Rg_t, (int)path.size() - 1);
+	int t_max = min(Rg_t, (int) path.size() - 1);
 	int t_b_l = Rg_t - abs(b_l.first - Rg.first) - abs(b_l.second - Rg.second);
 	int t_min = max(0, t_b_l);
 
@@ -377,10 +375,10 @@ bool RectangleReasoning::isCut(const Constraint b, const pair<int, int>& Rs, con
 }
 
 
-void RectangleReasoning::generalizedRectangle(const vector<PathEntry>& path1, const vector<PathEntry>& path2, 
-	const MDD& mdd1, const MDD& mdd2,
-	const list<Constraint>& B1, const list<Constraint>& B2, int timestep,
-	int& best_type, pair<int, int>& best_Rs, pair<int, int>& best_Rg)
+void RectangleReasoning::generalizedRectangle(const vector<PathEntry>& path1, const vector<PathEntry>& path2,
+											  const MDD& mdd1, const MDD& mdd2,
+											  const list<Constraint>& B1, const list<Constraint>& B2, int timestep,
+											  int& best_type, pair<int, int>& best_Rs, pair<int, int>& best_Rg)
 {
 	int loc = path1[timestep].location;
 	int dir1 = loc - path1[timestep - 1].location;
@@ -392,8 +390,8 @@ void RectangleReasoning::generalizedRectangle(const vector<PathEntry>& path1, co
 			if (isEntryBarrier(b1_entry, b2_entry, dir1) && isEntryBarrier(b2_entry, b1_entry, dir2))
 			{
 				pair<int, int> Rs = getIntersection(b1_entry, b2_entry);
-				list<Constraint>::const_reverse_iterator  b1_exit = B1.rbegin();
-				list<Constraint>::const_reverse_iterator  b2_exit = B2.rbegin();
+				list<Constraint>::const_reverse_iterator b1_exit = B1.rbegin();
+				list<Constraint>::const_reverse_iterator b2_exit = B2.rbegin();
 				while (b1_exit != B1.rend() && b2_exit != B2.rend())
 				{
 					if (!isExitBarrier(*b1_exit, b2_entry, dir1))
@@ -419,7 +417,7 @@ void RectangleReasoning::generalizedRectangle(const vector<PathEntry>& path1, co
 
 					bool cut1 = isCut(*b1_exit, Rs, Rg);
 					bool cut2 = isCut(*b2_exit, Rs, Rg);
-					int type = (int)(cut1)+(int)(cut2);
+					int type = (int) (cut1) + (int) (cut2);
 					if (type > best_type)
 					{
 						best_Rs = Rs;
@@ -442,16 +440,17 @@ void RectangleReasoning::generalizedRectangle(const vector<PathEntry>& path1, co
 
 //Identify rectangle conflicts for CR/R
 bool RectangleReasoning::isRectangleConflict(const pair<int, int>& s1, const pair<int, int>& s2,
-	const pair<int, int>& g1, const pair<int, int>& g2, int g1_t, int g2_t)
+											 const pair<int, int>& g1, const pair<int, int>& g2, int g1_t, int g2_t)
 {
 	return g1_t == abs(s1.first - g1.first) + abs(s1.second - g1.second) &&  // Manhattan-optimal
-		        g2_t == abs(s2.first - g2.first) + abs(s2.second - g2.second) && // Manhattan-optimal
-			(s1.first - g1.first) * (s2.first - g2.first) >= 0 &&  //Move in the same direction
-			(s1.second - g1.second) * (s2.second - g2.second) >= 0; //Move in the same direction
+		   g2_t == abs(s2.first - g2.first) + abs(s2.second - g2.second) && // Manhattan-optimal
+		   (s1.first - g1.first) * (s2.first - g2.first) >= 0 &&  //Move in the same direction
+		   (s1.second - g1.second) * (s2.second - g2.second) >= 0; //Move in the same direction
 }
 
 //Identify rectangle conflicts for RM
-bool RectangleReasoning::isRectangleConflict(const pair<int, int>& s1, const pair<int, int>& s2, const pair<int, int>& g1, const pair<int, int>& g2) const
+bool RectangleReasoning::isRectangleConflict(const pair<int, int>& s1, const pair<int, int>& s2,
+											 const pair<int, int>& g1, const pair<int, int>& g2) const
 {
 	if (s1 == s2) // A standard cardinal conflict
 		return false;
@@ -464,7 +463,9 @@ bool RectangleReasoning::isRectangleConflict(const pair<int, int>& s1, const pai
 		return false;
 	else if ((S1.first - S2.first) * (S2.first - G2.first) > 0 && (S1.second - S2.second) * (S2.second - G2.second) > 0) // s2 always in the middle
 		return false;*/
-	else return !((s1.first == g1.first && s2.second == g2.second) || (s1.second == g1.second && s2.first == g2.first)); // not a cardinal vertex conflict
+	else
+		return !((s1.first == g1.first && s2.second == g2.second) ||
+				 (s1.second == g1.second && s2.first == g2.first)); // not a cardinal vertex conflict
 }
 
 //Classify rectangle conflicts for CR/R
@@ -472,30 +473,32 @@ bool RectangleReasoning::isRectangleConflict(const pair<int, int>& s1, const pai
 // Return 1 if it is a semi-cardinal rectangle conflict
 // Return 0 if it is a non-cardinal rectangle conflict
 int RectangleReasoning::classifyRectangleConflict(const pair<int, int>& s1, const pair<int, int>& s2,
-	const pair<int, int>& g1, const pair<int, int>& g2)
+												  const pair<int, int>& g1, const pair<int, int>& g2)
 {
-		int cardinal1 = 0, cardinal2 = 0;
-		if ((s1.first - s2.first) * (g1.first - g2.first) <= 0)
-			cardinal1++;
-		if ((s1.second - s2.second) * (g1.second - g2.second) <= 0)
-			cardinal2++;
-		return cardinal1 + cardinal2;
+	int cardinal1 = 0, cardinal2 = 0;
+	if ((s1.first - s2.first) * (g1.first - g2.first) <= 0)
+		cardinal1++;
+	if ((s1.second - s2.second) * (g1.second - g2.second) <= 0)
+		cardinal2++;
+	return cardinal1 + cardinal2;
 }
 
 //Classify rectangle conflicts for RM
 // Return 2 if it is a cardinal rectangle conflict
 // Return 1 if it is a semi-cardinal rectangle conflict
 // Return 0 if it is a non-cardinal rectangle conflict
-int RectangleReasoning::classifyRectangleConflict(const pair<int, int>& s1, const pair<int, int>& s2, const pair<int, int>& g1, const pair<int, int>& g2, const pair<int, int>& Rg)
+int RectangleReasoning::classifyRectangleConflict(const pair<int, int>& s1, const pair<int, int>& s2,
+												  const pair<int, int>& g1, const pair<int, int>& g2,
+												  const pair<int, int>& Rg)
 {
 	if ((s2.first - s1.first) * (s1.first - g1.first) < 0 && (s2.second - s1.second) * (s1.second - g1.second) < 0) // s1 in the middle
 		return 0;
 	else if ((s1.first - s2.first) * (s2.first - g2.first) < 0 && (s1.second - s2.second) * (s2.second - g2.second) < 0) // s2 in the middle
-		return 0; 
+		return 0;
 
 	int cardinal1 = 0, cardinal2 = 0;
 	if ((s1.first == s2.first && (s1.second - s2.second) * (s2.second - Rg.second) >= 0) ||
-		(s1.first != s2.first && (s1.first - s2.first)*(s2.first - Rg.first) < 0))
+		(s1.first != s2.first && (s1.first - s2.first) * (s2.first - Rg.first) < 0))
 	{
 		if (Rg.first == g1.first)
 			cardinal1 = 1;
@@ -587,12 +590,12 @@ int RectangleReasoning::getStartCandidate(const Path& path, int dir1, int dir2, 
 
 int RectangleReasoning::getGoalCandidate(const Path& path, int dir1, int dir2, int timestep)
 {
-	for (int t = timestep; t < (int)path.size() - 1; t++) //Find the latest end that is single and Manhattan-optimal to conflicting location
+	for (int t = timestep; t < (int) path.size() - 1; t++) //Find the latest end that is single and Manhattan-optimal to conflicting location
 	{
 		if (path[t + 1].location - path[t].location != dir1 && path[t + 1].location - path[t].location != dir2)
 			return t;
 	}
-	return (int)path.size() - 1;
+	return (int) path.size() - 1;
 }
 
 /*int getRectangleTime(const Conflict& conflict, const std::vector<std::vector<PathEntry>*>& paths, int num_col)
@@ -606,17 +609,17 @@ int RectangleReasoning::getGoalCandidate(const Path& path, int dir1, int dir2, i
 	return std::get<3>(conflict) - abs(S1.first - Rs.first) - abs(S1.second - Rs.second);
 }*/
 
-bool RectangleReasoning::addModifiedBarrierConstraints(int a1, int a2, 
-	const pair<int, int>& Rs, const pair<int, int>& Rg,
-	const pair<int, int>& s1, const pair<int, int>& s2, int Rg_t,
-	const MDD* mdd1, const MDD* mdd2,
-	list<Constraint>& constraint1, list<Constraint>& constraint2)
+bool RectangleReasoning::addModifiedBarrierConstraints(int a1, int a2,
+													   const pair<int, int>& Rs, const pair<int, int>& Rg,
+													   const pair<int, int>& s1, const pair<int, int>& s2, int Rg_t,
+													   const MDD* mdd1, const MDD* mdd2,
+													   list<Constraint>& constraint1, list<Constraint>& constraint2)
 {
 	if ((s2.first - s1.first) * (s1.first - Rg.first) > 0 && (s2.second - s1.second) * (s1.second - Rg.second) > 0) // s1 in the middle
 	{
 		int Rs_t = Rg_t - instance.getManhattanDistance(Rs, Rg);
 		// try horizontal first
-		int offset = Rs.first > Rg.first? 1 : -1;
+		int offset = Rs.first > Rg.first ? 1 : -1;
 		bool found = hasNodeOnBarrier(mdd2, Rs.second, Rg.second, Rs.first + offset, Rs_t - 1, true);
 		if (!found)
 		{
@@ -691,7 +694,7 @@ bool RectangleReasoning::addModifiedBarrierConstraints(int a1, int a2,
 			}
 		}
 	}
-	else if ((s1.first - s2.first)*(s2.first - Rg.first) >= 0)
+	else if ((s1.first - s2.first) * (s2.first - Rg.first) >= 0)
 	{
 		// first agent moves vertically and second agent moves horizontally
 		if (!addModifiedHorizontalBarrierConstraint(a1, mdd1, Rg.first, Rs.second, Rg.second, Rg_t, constraint1))
@@ -727,7 +730,7 @@ bool RectangleReasoning::hasNodeOnBarrier(const MDD* mdd, int y_start, int y_end
 	int sign = y_start < y_end ? 1 : -1;
 	int t_max = t_min + abs(y_start - y_end);
 	int loc;
-	for (int t2 = t_min + 1; t2 <= min(t_max, (int)mdd->levels.size() - 1); t2++)
+	for (int t2 = t_min + 1; t2 <= min(t_max, (int) mdd->levels.size() - 1); t2++)
 	{
 		if (horizontal)
 			loc = instance.linearizeCoordinate(x, y_start + (t2 - t_min) * sign);
@@ -748,16 +751,16 @@ bool RectangleReasoning::hasNodeOnBarrier(const MDD* mdd, int y_start, int y_end
 
 // add a horizontal modified barrier constraint
 bool RectangleReasoning::addModifiedHorizontalBarrierConstraint(int agent, const MDD* mdd, int x,
-	int Ri_y, int Rg_y, int Rg_t, list<Constraint>& constraints)
+																int Ri_y, int Rg_y, int Rg_t, list<Constraint>& constraints)
 {
 	int sign = Ri_y < Rg_y ? 1 : -1;
 	int Ri_t = Rg_t - abs(Ri_y - Rg_y);
 	int t1 = -1;
 	int t_min = max(Ri_t, 0);
-	int t_max = min(Rg_t, (int)mdd->levels.size() - 1);
+	int t_max = min(Rg_t, (int) mdd->levels.size() - 1);
 	for (int t2 = t_min; t2 <= t_max; t2++)
 	{
-		int loc = instance.linearizeCoordinate(x,  (Ri_y + (t2 - Ri_t) * sign));
+		int loc = instance.linearizeCoordinate(x, (Ri_y + (t2 - Ri_t) * sign));
 		MDDNode* it = nullptr;
 		for (MDDNode* n : mdd->levels[t2])
 		{
@@ -795,15 +798,15 @@ bool RectangleReasoning::addModifiedHorizontalBarrierConstraint(int agent, const
 }
 
 
-// add a vertival modified barrier constraint
+// add a vertical modified barrier constraint
 bool RectangleReasoning::addModifiedVerticalBarrierConstraint(int agent, const MDD* mdd, int y,
-	int Ri_x, int Rg_x, int Rg_t, list<Constraint>& constraints)
+															  int Ri_x, int Rg_x, int Rg_t, list<Constraint>& constraints)
 {
 	int sign = Ri_x < Rg_x ? 1 : -1;
 	int Ri_t = Rg_t - abs(Ri_x - Rg_x);
 	int t1 = -1;
 	int t_min = max(Ri_t, 0);
-	int t_max = min(Rg_t, (int)mdd->levels.size() - 1);
+	int t_max = min(Rg_t, (int) mdd->levels.size() - 1);
 	for (int t2 = t_min; t2 <= t_max; t2++)
 	{
 		int loc = instance.linearizeCoordinate((Ri_x + (t2 - Ri_t) * sign), y);
@@ -897,7 +900,7 @@ bool RectangleReasoning::blocked(const Path& path, const list<Constraint>& const
 
 bool RectangleReasoning::traverse(const Path& path, int loc, int t)
 {
-	if (t >= (int)path.size())
+	if (t >= (int) path.size())
 		return loc == path.back().location;
 	else return t >= 0 && path[t].location == loc;
 }

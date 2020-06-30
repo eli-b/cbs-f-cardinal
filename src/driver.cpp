@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Jiaoyang Li
+/* Copyright (C) Jiaoyang Li
 * Unauthorized copying of this file, via any medium is strictly prohibited
 * Confidential
 * Written by Jiaoyang Li <jiaoyanl@usc.edu>, May 2019
@@ -35,20 +35,23 @@ int main(int argc, char** argv)
 		("rows", po::value<int>()->default_value(0), "number of rows")
 		("cols", po::value<int>()->default_value(0), "number of columns")
 		("obs", po::value<int>()->default_value(0), "number of obstacles")
-		("warehouseWidth", po::value<int>()->default_value(0), "width of working stations on both sides, for generating instacnes")
+		("warehouseWidth", po::value<int>()->default_value(0), "width of working stations on both sides, for generating instances")
 
 		// params for CBS
 		("heuristics", po::value<string>()->default_value("CG"), "heuristics for the high-level search (Zero, CG,DG, WDG)")
-		("prioritizingConflicts", po::value<bool>()->default_value(true), "conflict prioirtization. If true, conflictSelection is used as a tie-breaking rule.")
-		("conflictSelection", po::value<string>()->default_value("Earliest"), 
-			"conflict selection (Random\n Earliest,\n Conflicts: most conflicts with others\n MConstraints: most constraints\n FConstraints: fewest constraints\n Width: thinest MDDs\n Singletons: most singletons in MDDs)")
-		("nodeSelection", po::value<string>()->default_value("Conflicts"),
-			"conflict selection (Random\n H: smallest h value\n Depth: depth-first manner\n Conflicts: most conflicts\n ConflictPairs: most conflictinng pairs of agents\n MVC: MVC on the conflict graph)")
+		("prioritizingConflicts", po::value<bool>()->default_value(true),
+		 "conflict prioritization. If true, conflictSelection is used as a tie-breaking rule.")
+		("conflictSelection", po::value<string>()->default_value("Random"),
+		 "conflict selection (Random\n Earliest\n Conflicts: most conflicts with others\n MConstraints: most constraints\n "
+   		 "FConstraints: fewest constraints\n Width: thinnest MDDs\n Singletons: most singletons in MDDs)")
+		("nodeSelection", po::value<string>()->default_value("Random"),
+		 "conflict selection (Random\n H: smallest h value\n Depth: depth-first manner\n Conflicts: fewest conflicts\n "
+   		 "ConflictPairs: fewest conflicting pairs of agents\n MVC: MVC on the conflict graph)")
 		("bypass", po::value<bool>()->default_value(false), "Bypass1")
 		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")
-		("rectangleReasoning", po::value<string>()->default_value("None"), "rectangle reasoning strategy (None, R, RM, Disjoint)")
-		("corridorReasoning", po::value<string>()->default_value("None"), " corridor reasoning strategy (None, C, Disjoint")
-		("mutexReasoning", po::value<string>()->default_value("None"), "mutex reasoning strategy (None, C, NCK, NCG)")
+		("rectangleReasoning", po::value<bool>()->default_value(false), "Using rectangle reasoning")
+		("corridorReasoning", po::value<bool>()->default_value(false), "Using corridor reasoning")
+		("mutexReasoning", po::value<bool>()->default_value(false), "Using mutex reasoning")
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
 		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
 		("sipp", po::value<bool>()->default_value(false), "using sipp as the single agent solver")
@@ -57,7 +60,8 @@ int main(int argc, char** argv)
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 
-	if (vm.count("help")) {
+	if (vm.count("help"))
+	{
 		usage();
 		cout << desc << endl;
 		return 1;
@@ -72,7 +76,7 @@ int main(int argc, char** argv)
 		return -1;
 	}*/
 
-  heuristics_type h;
+	heuristics_type h;
 	if (vm["heuristics"].as<string>() == "Zero")
 		h = heuristics_type::ZERO;
 	else if (vm["heuristics"].as<string>() == "CG")
@@ -86,51 +90,6 @@ int main(int argc, char** argv)
 		cout << "WRONG heuristics strategy!" << endl;
 		return -1;
 	}
-
-	rectangle_strategy r;
-	if (vm["rectangleReasoning"].as<string>() == "None")
-		r = rectangle_strategy::NR;
-	else if (vm["rectangleReasoning"].as<string>() == "R")
-		r = rectangle_strategy::R;
-	else if (vm["rectangleReasoning"].as<string>() == "RM")
-		r = rectangle_strategy::RM;
-	else if (vm["rectangleReasoning"].as<string>() == "Disjoint")
-		r = rectangle_strategy::DISJOINTR;
-	else
-	{
-		cout << "WRONG rectangle reasoning strategy!" << endl;
-		return -1;
-	}
-
-	corridor_strategy c;
-	if (vm["corridorReasoning"].as<string>() == "None")
-		c = corridor_strategy::NC;
-	else if (vm["corridorReasoning"].as<string>() == "C")
-		c = corridor_strategy::C;
-	else if (vm["corridorReasoning"].as<string>() == "Disjoint")
-		c = corridor_strategy::DISJOINTC;
-	else
-	{
-		cout << "WRONG corridor reasoning strategy!" << endl;
-		return -1;
-	}
-
-	mutex_strategy m;
-	if (vm["mutexReasoning"].as<string>() == "None")
-		m = mutex_strategy::N_MUTEX;
-	else if (vm["mutexReasoning"].as<string>() == "C")
-		m = mutex_strategy::MUTEX_C;
-	else if (vm["mutexReasoning"].as<string>() == "NCK")
-		m = mutex_strategy::MUTEX_NC_FIRST_K;
-	else if (vm["mutexReasoning"].as<string>() == "NCG")
-		m = mutex_strategy::MUTEX_NC_GREEDY;
-	else if (vm["mutexReasoning"].as<string>() == "NCGF")
-		m = mutex_strategy::MUTEX_NC_GREEDY_F;
-	else
-    {
-      cout << "WRONG mutex reasoning strategy!" << endl;
-      return -1;
-    }
 
 	conflict_selection conflict;
 	if (vm["conflictSelection"].as<string>() == "Random")
@@ -171,13 +130,19 @@ int main(int argc, char** argv)
 		cout << "WRONG node selection strategy!" << endl;
 		return -1;
 	}
-	srand((int)time(0));
+
+	if (n == node_selection::NODE_DEPTH && vm["bypass"].as<bool>()) // When using depth as the node tie breaking rule, we cannot use bypassing
+	{
+		cout << "When using bypassing, we cannot use DEPTH as the node tie breaking rule!" << endl;
+		return -1;
+	}
+	srand((int) time(0));
 
 	///////////////////////////////////////////////////////////////////////////
 	// load the instance
 	Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
-		vm["agentNum"].as<int>(),
-		vm["rows"].as<int>(), vm["cols"].as<int>(), vm["obs"].as<int>(), vm["warehouseWidth"].as<int>());
+					  vm["agentNum"].as<int>(),
+					  vm["rows"].as<int>(), vm["cols"].as<int>(), vm["obs"].as<int>(), vm["warehouseWidth"].as<int>());
 
 	srand(vm["seed"].as<int>());
 
@@ -189,8 +154,9 @@ int main(int argc, char** argv)
 	cbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
 	cbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
 	cbs.setBypass(vm["bypass"].as<bool>());
-	cbs.setRectangleReasoning(r);
-	cbs.setCorridorReasoning(c);
+	cbs.setRectangleReasoning(vm["rectangleReasoning"].as<bool>());
+	cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
+	cbs.setHeuristicType(h);
 	cbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
 	cbs.setMutexReasoning(m);
 	cbs.setConflictSelectionRule(conflict);
@@ -206,7 +172,7 @@ int main(int argc, char** argv)
 		runtime += cbs.runtime;
 		if (cbs.solution_found)
 			break;
-		min_f_val = (int)cbs.min_f_val;
+		min_f_val = (int) cbs.min_f_val;
 		cbs.randomRoot = true;
 	}
 	cbs.runtime = runtime;
@@ -216,7 +182,6 @@ int main(int argc, char** argv)
 	return 0;
 
 }
-
 
 
 /*

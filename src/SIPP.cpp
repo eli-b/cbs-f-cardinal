@@ -1,7 +1,7 @@
 #include "SIPP.h"
 
 
-void SIPP::updatePath(const LLNode* goal, vector<PathEntry> &path)
+void SIPP::updatePath(const LLNode* goal, vector<PathEntry>& path)
 {
 	path.resize(goal->timestep + 1);
 	// num_of_conflicts = goal->num_of_conflicts;
@@ -25,22 +25,23 @@ void SIPP::updatePath(const LLNode* goal, vector<PathEntry> &path)
 
 
 // find path by SIPP
-// Returns a shortest path that satisfies the constraints of the give node  while
+// Returns a shortest path that satisfies the constraints of the given node while
 // minimizing the number of internal conflicts (that is conflicts with known_paths for other agents found so far).
 // lowerbound is an underestimation of the length of the path in order to speed up the search.
 Path SIPP::findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
-	const vector<Path*>& paths, int agent, int lowerbound)
+					const vector<Path*>& paths, int agent, int lowerbound)
 {
 	Path path;
 	auto t = clock();
 	ReservationTable reservation_table(initial_constraints);
 	reservation_table.build(node, agent);
-	runtime_build_CT = (double)(clock() - t) / CLOCKS_PER_SEC;
+	runtime_build_CT = (double) (clock() - t) / CLOCKS_PER_SEC;
 	int holding_time = reservation_table.getHoldingTime();
 	t = clock();
 	reservation_table.buildCAT(agent, paths);
-	runtime_build_CAT = (double)(clock() - t) / CLOCKS_PER_SEC;
-	if (reservation_table.length_min >= MAX_TIMESTEP || reservation_table.length_min > reservation_table.length_max) // the agent cannot reach its goal location
+	runtime_build_CAT = (double) (clock() - t) / CLOCKS_PER_SEC;
+	if (reservation_table.length_min >= MAX_TIMESTEP ||
+		reservation_table.length_min > reservation_table.length_max) // the agent cannot reach its goal location
 		return path;
 	num_expanded = 0;
 	num_generated = 0;
@@ -48,7 +49,7 @@ Path SIPP::findPath(const CBSNode& node, const ConstraintTable& initial_constrai
 	if (get<0>(interval) > 0)
 		return path;
 
-	 // generate start and add it to the OPEN list
+	// generate start and add it to the OPEN list
 	auto start = new SIPPNode(start_location, 0, my_heuristic[start_location], nullptr, 0, interval, 0, false);
 
 	num_generated++;
@@ -56,31 +57,32 @@ Path SIPP::findPath(const CBSNode& node, const ConstraintTable& initial_constrai
 	start->focal_handle = focal_list.push(start);
 	start->in_openlist = true;
 	allNodes_table.insert(start);
-	min_f_val = (int)start->getFVal();
+	min_f_val = (int) start->getFVal();
 	lower_bound = max(holding_time, max(min_f_val, max(reservation_table.length_min, lowerbound)));
 
 
-	while (!open_list.empty()) 
+	while (!open_list.empty())
 	{
 		updateFocalList(); // update FOCAL if min f-val increased
-		SIPPNode* curr = focal_list.top(); focal_list.pop();
+		SIPPNode* curr = focal_list.top();
+		focal_list.pop();
 		open_list.erase(curr->open_handle);
 		curr->in_openlist = false;
 		num_expanded++;
 
 		// check if the popped node is a goal node
-        if (curr->location == goal_location && // arrive at the goal location
+		if (curr->location == goal_location && // arrive at the goal location
 			!curr->wait_at_goal && // not wait at the goal location
 			curr->timestep >= holding_time) // the agent can hold the goal location afterward
-        {
-            updatePath(curr, path);
-            break;
-        }
+		{
+			updatePath(curr, path);
+			break;
+		}
 
-        for (int next_location : instance.getNeighbors(curr->location)) // move to neighboring locations
+		for (int next_location : instance.getNeighbors(curr->location)) // move to neighboring locations
 		{
 			for (auto interval : reservation_table.get_safe_intervals(
-				curr->location, next_location, curr->timestep + 1, get<1>(curr->interval) + 1))
+					curr->location, next_location, curr->timestep + 1, get<1>(curr->interval) + 1))
 			{
 				generateChild(interval, curr, next_location, reservation_table, lower_bound);
 			}
@@ -93,8 +95,8 @@ Path SIPP::findPath(const CBSNode& node, const ConstraintTable& initial_constrai
 			generateChild(interval, curr, curr->location, reservation_table, lower_bound);
 		}
 	}  // end while loop
-	  
-	  // no path found
+
+	// no path found
 	releaseNodes();
 	return path;
 }
@@ -104,7 +106,7 @@ void SIPP::updateFocalList()
 	auto open_head = open_list.top();
 	if (open_head->getFVal() > min_f_val)
 	{
-		int new_min_f_val = (int)open_head->getFVal();
+		int new_min_f_val = (int) open_head->getFVal();
 		int new_lower_bound = max(lower_bound, new_min_f_val);
 		for (auto n : open_list)
 		{
@@ -147,11 +149,11 @@ void SIPP::releaseNodes()
 }
 
 
-void SIPP::generateChild(const Interval& interval, SIPPNode* curr, int next_location, 
-	const ReservationTable& reservation_table, int lower_bound)
+void SIPP::generateChild(const Interval& interval, SIPPNode* curr, int next_location,
+						 const ReservationTable& reservation_table, int lower_bound)
 {
 	// compute cost to next_id via curr node
-	int next_timestep = max(curr->timestep + 1, (int)get<0>(interval));
+	int next_timestep = max(curr->timestep + 1, (int) get<0>(interval));
 	int next_g_val = next_timestep;
 	int next_h_val = my_heuristic[next_location];
 	if (next_g_val + next_h_val > reservation_table.length_max)
@@ -175,7 +177,7 @@ void SIPP::generateChild(const Interval& interval, SIPPNode* curr, int next_loca
 	auto existing_next = *it;
 	if (existing_next->getFVal() > next->getFVal() || // if f-val decreased through this new path
 		(existing_next->getFVal() == next->getFVal() &&
-			existing_next->num_of_conflicts > next->num_of_conflicts)) // or it remains the same but there's fewer conflicts
+		 existing_next->num_of_conflicts > next->num_of_conflicts)) // or it remains the same but there's fewer conflicts
 	{
 		if (!existing_next->in_openlist) // if its in the closed list (reopen)
 		{
@@ -197,7 +199,7 @@ void SIPP::generateChild(const Interval& interval, SIPPNode* curr, int next_loca
 			if (existing_next->getFVal() > next_g_val + next_h_val)
 				update_open = true;
 
-			existing_next->copy(*next);	// update existing node
+			existing_next->copy(*next);  // update existing node
 
 			if (update_open)
 				open_list.increase(existing_next->open_handle);  // increase because f-val improved
@@ -208,14 +210,15 @@ void SIPP::generateChild(const Interval& interval, SIPPNode* curr, int next_loca
 		}
 	}
 
-	delete(next);  // not needed anymore -- we already generated it before
+	delete next;  // not needed anymore -- we already generated it before
 }
 
 // TODO:: currently this is implemented in A*, not SIPP
 int SIPP::getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound)
 {
 	int length = MAX_TIMESTEP;
-	if (constraint_table.length_min >= MAX_TIMESTEP || constraint_table.length_min > constraint_table.length_max || // the agent cannot reach its goal location
+	if (constraint_table.length_min >= MAX_TIMESTEP || constraint_table.length_min > constraint_table.length_max ||  // the agent cannot reach
+																													 // its goal location
 		constraint_table.constrained(start, 0)) // the agent cannot stay at its start location
 	{
 		return length;
@@ -252,15 +255,17 @@ int SIPP::getTravelTime(int start, int end, const ConstraintTable& constraint_ta
 				int next_h_val = compute_heuristic(next_location, end);
 				if (next_g_val + next_h_val >= upper_bound) // the cost of the path is larger than the upper bound
 					continue;
-				auto next = new SIPPNode(next_location, next_g_val, next_h_val, nullptr, next_timestep, Interval(next_timestep, next_timestep + 1, 0));
+				auto next = new SIPPNode(next_location, next_g_val, next_h_val, nullptr, next_timestep,
+										 Interval(next_timestep, next_timestep + 1, 0));
 				auto it = allNodes_table.find(next);
 				if (it == allNodes_table.end())
 				{  // add the newly generated node to heap and hash table
 					next->open_handle = open_list.push(next);
 					allNodes_table.insert(next);
 				}
-				else {  // update existing node's g_val if needed (only in the heap)
-					delete(next);  // not needed anymore -- we already generated it before
+				else
+				{  // update existing node's g_val if needed (only in the heap)
+					delete next;  // not needed anymore -- we already generated it before
 					auto existing_next = *it;
 					if (existing_next->g_val > next_g_val)
 					{

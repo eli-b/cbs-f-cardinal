@@ -21,7 +21,7 @@ public:
 		instance(instance), initial_constraints(initial_constraints) {}
 	shared_ptr<Conflict> run(const vector<Path*> & paths, int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2);
 
-	vector < SingleAgentSolver* > search_engines;  // used to find (single) agents' paths and mdd
+	vector<SingleAgentSolver*> search_engines;  // used to find (single) agents' paths and mdd
 
   mutex_strategy strategy;
 

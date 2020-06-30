@@ -1,4 +1,5 @@
-﻿#pragma once
+#pragma once
+
 #include "Instance.h"
 #include "ConstraintTable.h"
 
@@ -12,18 +13,24 @@ public:
 	int timestep = 0;
 	int num_of_conflicts = 0;
 	bool in_openlist = false;
-	bool wait_at_goal; // the action is to wait at the goal vertex or not. This is used for >lenghth constraints
-	// the following is used to comapre nodes in the OPEN list
+	bool wait_at_goal; // the action is to wait at the goal vertex or not. This is used for >length constraints
+	// the following is used to compare nodes in the OPEN list
 	struct compare_node
 	{
 		// returns true if n1 > n2 (note -- this gives us *min*-heap).
 		bool operator()(const LLNode* n1, const LLNode* n2) const
 		{
+			if (n1->g_val + n1->h_val == n2->g_val + n2->h_val)
+			{
+				if (n1->h_val == n2->h_val)
+					return rand() % 2;
+				return n1->h_val >= n2->h_val;
+			}
 			return n1->g_val + n1->h_val >= n2->g_val + n2->h_val;
 		}
 	};  // used by OPEN (heap) to compare nodes (top of the heap has min f-val, and then highest g-val)
 
-		// the following is used to comapre nodes in the FOCAL list
+	// the following is used to compare nodes in the FOCAL list
 	struct secondary_compare_node
 	{
 		bool operator()(const LLNode* n1, const LLNode* n2) const // returns true if n1 > n2
@@ -48,6 +55,7 @@ public:
 		num_of_conflicts(num_of_conflicts), in_openlist(in_openlist), wait_at_goal(false) {}
 
 	inline double getFVal() const { return g_val + h_val; }
+
 	void copy(const LLNode& other)
 	{
 		location = other.location;
@@ -67,7 +75,7 @@ public:
 	uint64_t num_expanded = 0;
 	uint64_t num_generated = 0;
 
-	double runtime_build_CT = 0; // runtimr of building constraint table
+	double runtime_build_CT = 0; // runtime of building constraint table
 	double runtime_build_CAT = 0; // runtime of building conflict avoidance table
 
 	int start_location;
@@ -77,10 +85,11 @@ public:
 	{
 		return max(get_DH_heuristic(from, to), instance.getManhattanDistance(from, to));
 	}
+
 	const Instance& instance;
 
 	virtual Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
-		const vector<Path*>& paths, int agent, int lower_bound) = 0;
+						  const vector<Path*>& paths, int agent, int lower_bound) = 0;
 	virtual int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound) = 0;
 	virtual string getName() const = 0;
 
@@ -98,10 +107,11 @@ public:
 		compute_heuristics();
 	}
 
-  virtual ~SingleAgentSolver(){} 
+	virtual ~SingleAgentSolver() {}
 
 protected:
 	void compute_heuristics();
+
 	int get_DH_heuristic(int from, int to) const { return abs(my_heuristic[from] - my_heuristic[to]); }
 };
 

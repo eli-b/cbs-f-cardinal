@@ -19,41 +19,40 @@ protected:
   MDD* mdd1;
 
 
-  // check whether two nodes could be mutexed
-  // return true if they are mutexed
-  bool should_be_fwd_mutexed(MDDNode*, MDDNode*);
+	// check whether two nodes could be mutexed
+	// return true if they are mutexed
+	bool should_be_fwd_mutexed(MDDNode*, MDDNode*);
 
-  bool should_be_fwd_mutexed(MDDNode* node_a, MDDNode* node_a_to,
-                         MDDNode* node_b, MDDNode* node_b_to);
+	bool should_be_fwd_mutexed(MDDNode* node_a, MDDNode* node_a_to,
+							   MDDNode* node_b, MDDNode* node_b_to);
 
-  bool should_be_bwd_mutexed(MDDNode*, MDDNode*);
-  bool should_be_bwd_mutexed(MDDNode* node_a, MDDNode* node_a_to,
-                             MDDNode* node_b, MDDNode* node_b_to);
+	bool should_be_bwd_mutexed(MDDNode*, MDDNode*);
+	bool should_be_bwd_mutexed(MDDNode* node_a, MDDNode* node_a_to,
+							   MDDNode* node_b, MDDNode* node_b_to);
 
 
-  void add_bwd_node_mutex(MDDNode* node_a, MDDNode* node_b);
+	void add_bwd_node_mutex(MDDNode* node_a, MDDNode* node_b);
 
-  void add_fwd_node_mutex(MDDNode* node_a, MDDNode* node_b);
-  void add_fwd_edge_mutex(MDDNode* node_a, MDDNode* node_a_to,
-                      MDDNode* node_b, MDDNode* node_b_to);
+	void add_fwd_node_mutex(MDDNode* node_a, MDDNode* node_b);
+	void add_fwd_edge_mutex(MDDNode* node_a, MDDNode* node_a_to,
+							MDDNode* node_b, MDDNode* node_b_to);
 
-  // boost::unordered_set<node_pair> node_cons;
+	// boost::unordered_set<node_pair> node_cons;
 
-  /*
-    A Mutex is in the form of <<node*, node*>, <node*, node*>>
-    if second node* in each pair are nullptr, then it is a node mutex
+	/*
+	  A Mutex is in the form of <<node*, node*>, <node*, node*>>
+	  if second node* in each pair are nullptr, then it is a node mutex
 
-   */
+	 */
 
-  // void fwd_mutex_prop_generalized_helper(MDD* mdd_0, MDD* mdd_1, int level);
+	// void fwd_mutex_prop_generalized_helper(MDD* mdd_0, MDD* mdd_1, int level);
 
 public:
-  ConstraintPropagation(MDD* mdd0, MDD* mdd1):
-    mdd0(mdd0), mdd1(mdd1)
-  {}
+	ConstraintPropagation(MDD* mdd0, MDD* mdd1) :
+			mdd0(mdd0), mdd1(mdd1) {}
 
-  boost::unordered_set<edge_pair> fwd_mutexes;
-  boost::unordered_set<edge_pair> bwd_mutexes;
+	boost::unordered_set<edge_pair> fwd_mutexes;
+	boost::unordered_set<edge_pair> bwd_mutexes;
 
   virtual void init_mutex();
   virtual void fwd_mutex_prop();
