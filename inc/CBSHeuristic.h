@@ -1,8 +1,10 @@
 #pragma once
+
 #include "MDD.h"
 #include "RectangleReasoning.h"
 #include "CorridorReasoning.h"
 #include "MutexReasoning.h"
+
 enum heuristics_type { ZERO, CG, DG, WDG, STRATEGY_COUNT };
 
 
@@ -25,47 +27,49 @@ struct HTableEntry // look-up table entry
 			{
 				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
 					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE) {
-					for (auto con : curr->constraints)
-					{
-						cons1[0].insert(con);
-						cons2[0].insert(con);
-					}
-				}
-				else {
-					if (get<0>(curr->constraints.front()) == h1.a1)
-						for (auto con : curr->constraints)
-							cons1[0].insert(con);
-					else if (get<0>(curr->constraints.front()) == h1.a2)
-						for (auto con : curr->constraints)
-							cons2[0].insert(con);
-				}
+					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE)
+          {
+            for (auto con : curr->constraints)
+              {
+                cons1[0].insert(con);
+                cons2[0].insert(con);
+              }
+          }
+				else
+          {
+            if (get<0>(curr->constraints.front()) == h1.a1)
+              for (auto con : curr->constraints)
+                cons1[0].insert(con);
+            else if (get<0>(curr->constraints.front()) == h1.a2)
+              for (auto con : curr->constraints)
+                cons2[0].insert(con);
+          }
 
 				curr = curr->parent;
 			}
 			curr = h2.n;
 			while (curr->parent != nullptr)
-			{
-				if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
-					get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE) {
-					for (auto con : curr->constraints)
-					{
-						cons1[1].insert(con);
-						cons2[1].insert(con);
-					}
-				}
-				else {
-					if (get<0>(curr->constraints.front()) == h2.a1)
-						for (auto con : curr->constraints)
-							cons1[1].insert(con);
-					else if (get<0>(curr->constraints.front()) == h2.a2)
-						for (auto con : curr->constraints)
-							cons2[1].insert(con);
-				}
+        {
+          if (get<4>(curr->constraints.front()) == constraint_type::LEQLENGTH ||
+              get<4>(curr->constraints.front()) == constraint_type::POSITIVE_VERTEX ||
+              get<4>(curr->constraints.front()) == constraint_type::POSITIVE_EDGE) {
+            for (auto con : curr->constraints)
+              {
+                cons1[1].insert(con);
+                cons2[1].insert(con);
+              }
+          }
+          else {
+            if (get<0>(curr->constraints.front()) == h2.a1)
+              for (auto con : curr->constraints)
+                cons1[1].insert(con);
+            else if (get<0>(curr->constraints.front()) == h2.a2)
+              for (auto con : curr->constraints)
+                cons2[1].insert(con);
+          }
 
-				curr = curr->parent;
-			}
+          curr = curr->parent;
+        }
 			if (cons1[0].size() != cons1[1].size() || cons2[0].size() != cons2[1].size())
 				return false;
 
@@ -124,8 +128,8 @@ class CBSHeuristic
 {
 public:
 	heuristics_type type;
-	rectangle_strategy rectangle_reasoning; // using rectangle reasoning
-	corridor_strategy corridor_reasoning; // using corridor reasoning
+	bool rectangle_reasoning; // using rectangle reasoning
+	bool corridor_reasoning; // using corridor reasoning
 	bool target_reasoning; // using target reasoning
 	mutex_strategy mutex_reasoning; // using mutex reasoning
 	bool disjoint_splitting; // disjoint splittting
@@ -148,14 +152,18 @@ public:
                                        paths(paths), search_engines(search_engines), initial_constraints(initial_constraints), mdd_helper(mdd_helper) {}
 
   virtual void copyConflictGraph(CBSNode& child, const CBSNode& parent);
-	virtual int computeHeuristics(CBSNode& curr, double time_limit) = 0;
+	bool computeInformedHeuristics(CBSNode& curr, double time_limit);
+	virtual void computeQuickHeuristics(CBSNode& curr); // this function is called when generating a CT node
 
 	virtual void init() {}
 	virtual void clear() {}
+  bool shouldEvalHeuristic(CBSNode* node);
 
 protected:
 	int screen = 0;
 	int num_of_agents;
+	int ILP_node_threshold = 5; // run ILP if #nodes in the conrflict graph is larger than the threshold
+	int ILP_edge_threshold = 10; // run ILP if #edges in the conrflict graph is larger than the threshold
 
 	double time_limit;
 	int node_limit = 64;  // terminate the sub CBS solver if the number of its expanded nodes exceeds the node limit.
@@ -165,6 +173,12 @@ protected:
 	const vector<SingleAgentSolver*>& search_engines;
 	const vector<ConstraintTable>& initial_constraints;
 	MDDTable& mdd_helper;
+
+	int MVConAllConflicts(CBSNode& curr);
+	vector<int> buildConflictGraph(const CBSNode& curr) const;
+  int minimumVertexCover(const vector<int>& CG);
+
+	virtual int computeInformedHeuristicsValue(CBSNode& curr, double time_limit);
 
 };
 
@@ -180,8 +194,8 @@ public:
     type = heuristics_type::ZERO;
   }
 
-	virtual int computeHeuristics(CBSNode& curr, double time_limit);
-
+protected:
+  virtual int computeInformedHeuristicsValue(CBSNode& curr, double time_limit);
 };
 
 class CGHeuristic: public CBSHeuristic {
@@ -195,10 +209,10 @@ public:
     type = heuristics_type::CG;
   }
 
-	virtual int computeHeuristics(CBSNode& curr, double time_limit);
-
 protected:
+	virtual int computeInformedHeuristicsValue(CBSNode& curr, double time_limit);
   virtual void buildCardinalConflictGraph(CBSNode& curr, vector<int>& CG, int& num_of_CGedges);
+  using CBSHeuristic::minimumVertexCover;
   virtual int minimumVertexCover(const vector<int>& CG, int old_mvc, int cols, int num_of_edges);
 	virtual bool KVertexCover(const vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
 };
@@ -214,7 +228,6 @@ public:
   {
     type = heuristics_type::DG;
   }
-	virtual int computeHeuristics(CBSNode& curr, double time_limit);
 
 	virtual void init()
 	{
@@ -230,6 +243,7 @@ public:
 protected:
 	vector<vector<HTable> > lookupTable;
 
+	virtual int computeInformedHeuristicsValue(CBSNode& curr, double time_limit);
 	virtual bool buildDependenceGraph(CBSNode& node);
 	virtual int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
 	virtual bool SyncMDDs(const MDD &mdd1, const MDD& mdd2);
@@ -247,10 +261,10 @@ public:
     type = heuristics_type::WDG;
   }
 
-	virtual int computeHeuristics(CBSNode& curr, double time_limit);
-
 protected:
   int delta_limit = 10; // upperbounding the edge delta
+
+	virtual int computeInformedHeuristicsValue(CBSNode& curr, double time_limit);
 	virtual bool buildDependenceGraph(CBSNode& node);
   int computePairwiseDelta(int a1, int a2, CBSNode& node, int rst);
 	virtual int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);

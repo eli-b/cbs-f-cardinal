@@ -1,16 +1,16 @@
 #include "CBSHeuristic.h"
 
-
-
 int CGHeuristic::minimumVertexCover(const std::vector<int>& CG, int old_mvc, int cols, int num_of_CGedges)
 {
+	clock_t t = clock();
+	int rst = 0;
 	if (num_of_CGedges < 2)
 		return num_of_CGedges;
 	// Compute #CG nodes that have edges
 	int num_of_CGnodes = 0;
-	for (int i = 0; i <  cols; i++)
+	for (int i = 0; i < cols; i++)
     {
-      for (int j = 0; j <  cols; j++)
+      for (int j = 0; j < cols; j++)
         {
           if (CG[i * cols + j] > 0)
             {
@@ -23,20 +23,26 @@ int CGHeuristic::minimumVertexCover(const std::vector<int>& CG, int old_mvc, int
 	if (old_mvc == -1)
     {
       for (int i = 1; i < num_of_CGnodes; i++)
-        if (KVertexCover(CG, num_of_CGnodes, num_of_CGedges, i, cols))
-          return i;
-      cerr << "ERROR" << endl;
-      exit (-1);
+        {
+          if (KVertexCover(CG, num_of_CGnodes, num_of_CGedges, i, cols))
+            {
+              rst = i;
+              break;
+            }
+        }
+      assert(rst > 0);
     }
 	else
     {
       if (KVertexCover(CG, num_of_CGnodes, num_of_CGedges, old_mvc - 1, cols))
-        return old_mvc - 1;
+        rst = old_mvc - 1;
       else if (KVertexCover(CG, num_of_CGnodes, num_of_CGedges, old_mvc, cols))
-        return old_mvc;
+        rst = old_mvc;
       else
-        return old_mvc + 1;
+        rst = old_mvc + 1;
     }
+	runtime_solve_MVC += (double) (clock() - t) / CLOCKS_PER_SEC;
+	return rst;
 }
 
 
@@ -85,22 +91,18 @@ bool CGHeuristic::KVertexCover(const std::vector<int>& CG, int num_of_CGnodes, i
 	return false;
 }
 
-int CGHeuristic::computeHeuristics(CBSNode& curr, double time_limit){
+int CGHeuristic::computeInformedHeuristicsValue(CBSNode& curr, double time_limit){
 
-	start_time = clock();
-	this->time_limit = time_limit;
-	vector<int> CG(num_of_agents * num_of_agents, 0);
+  int h = -1;
 	int num_of_CGedges = 0;
-  buildCardinalConflictGraph(curr, CG, num_of_CGedges);
-	auto t = clock();
-	int rst;
+	vector<int> HG(num_of_agents * num_of_agents, 0); // heuristic graph
+  buildCardinalConflictGraph(curr, HG, num_of_CGedges);
   // Minimum Vertex Cover
-  if (curr.parent == nullptr) // root node of CBS tree
-    rst = minimumVertexCover(CG, -1, num_of_agents, num_of_CGedges);
+  if (curr.parent == nullptr || num_of_CGedges > ILP_edge_threshold) // root node of CBS tree or the CG is too large
+    h = minimumVertexCover(HG);
   else
-    rst = minimumVertexCover(CG, curr.parent->h_val, num_of_agents, num_of_CGedges);
-	runtime_solve_MVC += (double)(clock() - t) / CLOCKS_PER_SEC;
-	return rst;
+    h = minimumVertexCover(HG, curr.parent->h_val, num_of_agents, num_of_CGedges);
+  return h;
 
 }
 
