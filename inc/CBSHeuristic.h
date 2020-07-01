@@ -244,10 +244,10 @@ protected:
 	vector<vector<HTable> > lookupTable;
 
 	virtual int computeInformedHeuristicsValue(CBSNode& curr, double time_limit);
-	virtual bool buildDependenceGraph(CBSNode& node);
-	virtual int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
+	virtual bool buildDependenceGraph(CBSNode& node, vector<int>& CG, int& num_of_CGedges);
+	// virtual int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
 	virtual bool SyncMDDs(const MDD &mdd1, const MDD& mdd2);
-  virtual bool canMergeMDD(int a1, int a2, CBSNode& node);
+  virtual bool dependent(int a1, int a2, CBSNode& node);
 };
 
 class WDGHeuristic: public DGHeuristic {
@@ -262,14 +262,13 @@ public:
   }
 
 protected:
-  int delta_limit = 10; // upperbounding the edge delta
-
 	virtual int computeInformedHeuristicsValue(CBSNode& curr, double time_limit);
-	virtual bool buildDependenceGraph(CBSNode& node);
-  int computePairwiseDelta(int a1, int a2, CBSNode& node, int rst);
-	virtual int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
-	virtual int weightedVertexCover(const vector<int>& CG);
-	virtual int weightedVertexCover(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
+	virtual bool buildWeightedDependenceGraph(CBSNode& node, vector<int>& CG);
+	int solve2Agents(int a1, int a2, const CBSNode& node, bool cardinal);
+	int DPForWMVC(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
+	int ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_value);
+	int minimumWeightedVertexCover(const vector<int>& CG);
+	int weightedVertexCover(const vector<int>& CG);
 };
 
 

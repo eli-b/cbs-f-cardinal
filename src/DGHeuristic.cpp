@@ -1,116 +1,114 @@
 #include "CBSHeuristic.h"
 
-int DGHeuristic::computeHeuristics(CBSNode& curr, double time_limit){
-
-	start_time = clock();
-	this->time_limit = time_limit;
-	vector<int> CG(num_of_agents * num_of_agents, 0);
-	int num_of_CGedges = 0;
-  bool succeed = buildDependenceGraph(curr);
-  if (!succeed)
-    return -1;
-  for (int i = 0; i < num_of_agents; i++)
-		{
-			for (int j = i + 1; j < num_of_agents; j++)
-        {
-          auto got = curr.conflictGraph.find(i * num_of_agents + j);
-          if (got != curr.conflictGraph.end() && got->second > 0)
-            {
-              CG[i * num_of_agents + j] = got->second;
-              CG[j * num_of_agents + i] = got->second;
-              num_of_CGedges++;
-            }
-        }
-		}
-	runtime_build_dependency_graph += (double)(clock() - start_time) / CLOCKS_PER_SEC;
-	auto t = clock();
-	int rst;
+int DGHeuristic::computeInformedHeuristicsValue(CBSNode& curr, double time_limit){
+  int h = -1;
+	int num_of_CGedges;
+	vector<int> HG(num_of_agents * num_of_agents, 0); // heuristic graph
+  if (!buildDependenceGraph(curr, HG, num_of_CGedges))
+    return false;
   // Minimum Vertex Cover
-  if (curr.parent == nullptr) // root node of CBS tree
-    rst = minimumVertexCover(CG, -1, num_of_agents, num_of_CGedges);
+  if (curr.parent == nullptr || num_of_CGedges > ILP_edge_threshold) // root node of CBS tree or the CG is too large
+    h = minimumVertexCover(HG);
   else
-    rst = minimumVertexCover(CG, curr.parent->h_val, num_of_agents, num_of_CGedges);
-	runtime_solve_MVC += (double)(clock() - t) / CLOCKS_PER_SEC;
-	return rst;
-
+    h = minimumVertexCover(HG, curr.parent->h_val, num_of_agents, num_of_CGedges);
+  return h;
 }
 
 
-bool DGHeuristic::buildDependenceGraph(CBSNode& node)
+bool DGHeuristic::buildDependenceGraph(CBSNode& node, vector<int>& CG, int& num_of_CGedges)
 {
-	for (const auto& conflict : node.conflicts)
+	for (auto& conflict : node.conflicts)
 	{
 		int a1 = min(conflict->a1, conflict->a2);
 		int a2 = max(conflict->a1, conflict->a2);
 		int idx = a1 * num_of_agents + a2;
-		double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-		if (runtime > time_limit)
-			return false; // run out of time
 		if (conflict->priority == conflict_priority::CARDINAL)
 		{
-      node.conflictGraph[idx] = 1;
+			node.conflictGraph[idx] = 1;
 		}
-		else
+		else if (node.conflictGraph.find(idx) == node.conflictGraph.end())
 		{
-			if (node.conflictGraph.find(idx) == node.conflictGraph.end())
+			auto got = lookupTable[a1][a2].find(HTableEntry(a1, a2, &node));
+			if (got != lookupTable[a1][a2].end()) // check the lookup table first
 			{
-				int w = getEdgeWeight(a1, a2, node, false);
-				if (w < 0) //no solution
-					return false;
-				node.conflictGraph[idx] = w;
+				num_memoization++;
+				node.conflictGraph[idx] = got->second;
+			}
+			else
+			{
+				node.conflictGraph[idx] = dependent(a1, a2, node) ? 1 : 0;
+				lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
+			}
+		}
+		if (conflict->priority != conflict_priority::CARDINAL && node.conflictGraph[idx] > 0)
+		{
+			conflict->priority = conflict_priority::PSEUDO_CARDINAL; // the two agents are dependent, although resolving this conflict might not increase the cost
+		}
+		if ((clock() - start_time) / CLOCKS_PER_SEC > time_limit) // run out of time
+		{
+			runtime_build_dependency_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
+			return false;
+		}
+	}
+
+	num_of_CGedges = 0;
+	for (int i = 0; i < num_of_agents; i++)
+	{
+		for (int j = i + 1; j < num_of_agents; j++)
+		{
+			auto got = node.conflictGraph.find(i * num_of_agents + j);
+			if (got != node.conflictGraph.end() && got->second > 0)
+			{
+				CG[i * num_of_agents + j] = got->second;
+				CG[j * num_of_agents + i] = got->second;
+				num_of_CGedges++;
 			}
 		}
 	}
+	runtime_build_dependency_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
 	return true;
 }
 
 
-int DGHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
+// int DGHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
+// {
+// 	HTableEntry newEntry(a1, a2, &node);
+//   HTable::const_iterator got = lookupTable[a1][a2].find(newEntry);
+
+//   if (got != lookupTable[a1][a2].end())
+// 		{
+// 			num_memoization++;
+// 			return got->second;
+// 		}
+
+
+// 	// runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
+// 	if (screen > 2)
+// 	{
+// 		cout << "Agents " << a1 << " and " << a2 << " in node " << node.time_generated << " : ";
+// 	}
+// 	int rst = 0;
+// 	if (cardinal)
+// 		rst = 1;
+// 	else if (!mutex_reasoning) // no mutex reasoning, so we might miss some cardinal conflicts
+// 	{
+//     // merging MDDs
+//     rst = dependent(a1, a2, node)? 0 : 1;
+// 	}
+// 	lookupTable[a1][a2][newEntry] = rst;
+// 	return rst;
+// }
+
+bool DGHeuristic::dependent(int a1, int a2, CBSNode& node) // return true if the two agents are dependent
 {
-	HTableEntry newEntry(a1, a2, &node);
-  HTable::const_iterator got = lookupTable[a1][a2].find(newEntry);
-
-  if (got != lookupTable[a1][a2].end())
-		{
-			num_memoization++;
-			return got->second;
-		}
-
-
-	// runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
-	if (screen > 2)
-	{
-		cout << "Agents " << a1 << " and " << a2 << " in node " << node.time_generated << " : ";
-	}
-	int rst = 0;
-	if (cardinal)
-		rst = 1;
-	else if (!mutex_reasoning) // no mutex reasoning, so we might miss some cardinal conflicts
-	{
-    // merging MDDs
-    rst = canMergeMDD(a1, a2, node)? 0 : 1;
-	}
-	lookupTable[a1][a2][newEntry] = rst;
-	return rst;
+	const MDD* mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size()); // get mdds
+	const MDD* mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
+	if (mdd1->levels.size() > mdd2->levels.size()) // swap
+		std::swap(mdd1, mdd2);
+	num_merge_MDDs++;
+	return !SyncMDDs(*mdd1, *mdd2);
 }
 
-bool DGHeuristic::canMergeMDD(int a1, int a2, CBSNode& node){
-  bool rst;
-  const MDD* mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
-  const MDD* mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
-  if (mdd1->levels.size() > mdd2->levels.size()) // swap
-		{
-			const MDD* temp = mdd1;
-			mdd1 = mdd2;
-			mdd2 = temp;
-		}
-  if (SyncMDDs(*mdd1, *mdd2))
-    rst = false;
-  else
-    rst = true;
-  num_merge_MDDs++;
-  return rst;
-}
 bool DGHeuristic::SyncMDDs(const MDD &mdd, const MDD& other) // assume mdd.levels <= other.levels
 {
 	if (other.levels.size() <= 1) // Either of the MDDs was already completely pruned already
