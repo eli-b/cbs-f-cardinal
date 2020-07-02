@@ -22,8 +22,9 @@
 bool MDD::buildMDD(const ConstraintTable& ct,
 				   int num_of_levels, const SingleAgentSolver* solver)
 {
-	this->solver = solver;
-	auto root = new MDDNode(solver->start_location, nullptr); // Root
+  this->solver = solver;
+  auto root = new MDDNode(solver->start_location, nullptr); // Root
+  root->cost = num_of_levels - 1;
 	std::queue<MDDNode*> open;
 	list<MDDNode*> closed;
 	open.push(root);
@@ -222,6 +223,7 @@ MDD::MDD(const MDD& cpy) // deep copy
 {
 	levels.resize(cpy.levels.size());
 	auto root = new MDDNode(cpy.levels[0].front()->location, nullptr);
+  root->cost = cpy.levels.size() - 1;
 	levels[0].push_back(root);
 	for (size_t t = 0; t < levels.size() - 1; t++)
 	{
@@ -256,10 +258,14 @@ MDD::~MDD()
 	clear();
 }
 
-void MDD::increaseBy(const ConstraintTable& ct, int dLevel, SingleAgentSolver* solver)
-{
-	auto oldHeight = levels.size();
-	auto numOfLevels = levels.size() + dLevel;
+void MDD::increaseBy(const ConstraintTable&ct, int dLevel, SingleAgentSolver* solver){
+  auto oldHeight = levels.size();
+  auto numOfLevels = levels.size() + dLevel;
+  for (auto &l : levels){
+    for (auto node: l){
+      node->parents.clear();
+    }
+  }
 	levels.resize(numOfLevels);
 	for (int l = 0; l < numOfLevels - 1; l++)
 	{

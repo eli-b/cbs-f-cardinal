@@ -40,6 +40,19 @@ public:
 	conflict_priority priority = conflict_priority::UNKNOWN;
 	double secondary_priority = 0; // used as the tie-breaking criteria for conflict selection
 
+  // For mutex propagation
+  int final_len_1;
+  int final_len_2;
+
+  // For mutex propagation in Non-cardinal
+  // The actuall MDD node/edge which was used to generated the biclique;
+  int t1;
+  int loc1;
+  int loc1_to=-1;
+  int t2;
+  int loc2;
+  int loc2_to=-1;
+
 	void vertexConflict(int a1, int a2, int v, int t)
 	{
 		constraint1.clear();

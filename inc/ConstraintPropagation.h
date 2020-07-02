@@ -9,13 +9,14 @@
 typedef std::pair<MDDNode*, MDDNode*> node_pair;
 typedef std::pair<node_pair, node_pair> edge_pair;
 
-class ConstraintPropagation
-{
-private:
-	// TODO ownership?
-	// std::vector<MDD*> mdds;
-	MDD* mdd0;
-	MDD* mdd1;
+bool is_edge_mutex(edge_pair ep);
+
+class ConstraintPropagation{
+protected:
+  // TODO ownership?
+  // std::vector<MDD*> mdds;
+  MDD* mdd0;
+  MDD* mdd1;
 
 
 	// check whether two nodes could be mutexed
@@ -53,27 +54,29 @@ public:
 	boost::unordered_set<edge_pair> fwd_mutexes;
 	boost::unordered_set<edge_pair> bwd_mutexes;
 
-	void init_mutex();
-	void fwd_mutex_prop();
-	// void fwd_mutex_prop_generalized();
+  virtual void init_mutex();
+  virtual void fwd_mutex_prop();
+  // void fwd_mutex_prop_generalized();
 
-	void bwd_mutex_prop();
+  virtual void bwd_mutex_prop();
 
-	bool has_mutex(edge_pair);
-	bool has_mutex(MDDNode*, MDDNode*);
+  virtual bool has_mutex(edge_pair);
+  virtual bool has_mutex(MDDNode*, MDDNode*);
 
-	bool has_fwd_mutex(edge_pair);
-	bool has_fwd_mutex(MDDNode*, MDDNode*);
+  virtual bool has_fwd_mutex(edge_pair);
+  virtual bool has_fwd_mutex(MDDNode*, MDDNode*);
 
-	// MDD 0 of level_0 and MDD 1 of level_1 mutexed at goal
-	bool mutexed(int level_0, int level_1);
-	bool feasible(int level_0, int level_1);
-	int _feasible(int level_0, int level_1);
+  // MDD 0 of level_0 and MDD 1 of level_1 mutexed at goal
+  virtual bool mutexed(int level_0, int level_1);
+  virtual bool feasible(int level_0, int level_1);
+  virtual int _feasible(int level_0, int level_1);
 
-	bool semi_cardinal(int level, int loc);
+  // virtual bool semi_cardinal(int level, int loc);
 
+  virtual std::pair<std::vector<Constraint>, std::vector<Constraint>> generate_constraints(int, int);
 
-	std::pair<std::vector<Constraint>, std::vector<Constraint>> generate_constraints(int, int);
+  virtual ~ConstraintPropagation(){};
 };
+
 
 #endif

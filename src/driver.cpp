@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")
 		("rectangleReasoning", po::value<bool>()->default_value(false), "Using rectangle reasoning")
 		("corridorReasoning", po::value<bool>()->default_value(false), "Using corridor reasoning")
-		("mutexReasoning", po::value<bool>()->default_value(false), "Using mutex reasoning")
+		("mutexReasoning", po::value<string>()->default_value("None"), "Using mutex reasoning")
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
 		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
 		("sipp", po::value<bool>()->default_value(false), "using sipp as the single agent solver")
@@ -136,6 +136,24 @@ int main(int argc, char** argv)
 		cout << "When using bypassing, we cannot use DEPTH as the node tie breaking rule!" << endl;
 		return -1;
 	}
+
+	mutex_strategy m;
+	if (vm["mutexReasoning"].as<string>() == "None")
+		m = mutex_strategy::N_MUTEX;
+	else if (vm["mutexReasoning"].as<string>() == "C")
+		m = mutex_strategy::MUTEX_C;
+	else if (vm["mutexReasoning"].as<string>() == "NCK")
+		m = mutex_strategy::MUTEX_NC_FIRST_K;
+	else if (vm["mutexReasoning"].as<string>() == "NCG")
+		m = mutex_strategy::MUTEX_NC_GREEDY;
+	else if (vm["mutexReasoning"].as<string>() == "NCGF")
+		m = mutex_strategy::MUTEX_NC_GREEDY_F;
+	else
+    {
+      cout << "WRONG mutex reasoning strategy!" << endl;
+      return -1;
+    }
+  
 	srand((int) time(0));
 
 	///////////////////////////////////////////////////////////////////////////
@@ -150,15 +168,14 @@ int main(int argc, char** argv)
 	
 	//////////////////////////////////////////////////////////////////////
 	// initialize the solver
-	CBS cbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>());
+	CBS cbs(instance, vm["sipp"].as<bool>(), h, vm["screen"].as<int>());
 	cbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
 	cbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
 	cbs.setBypass(vm["bypass"].as<bool>());
 	cbs.setRectangleReasoning(vm["rectangleReasoning"].as<bool>());
 	cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
-	cbs.setHeuristicType(h);
 	cbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
-	cbs.setMutexReasoning(vm["mutexReasoning"].as<bool>());
+	cbs.setMutexReasoning(m);
 	cbs.setConflictSelectionRule(conflict);
 	cbs.setNodeSelectionRule(n);
 	//////////////////////////////////////////////////////////////////////
