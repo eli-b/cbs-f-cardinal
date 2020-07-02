@@ -127,7 +127,6 @@ typedef unordered_map<HTableEntry, int, HTableEntry::Hasher, HTableEntry::EqNode
 class CBSHeuristic
 {
 public:
-	heuristics_type type;
 	bool rectangle_reasoning; // using rectangle reasoning
 	bool corridor_reasoning; // using corridor reasoning
 	bool target_reasoning; // using target reasoning
@@ -158,6 +157,7 @@ public:
 	virtual void init() {}
 	virtual void clear() {}
   bool shouldEvalHeuristic(CBSNode* node);
+  virtual heuristics_type getType() const =0;
 
 protected:
 	int screen = 0;
@@ -177,8 +177,9 @@ protected:
 	int MVConAllConflicts(CBSNode& curr);
 	vector<int> buildConflictGraph(const CBSNode& curr) const;
   int minimumVertexCover(const vector<int>& CG);
-
-	virtual int computeInformedHeuristicsValue(CBSNode& curr, double time_limit);
+	virtual bool KVertexCover(const vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
+	int ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_value);
+	virtual int computeInformedHeuristicsValue(CBSNode& curr, double time_limit)=0;
 
 };
 
@@ -191,7 +192,10 @@ public:
                const vector<ConstraintTable>& initial_constraints,
                 MDDTable& mdd_helper) : CBSHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper)
   {
-    type = heuristics_type::ZERO;
+  }
+  virtual heuristics_type getType() const
+  {
+    return heuristics_type::ZERO;
   }
 
 protected:
@@ -206,7 +210,11 @@ public:
                 const vector<ConstraintTable>& initial_constraints,
                 MDDTable& mdd_helper) : CBSHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper)
   {
-    type = heuristics_type::CG;
+  }
+
+  virtual heuristics_type getType() const
+  {
+    return heuristics_type::CG;
   }
 
 protected:
@@ -214,7 +222,6 @@ protected:
   virtual void buildCardinalConflictGraph(CBSNode& curr, vector<int>& CG, int& num_of_CGedges);
   using CBSHeuristic::minimumVertexCover;
   virtual int minimumVertexCover(const vector<int>& CG, int old_mvc, int cols, int num_of_edges);
-	virtual bool KVertexCover(const vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
 };
 
 
@@ -226,7 +233,11 @@ public:
               const vector<ConstraintTable>& initial_constraints,
               MDDTable& mdd_helper) : CGHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper)
   {
-    type = heuristics_type::DG;
+  }
+
+  virtual heuristics_type getType() const 
+  {
+    return heuristics_type::DG;
   }
 
 	virtual void init()
@@ -258,7 +269,11 @@ public:
                 const vector<ConstraintTable>& initial_constraints,
                 MDDTable& mdd_helper) : DGHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper)
   {
-    type = heuristics_type::WDG;
+  }
+
+  virtual heuristics_type getType() const
+  {
+    return heuristics_type::WDG;
   }
 
 protected:
@@ -266,7 +281,6 @@ protected:
 	virtual bool buildWeightedDependenceGraph(CBSNode& node, vector<int>& CG);
 	int solve2Agents(int a1, int a2, const CBSNode& node, bool cardinal);
 	int DPForWMVC(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
-	int ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_value);
 	int minimumWeightedVertexCover(const vector<int>& CG);
 	int weightedVertexCover(const vector<int>& CG);
 };

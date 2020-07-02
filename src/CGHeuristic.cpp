@@ -46,50 +46,6 @@ int CGHeuristic::minimumVertexCover(const std::vector<int>& CG, int old_mvc, int
 }
 
 
-// Whether there exists a k-vertex cover solution
-bool CGHeuristic::KVertexCover(const std::vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols)
-{
-	double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-	if (runtime > time_limit)
-		return true; // run out of time
-	if (num_of_CGedges == 0)
-		return true;
-	else if (num_of_CGedges > k * num_of_CGnodes - k)
-		return false;
-
-	std::vector<int> node(2);
-	bool flag = true;
-	for (int i = 0; i < cols - 1 && flag; i++) // to find an edge
-	{
-		for (int j = i + 1; j < cols && flag; j++)
-		{
-			if (CG[i * cols + j] > 0)
-			{
-				node[0] = i;
-				node[1] = j;
-				flag = false;
-			}
-		}
-	}
-	for (int i = 0; i < 2; i++)
-	{
-		std::vector<int> CG_copy(CG.size());
-		CG_copy.assign(CG.cbegin(), CG.cend());
-		int num_of_CGedges_copy = num_of_CGedges;
-		for (int j = 0; j < cols; j++)
-		{
-			if (CG_copy[node[i] * cols + j] > 0)
-			{
-				CG_copy[node[i] * cols + j] = 0;
-				CG_copy[j * cols + node[i]] = 0;
-				num_of_CGedges_copy--;
-			}
-		}
-		if (KVertexCover(CG_copy, num_of_CGnodes - 1, num_of_CGedges_copy, k - 1, cols))
-			return true;
-	}
-	return false;
-}
 
 int CGHeuristic::computeInformedHeuristicsValue(CBSNode& curr, double time_limit){
 

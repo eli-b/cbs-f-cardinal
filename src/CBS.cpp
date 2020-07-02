@@ -336,7 +336,7 @@ void CBS::classifyConflicts(CBSNode& node)
 			con->priority = conflict_priority::NON;
 		}
 
-		/*if (con->priority == conflict_priority::CARDINAL && heuristic_helper.type == heuristics_type::ZERO)
+		/*if (con->priority == conflict_priority::CARDINAL && heuristic_helper->type == heuristics_type::ZERO)
 		{
 			computePriorityForConflict(*con, node);
 			node.conflicts.push_back(con);
@@ -567,7 +567,7 @@ bool CBS::generateChild(CBSNode* node, CBSNode* parent)
 
 	assert(!node->paths.empty());
 	findConflicts(*node);
-	heuristic_helper.computeQuickHeuristics(*node);
+	heuristic_helper->computeQuickHeuristics(*node);
 	runtime_generate_child += (double) (clock() - t1) / CLOCKS_PER_SEC;
 	return true;
 }
@@ -674,11 +674,11 @@ void CBS::saveResults(const string& fileName, const string& instanceName) const
 		  num_standard_conflicts << "," << num_rectangle_conflicts << "," << num_corridor_conflicts << "," << num_target_conflicts << ","
 		  << num_mutex_conflicts << "," <<
 
-		  heuristic_helper.num_merge_MDDs << "," <<
-		  heuristic_helper.num_solve_2agent_problems << "," <<
-		  heuristic_helper.num_memoization << "," <<
-		  heuristic_helper.runtime_build_dependency_graph << "," <<
-		  heuristic_helper.runtime_solve_MVC << "," <<
+		  heuristic_helper->num_merge_MDDs << "," <<
+		  heuristic_helper->num_solve_2agent_problems << "," <<
+		  heuristic_helper->num_memoization << "," <<
+		  heuristic_helper->runtime_build_dependency_graph << "," <<
+		  heuristic_helper->runtime_solve_MVC << "," <<
 
 		  runtime_detect_conflicts << "," <<
 		  rectangle_helper.accumulated_runtime << "," << corridor_helper.accumulated_runtime << "," << mutex_helper.accumulated_runtime << "," <<
@@ -708,7 +708,7 @@ string CBS::getSolverName() const
 	string name;
 	if (disjoint_splitting)
 		name += "Disjoint ";
-	switch (heuristic_helper->type)
+	switch (heuristic_helper->getType())
 	{
 	case heuristics_type::ZERO:
 		if (PC)
@@ -798,7 +798,7 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 		if (!curr->h_computed) // heuristics has not been computed yet
 		{
 			runtime = (double) (clock() - start) / CLOCKS_PER_SEC;
-			bool succ = heuristic_helper.computeInformedHeuristics(*curr, time_limit - runtime);
+			bool succ = heuristic_helper->computeInformedHeuristics(*curr, time_limit - runtime);
 			runtime = (double) (clock() - start) / CLOCKS_PER_SEC;
 			if (runtime > time_limit)
 			{  // timeout
@@ -994,28 +994,29 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 
 CBS::CBS(vector<SingleAgentSolver*>& search_engines,
 		 const vector<ConstraintTable>& initial_constraints,
-		 vector<Path>& paths_found_initially, int screen) :
+         vector<Path>& paths_found_initially,
+         heuristics_type heuristic,
+         int screen) :
 		screen(screen), focal_w(1),
 		initial_constraints(initial_constraints), paths_found_initially(paths_found_initially),
 		search_engines(search_engines),
 		mdd_helper(initial_constraints, search_engines),
 		rectangle_helper(search_engines[0]->instance),
 		mutex_helper(search_engines[0]->instance, initial_constraints),
-		corridor_helper(search_engines, initial_constraints),
-		heuristic_helper(search_engines.size(), paths, search_engines, initial_constraints, mdd_helper)
+		corridor_helper(search_engines, initial_constraints)
 {
 	num_of_agents = (int) search_engines.size();
+  init_heuristic(heuristic);
 	mutex_helper.search_engines = search_engines;
 }
 
-CBS::CBS(const Instance& instance, bool sipp, int screen) :
+CBS::CBS(const Instance& instance, bool sipp, heuristics_type heuristic, int screen) :
 		screen(screen), focal_w(1),
 		num_of_agents(instance.getDefaultNumberOfAgents()),
 		mdd_helper(initial_constraints, search_engines),
 		rectangle_helper(instance),
 		mutex_helper(instance, initial_constraints),
-		corridor_helper(search_engines, initial_constraints),
-		heuristic_helper(instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper)
+		corridor_helper(search_engines, initial_constraints)
 {
 	clock_t t = clock();
 	initial_constraints.resize(num_of_agents,
@@ -1034,7 +1035,6 @@ CBS::CBS(const Instance& instance, bool sipp, int screen) :
 	runtime_preprocessing = (double) (clock() - t) / CLOCKS_PER_SEC;
 
   init_heuristic(heuristic);
- 
 
 	mutex_helper.search_engines = search_engines;
 

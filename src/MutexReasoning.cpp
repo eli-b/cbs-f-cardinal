@@ -5,8 +5,17 @@
 
 shared_ptr<Conflict> MutexReasoning::run(const vector<Path*> & paths, int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2)
 {
+  if (a1 > a2){
+    std::swap(a1, a2);
+    std::swap(mdd_1, mdd_2);
+  }
+
+  if (strategy == mutex_strategy::N_MUTEX){
+    return nullptr;
+  }
+
 	clock_t t = clock();
-	auto conflict = findMutexConflict(a1, a2, node, mdd_1, mdd_2);
+	auto conflict = findMutexConflict(paths, a1, a2, node, mdd_1, mdd_2);
 	accumulated_runtime += (double) (clock() - t) / CLOCKS_PER_SEC;
 	return conflict;
 }
@@ -208,7 +217,7 @@ shared_ptr<Conflict> MutexReasoning::iter_path_first_k(const vector<Path*> & pat
 
   mutex_conflict = make_shared<Conflict>();
   mutex_conflict->mutexConflict(a1, a2);
-  mutex_conflict->priority = conflict_priority::MUTEX_NON;
+  mutex_conflict->priority = conflict_priority::NON;
   if (center.first.second == nullptr){
     mutex_conflict->t1 = center.first.first->level;
     mutex_conflict->t2 = center.second.first->level;
@@ -366,7 +375,7 @@ shared_ptr<Conflict> MutexReasoning::iter_path_greedy(const vector<Path*> & path
 
   mutex_conflict = make_shared<Conflict>();
   mutex_conflict->mutexConflict(a1, a2);
-  mutex_conflict->priority = semi_card_list.empty()? conflict_priority::MUTEX_NON : conflict_priority::MUTEX_SEMI;
+  mutex_conflict->priority = semi_card_list.empty()? conflict_priority::NON : conflict_priority::SEMI;
   mutex_conflict->t1 = center.first.first->level;
   mutex_conflict->t2 = center.second.first->level;
   mutex_conflict->loc1 = center.first.first->location;
@@ -537,7 +546,7 @@ shared_ptr<Conflict> MutexReasoning::iter_path_greedy_f(const vector<Path*> & pa
 
   mutex_conflict = make_shared<Conflict>();
   mutex_conflict->mutexConflict(a1, a2);
-  mutex_conflict->priority = semi_card_list.empty()? conflict_priority::MUTEX_NON : conflict_priority::MUTEX_SEMI;
+  mutex_conflict->priority = semi_card_list.empty()? conflict_priority::NON : conflict_priority::SEMI;
   mutex_conflict->t1 = center.first.first->level;
   mutex_conflict->t2 = center.second.first->level;
   mutex_conflict->loc1 = center.first.first->location;
