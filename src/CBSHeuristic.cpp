@@ -221,3 +221,35 @@ vector<int> CBSHeuristic::buildConflictGraph(const CBSNode& curr) const
     }
 	return G;
 }
+
+int CBSHeuristic::greedyMatching(const std::vector<int>& CG, int cols)
+{
+	int rst = 0;
+	std::vector<bool> used(cols, false);
+	while (1)
+    {
+      int maxWeight = 0;
+      int ep1, ep2;
+      for (int i = 0; i < cols; i++)
+        {
+          if (used[i])
+            continue;
+          for (int j = i + 1; j < cols; j++)
+            {
+              if (used[j])
+                continue;
+              else if (maxWeight < CG[i * cols + j])
+                {
+                  maxWeight = CG[i * cols + j];
+                  ep1 = i;
+                  ep2 = j;
+                }
+            }
+        }
+      if (maxWeight == 0)
+        return rst;
+      rst += maxWeight;
+      used[ep1] = true;
+      used[ep2] = true;
+    }
+}

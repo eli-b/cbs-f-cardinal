@@ -176,6 +176,7 @@ protected:
 
 	int MVConAllConflicts(CBSNode& curr);
 	vector<int> buildConflictGraph(const CBSNode& curr) const;
+  int greedyMatching(const std::vector<int>& CG, int cols);
   int minimumVertexCover(const vector<int>& CG);
 	virtual bool KVertexCover(const vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
 	int ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_value);
