@@ -142,12 +142,6 @@ int main(int argc, char** argv)
 		m = mutex_strategy::N_MUTEX;
 	else if (vm["mutexReasoning"].as<string>() == "C")
 		m = mutex_strategy::MUTEX_C;
-	else if (vm["mutexReasoning"].as<string>() == "NCK")
-		m = mutex_strategy::MUTEX_NC_FIRST_K;
-	else if (vm["mutexReasoning"].as<string>() == "NCG")
-		m = mutex_strategy::MUTEX_NC_GREEDY;
-	else if (vm["mutexReasoning"].as<string>() == "NCGF")
-		m = mutex_strategy::MUTEX_NC_GREEDY_F;
 	else
     {
       cout << "WRONG mutex reasoning strategy!" << endl;

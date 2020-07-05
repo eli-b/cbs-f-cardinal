@@ -1,7 +1,6 @@
 #pragma once
 #include "IncrementalPairwiseMutexPropagation.hpp"
 #include "ConstraintPropagation.h"
-#include "ConstraintPropagationGeneralized.h"
 #include "MDD.h"
 
 /*
@@ -9,7 +8,7 @@
   + MUTEX_C mutex reasoning for cardinal conflict only
   + MUTEX_NC_FIRST_K for each conflict only compute first k biclique
  */
-enum mutex_strategy{N_MUTEX, MUTEX_C, MUTEX_NC_FIRST_K, MUTEX_NC_GREEDY, MUTEX_NC_GREEDY_F };
+enum mutex_strategy{N_MUTEX, MUTEX_C};
 
 class MutexReasoning{
 public:
@@ -26,16 +25,6 @@ public:
   mutex_strategy strategy;
 
 private:
-
-  shared_ptr<Conflict> iter_path_first_k(const vector<Path*> & paths, int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2, ConstraintPropagationGeneralized* cp);
-  shared_ptr<Conflict> iter_path_greedy(const vector<Path*> & paths, int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2, ConstraintPropagationGeneralized* cp);
-  shared_ptr<Conflict> iter_path_greedy_f(const vector<Path*> & paths, int a1, int a2, CBSNode& node, MDD* mdd_1, MDD* mdd_2, ConstraintPropagationGeneralized* cp);
-
-
-  vector<edge_pair> compute_semi_card_list(ConstraintPropagationGeneralized* cp_gen, vector<node_pair>& np_sequence_1, vector<node_pair>& np_sequence_2);
-
-  vector<node_pair> path_to_np_sequence(MDD* mdd, Path* path);
-
 
   void cache_constraint(ConstraintsHasher & c1, ConstraintsHasher & c2, shared_ptr<Conflict> constraint);
   shared_ptr<Conflict> find_applicable_constraint(ConstraintsHasher & c1, ConstraintsHasher & c2, const vector<Path*> & paths);
