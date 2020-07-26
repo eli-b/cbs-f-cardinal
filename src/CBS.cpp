@@ -940,6 +940,8 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 					delete child[i];
 					child[i] = nullptr;
 				}
+				if (PC) // prioritize conflicts
+					classifyConflicts(*curr); // classify the new-detected conflicts
 			}
 			else
 			{
