@@ -23,8 +23,8 @@ public:
 		bool operator()(const CBSNode* n1, const CBSNode* n2) const 
 		{
 			if (n1->tie_breaking == n2->tie_breaking)
-				return rand() % 2;
-			return n1->tie_breaking >= n2->tie_breaking;
+				return n1->time_generated >= n2->time_generated;  // Return an arbitrary consistent answer
+			return n1->tie_breaking > n2->tie_breaking;
 		}
 	};  // used by FOCAL to compare nodes by tie_breaking value (top of the heap has min tie_breaking value)
 

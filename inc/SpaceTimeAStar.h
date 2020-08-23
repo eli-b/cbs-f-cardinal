@@ -6,36 +6,7 @@
 class AStarNode: public LLNode
 {
 public:
-	// define a typedefs for handles to the heaps (allow up to quickly update a node in the heap)
-	typedef pairing_heap<AStarNode*, compare<LLNode::compare_node>>::handle_type open_handle_t;
-	typedef pairing_heap<AStarNode*, compare<LLNode::secondary_compare_node>>::handle_type focal_handle_t;
-	open_handle_t open_handle;
-	focal_handle_t focal_handle;
-
-	// list<int> unsatisfied_positive_constraint_sets; // store the idx of satisfied positive constraint sets
-
-
-	AStarNode() : LLNode() {}
-
-	AStarNode(int loc, int g_val, int h_val, LLNode* parent, int timestep, int num_of_conflicts = 0, bool in_openlist = false) :
-		LLNode(loc, g_val, h_val, parent, timestep, num_of_conflicts, in_openlist) {}
-
-	/*AStarNode(const AStarNode& other)
-	{
-		location = other.location;
-		g_val = other.g_val;
-		h_val = other.h_val;
-		parent = other.parent;
-		timestep = other.timestep;
-		in_openlist = other.in_openlist;
-		open_handle = other.open_handle;
-		focal_handle = other.focal_handle;
-		num_of_conflicts = other.num_of_conflicts;
-	}*/
-
-	~AStarNode() {}
-
-	// The following is used by for generating the hash value of a nodes
+	// The following is used by for generating the hash value of a node
 	struct NodeHasher
 	{
 		size_t operator()(const AStarNode* n) const
@@ -60,6 +31,71 @@ public:
 					s1->wait_at_goal == s2->wait_at_goal);
 		}
 	};
+
+	// the following is used to compare nodes in the OPEN list
+	struct compare_node
+	{
+		// returns true if n1 > n2 (note -- this gives us *min*-heap).
+		bool operator()(const AStarNode* n1, const AStarNode* n2) const
+		{
+			if (n1->g_val + n1->h_val == n2->g_val + n2->h_val)
+			{
+				if (n1->h_val == n2->h_val)
+				{
+					AStarNode::NodeHasher hasher;
+					return hasher(n1) <= hasher(n2);  // Return an arbitrary consistent answer
+				}
+				return n1->h_val > n2->h_val;
+			}
+			return n1->g_val + n1->h_val > n2->g_val + n2->h_val;
+		}
+	};  // used by OPEN (heap) to compare nodes (top of the heap has min f-val, and then highest g-val)
+
+	// the following is used to compare nodes in the FOCAL list
+	struct secondary_compare_node
+	{
+		bool operator()(const AStarNode* n1, const AStarNode* n2) const // returns true if n1 > n2
+		{
+			if (n1->num_of_conflicts == n2->num_of_conflicts)
+			{
+				if (n1->g_val == n2->g_val)
+				{
+					AStarNode::NodeHasher hasher;
+					return hasher(n1) <= hasher(n2);  // Return an arbitrary consistent answer
+				}
+				return n1->g_val < n2->g_val;  // break ties towards larger g_vals
+			}
+			return n1->num_of_conflicts > n2->num_of_conflicts;  // n1 > n2 if it has more conflicts
+		}
+	};  // used by FOCAL (heap) to compare nodes (top of the heap has min number-of-conflicts)
+
+	// define a typedefs for handles to the heaps (allow up to quickly update a node in the heap)
+	typedef pairing_heap<AStarNode*, compare<AStarNode::compare_node>>::handle_type open_handle_t;
+	typedef pairing_heap<AStarNode*, compare<AStarNode::secondary_compare_node>>::handle_type focal_handle_t;
+	open_handle_t open_handle;
+	focal_handle_t focal_handle;
+
+	// list<int> unsatisfied_positive_constraint_sets; // store the idx of satisfied positive constraint sets
+
+	AStarNode() : LLNode() {}
+
+	AStarNode(int loc, int g_val, int h_val, LLNode* parent, int timestep, int num_of_conflicts = 0, bool in_openlist = false) :
+		LLNode(loc, g_val, h_val, parent, timestep, num_of_conflicts, in_openlist) {}
+
+	/*AStarNode(const AStarNode& other)
+	{
+		location = other.location;
+		g_val = other.g_val;
+		h_val = other.h_val;
+		parent = other.parent;
+		timestep = other.timestep;
+		in_openlist = other.in_openlist;
+		open_handle = other.open_handle;
+		focal_handle = other.focal_handle;
+		num_of_conflicts = other.num_of_conflicts;
+	}*/
+
+	~AStarNode() {}
 };
 
 

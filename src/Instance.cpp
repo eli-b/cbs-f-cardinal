@@ -2,6 +2,7 @@
 #include <algorithm>    // std::shuffle
 #include <random>      // std::default_random_engine
 #include <chrono>       // std::chrono::system_clock
+#include <cstdlib>     // std::rand
 #include"Instance.h"
 
 int RANDOM_WALK_STEPS = 100000;
@@ -78,7 +79,7 @@ void Instance::generateRandomAgents(int warehouse_width)
 		int k = 0;
 		while (k < num_of_agents)
 		{
-			int x = rand() % num_of_rows, y = rand() % num_of_cols;
+			int x = std::rand() % num_of_rows, y = std::rand() % num_of_cols;
 			int start = linearizeCoordinate(x, y);
 			if (my_map[start] || starts[start])
 				continue;
@@ -106,7 +107,7 @@ void Instance::generateRandomAgents(int warehouse_width)
 		int k = 0;
 		while (k < num_of_agents)
 		{
-			int x = rand() % num_of_rows, y = rand() % warehouse_width;
+			int x = std::rand() % num_of_rows, y = std::rand() % warehouse_width;
 			if (k % 2 == 0)
 				y = num_of_cols - y - 1;
 			int start = linearizeCoordinate(x, y);
@@ -122,7 +123,7 @@ void Instance::generateRandomAgents(int warehouse_width)
 		k = 0;
 		while (k < num_of_agents)
 		{
-			int x = rand() % num_of_rows, y = rand() % warehouse_width;
+			int x = std::rand() % num_of_rows, y = std::rand() % warehouse_width;
 			if (k % 2 == 1)
 				y = num_of_cols - y - 1;
 			int goal = linearizeCoordinate(x, y);
@@ -236,7 +237,7 @@ void Instance::generateConnectedRandomGrid(int rows, int cols, int obstacles)
 	i = 0;
 	while (i < obstacles)
 	{
-		int loc = rand() % map_size;
+		int loc = std::rand() % map_size;
 		if (addObstacle(loc))
 		{
 			printMap();

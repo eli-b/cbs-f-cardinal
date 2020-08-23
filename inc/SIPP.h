@@ -82,8 +82,8 @@ public:
 
 private:
 	// define typedefs and handles for heap
-	typedef boost::heap::pairing_heap<SIPPNode*, boost::heap::compare<LLNode::compare_node>> heap_open_t;
-	typedef boost::heap::pairing_heap<SIPPNode*, boost::heap::compare<LLNode::secondary_compare_node>> heap_focal_t;
+	typedef boost::heap::pairing_heap<SIPPNode*, boost::heap::compare<SIPPNode::compare_node>> heap_open_t;
+	typedef boost::heap::pairing_heap<SIPPNode*, boost::heap::compare<SIPPNode::secondary_compare_node>> heap_focal_t;
 	heap_open_t open_list;
 	heap_focal_t focal_list;
 

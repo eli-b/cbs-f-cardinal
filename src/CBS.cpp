@@ -1,6 +1,7 @@
 #include <algorithm>    // std::shuffle
 #include <random>      // std::default_random_engine
 #include <chrono>       // std::chrono::system_clock
+#include <cstdlib>      //  std::rand
 #include "CBS.h"
 #include "SIPP.h"
 #include "SpaceTimeAStar.h"
@@ -836,7 +837,7 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 
 			if (disjoint_splitting && curr->conflict->type == conflict_type::STANDARD)
 			{
-				int first = (bool) (rand() % 2);
+				int first = (bool) (std::rand() % 2);
 				if (first) // disjoint splitting on the first agent
 				{
 					child[0]->constraints = curr->conflict->constraint1;

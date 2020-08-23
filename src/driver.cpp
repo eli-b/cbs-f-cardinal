@@ -7,6 +7,7 @@
 /*driver.cpp
 * Solve a MAPF instance on 2D grids.
 */
+#include <cstdlib>  // std::srand
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
 #include "CBS.h"
@@ -147,16 +148,14 @@ int main(int argc, char** argv)
       cout << "WRONG mutex reasoning strategy!" << endl;
       return -1;
     }
-  
-	srand((int) time(0));
+
+	std::srand(vm["seed"].as<int>());
 
 	///////////////////////////////////////////////////////////////////////////
 	// load the instance
 	Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
 					  vm["agentNum"].as<int>(),
 					  vm["rows"].as<int>(), vm["cols"].as<int>(), vm["obs"].as<int>(), vm["warehouseWidth"].as<int>());
-
-	srand(vm["seed"].as<int>());
 
 	int runs = vm["restart"].as<int>();
 	
@@ -231,7 +230,7 @@ static void usage()
 	fprintf(stderr, "	maxtime		-> time cutoff in sec. (default: 7200)\n");
 	fprintf(stderr, "	restart		-> Restart after learning(=1) or not (=0), (default: 0)\n");
 	fprintf(stderr, "	kernel		-> Add interaction features with Kernel(=1) or not(=0), (default: 1)\n");
-	fprintf(stderr, "	seed		-> CPLEX random seed (default: 1)\n");
+	fprintf(stderr, "	seed		-> Random seed used for CPLEX and for generating instances (default: 0)\n");
 	fprintf(stderr, "	cutoff		-> Use instance's optimal value as cutoff(=1) or not(=0), (default: 0)\n");
 	fprintf(stderr, "	whichpc		-> Use PC scores as search goes(=1) or after Phase 1(=0), (default: 0)\n");
 	fprintf(stderr, "whichFeatures	-> which features to include, (default 0) \n");

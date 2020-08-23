@@ -14,6 +14,18 @@ public:
 	int num_of_conflicts = 0;
 	bool in_openlist = false;
 	bool wait_at_goal; // the action is to wait at the goal vertex or not. This is used for >length constraints
+
+	// The following is used by for generating the hash value of a node
+	struct NodeHasher
+	{
+		size_t operator()(const LLNode* n) const
+		{
+			size_t loc_hash = std::hash<int>()(n->location);
+			size_t timestep_hash = std::hash<int>()(n->timestep);
+			return (loc_hash ^ (timestep_hash << 1));
+		}
+	};
+
 	// the following is used to compare nodes in the OPEN list
 	struct compare_node
 	{
@@ -23,10 +35,13 @@ public:
 			if (n1->g_val + n1->h_val == n2->g_val + n2->h_val)
 			{
 				if (n1->h_val == n2->h_val)
-					return rand() % 2;
-				return n1->h_val >= n2->h_val;
+				{
+					NodeHasher hasher;
+					return hasher(n1) <= hasher(n2);  // Return an arbitrary consistent answer
+				}
+				return n1->h_val > n2->h_val;
 			}
-			return n1->g_val + n1->h_val >= n2->g_val + n2->h_val;
+			return n1->g_val + n1->h_val > n2->g_val + n2->h_val;
 		}
 	};  // used by OPEN (heap) to compare nodes (top of the heap has min f-val, and then highest g-val)
 
@@ -39,11 +54,12 @@ public:
 			{
 				if (n1->g_val == n2->g_val)
 				{
-					return rand() % 2 == 0;
+					NodeHasher hasher;
+					return hasher(n1) <= hasher(n2);  // Return an arbitrary consistent answer
 				}
-				return n1->g_val <= n2->g_val;  // break ties towards larger g_vals
+				return n1->g_val < n2->g_val;  // break ties towards larger g_vals
 			}
-			return n1->num_of_conflicts >= n2->num_of_conflicts;  // n1 > n2 if it has more conflicts
+			return n1->num_of_conflicts > n2->num_of_conflicts;  // n1 > n2 if it has more conflicts
 		}
 	};  // used by FOCAL (heap) to compare nodes (top of the heap has min number-of-conflicts)
 

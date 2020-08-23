@@ -102,7 +102,8 @@ bool operator<(const Conflict& conflict1, const Conflict& conflict2) // return t
 		{
 			if (conflict1.secondary_priority == conflict2.secondary_priority)
 			{
-				return rand() % 2;
+				return 3 * std::hash<int>()(conflict1.a1) + 5 * std::hash<int>()(conflict1.a2) <=
+					   3 * std::hash<int>()(conflict2.a1) + 5 * std::hash<int>()(conflict2.a2);  // Return an arbitrary consistent answer
 			}
 			return conflict1.secondary_priority > conflict2.secondary_priority;
 		}
