@@ -725,7 +725,7 @@ string CBS::getSolverName() const
 	case heuristics_type::WDG:
 		name += "WDG";
 		break;
-	case STRATEGY_COUNT:
+	case HEURISTICS_COUNT:
 		break;
 	}
 	if (rectangle_helper.use_rectangle_reasoning)

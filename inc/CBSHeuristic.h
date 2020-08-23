@@ -5,7 +5,7 @@
 #include "CorridorReasoning.h"
 #include "MutexReasoning.h"
 
-enum heuristics_type { ZERO, CG, DG, WDG, STRATEGY_COUNT };
+enum heuristics_type { ZERO, CG, DG, WDG, HEURISTICS_COUNT };
 
 
 struct HTableEntry // look-up table entry 
@@ -127,14 +127,14 @@ typedef unordered_map<HTableEntry, int, HTableEntry::Hasher, HTableEntry::EqNode
 class CBSHeuristic
 {
 public:
-	bool rectangle_reasoning; // using rectangle reasoning
-	bool corridor_reasoning; // using corridor reasoning
-	bool target_reasoning; // using target reasoning
-	mutex_strategy mutex_reasoning; // using mutex reasoning
-	bool disjoint_splitting; // disjoint splittting
+	bool rectangle_reasoning; // using rectangle reasoning in the subproblem solver
+	bool corridor_reasoning; // using corridor reasoning in the subproblem solver
+	bool target_reasoning; // using target reasoning in the subproblem solver
+	mutex_strategy mutex_reasoning; // using mutex reasoning in the subproblem solver
+	bool disjoint_splitting; // using disjoint splitting in the subproblem solver
 	bool PC; // prioritize conflicts
-	conflict_selection conflict_seletion_rule;
-	node_selection node_selection_rule;
+	conflict_selection conflict_selection_rule;  // for the subproblem solver
+	node_selection node_selection_rule;  // for the subproblem solver
 
 	double runtime_build_dependency_graph = 0;
 	double runtime_solve_MVC = 0;
@@ -162,8 +162,8 @@ public:
 protected:
 	int screen = 0;
 	int num_of_agents;
-	int ILP_node_threshold = 5; // run ILP if #nodes in the conrflict graph is larger than the threshold
-	int ILP_edge_threshold = 10; // run ILP if #edges in the conrflict graph is larger than the threshold
+	int ILP_node_threshold = 5; // run ILP if #nodes in the conflict graph is larger than the threshold
+	int ILP_edge_threshold = 10; // run ILP if #edges in the conflict graph is larger than the threshold
 
 	double time_limit;
 	int node_limit = 64;  // terminate the sub CBS solver if the number of its expanded nodes exceeds the node limit.
