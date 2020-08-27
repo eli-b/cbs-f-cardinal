@@ -107,11 +107,11 @@ public:
 	// minimizing the number of internal conflicts (that is conflicts with known_paths for other agents found so far).
 	// lowerbound is an underestimation of the length of the path in order to speed up the search.
 	Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
-				  const vector<Path*>& paths, int agent, int lower_bound);
+				  const vector<Path*>& paths, int agent, int lower_bound) override;
 
-	int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound);
+	int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound) override;
 
-	string getName() const { return "AStar"; }
+	string getName() const override { return "A*"; }
 
 	SpaceTimeAStar(const Instance& instance, int agent) :
 			SingleAgentSolver(instance, agent) {}
