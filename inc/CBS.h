@@ -59,6 +59,7 @@ public:
   void setConflictSelectionRule(conflict_selection c) { conflict_selection_rule = c; heuristic_helper->conflict_selection_rule = c; }
   void setNodeSelectionRule(node_selection n) { node_selection_rule = n; heuristic_helper->node_selection_rule = n; }
   void setNodeLimit(int n) { node_limit = n; }
+  void setSeed(int s) { seed = s; heuristic_helper->seed = seed; }
 
   ////////////////////////////////////////////////////////////////////////////////////////////
   // Runs the algorithm until the problem is solved or time is exhausted
@@ -105,6 +106,7 @@ private:
   double focal_w = 1.0;
   int cost_upperbound = MAX_COST;
 
+  int seed;
 
   vector<ConstraintTable> initial_constraints;
   clock_t start;

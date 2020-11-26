@@ -171,6 +171,7 @@ int WDGHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 	cbs.setConflictSelectionRule(conflict_selection_rule);
 	cbs.setNodeSelectionRule(node_selection_rule);
 	cbs.setNodeLimit(node_limit);
+	cbs.setSeed(seed);
 
 	double runtime = (double) (clock() - start_time) / CLOCKS_PER_SEC;
 	int root_g = (int) initial_paths[0].size() - 1 + (int) initial_paths[1].size() - 1;

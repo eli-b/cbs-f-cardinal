@@ -143,6 +143,7 @@ public:
 	conflict_selection conflict_selection_rule;  // for the subproblem solver
 	node_selection node_selection_rule;  // for the subproblem solver
 	int screen = 0;  // Mostly for subsolver
+	int seed = 0;
 
 	// Runtime stats
 	double runtime_build_graph = 0;

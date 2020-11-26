@@ -1,5 +1,5 @@
+#include <random>      // std::mt19937
 #include <algorithm>    // std::shuffle
-#include <random>      // std::default_random_engine
 #include <chrono>       // std::chrono::system_clock
 #include <cstdlib>      //  std::rand
 #include "CBS.h"
@@ -1085,8 +1085,7 @@ bool CBS::generateRoot()
 
 		if (randomRoot)
 		{
-			std::random_device rd;
-			std::mt19937 g(rd());
+			std::mt19937 g(seed);
 			std::shuffle(std::begin(agents), std::end(agents), g);
 		}
 

@@ -173,7 +173,8 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	std::srand(vm["seed"].as<int>());
+	int seed = vm["seed"].as<int>();
+	std::srand(seed);
 
 	///////////////////////////////////////////////////////////////////////////
 	// load the instance
@@ -196,6 +197,7 @@ int main(int argc, char** argv)
 	cbs.setMutexReasoning(m);
 	cbs.setConflictSelectionRule(conflict);
 	cbs.setNodeSelectionRule(n);
+	cbs.setSeed(seed);
 	//////////////////////////////////////////////////////////////////////
 	// run
 	double runtime = 0;
