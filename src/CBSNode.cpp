@@ -5,15 +5,15 @@ void CBSNode::clear()
 {
 	conflicts.clear();
 	unknownConf.clear();
-	conflictGraph.clear();
+	dependenceGraph.clear();
 }
 
 void CBSNode::printConflictGraph(int num_of_agents) const
 {
-	if (conflictGraph.empty())
+	if (dependenceGraph.empty())
 		return;
 	cout << "	Build conflict graph in " << *this << ": ";
-	for (auto e : conflictGraph)
+	for (auto e : dependenceGraph)
 	{
 		if (e.second == 0)
 			continue;

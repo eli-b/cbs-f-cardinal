@@ -54,8 +54,12 @@ public:
 	// The chosen conflict
 	shared_ptr<Conflict> conflict;
 
-	boost::unordered_map<int, int> conflictGraph; //<edge index, weight> // TODO: This can be deleted.
 	CBSNode* parent;
+
+	boost::unordered_map<int, int> dependenceGraph; //<edge index : weight>
+	// TODO: This can be deleted.
+	// It's used by the DG-, EWDG- and NVWEWDG- MVC heuristics. Do you mean it doesn't save enough time to be worth it?
+
 
 	list<pair<int, Path>> paths; // new paths
 	list<Constraint> constraints; // new constraints

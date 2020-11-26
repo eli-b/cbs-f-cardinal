@@ -677,8 +677,8 @@ void CBS::saveResults(const string& fileName, const string& instanceName) const
 
 		  heuristic_helper->num_merge_MDDs << "," <<
 		  heuristic_helper->num_solve_2agent_problems << "," <<
-		  heuristic_helper->num_memoization << "," <<
-		  heuristic_helper->runtime_build_dependency_graph << "," <<
+		  heuristic_helper->num_memoization_hits << "," <<
+		  heuristic_helper->runtime_build_graph << "," <<
 		  heuristic_helper->runtime_solve_MVC << "," <<
 
 		  runtime_detect_conflicts << "," <<

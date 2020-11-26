@@ -2,138 +2,32 @@
 #include "CBS.h"
 
 
-int WDGHeuristic::computeInformedHeuristicsValue(CBSNode& curr, double time_limit)
+bool WDGHeuristic::buildGraph(CBSNode& node, vector<vector<tuple<int,int>>>& WDG, int& num_edges, int& max_edge_weight)
 {
-  int h = -1;
-	int num_of_CGedges;
-	vector<int> HG(num_of_agents * num_of_agents, 0); // heuristic graph
-  if (!buildWeightedDependenceGraph(curr, HG))
-    return false;
-  h = minimumWeightedVertexCover(HG);
-  return h;
-}
-
-int WDGHeuristic::minimumWeightedVertexCover(const vector<int>& HG)
-{
-	clock_t t = clock();
-	int rst = weightedVertexCover(HG);
-	runtime_solve_MVC += (double) (clock() - t) / CLOCKS_PER_SEC;
-	return rst;
-}
-
-int WDGHeuristic::weightedVertexCover(const std::vector<int>& CG)
-{
-int rst = 0;
-	std::vector<bool> done(num_of_agents, false);
-	for (int i = 0; i < num_of_agents; i++)
-	{
-		if (done[i])
-			continue;
-		std::vector<int> range;
-		std::vector<int> indices;
-		range.reserve(num_of_agents);
-		indices.reserve(num_of_agents);
-		int num = 0;
-		std::queue<int> Q;
-		Q.push(i);
-		done[i] = true;
-		while (!Q.empty())
-		{
-			int j = Q.front(); Q.pop();
-			range.push_back(0);
-			indices.push_back(j);
-			for (int k = 0; k < num_of_agents; k++)
-			{
-				if (CG[j * num_of_agents + k] > 0)
-				{
-					range[num] = std::max(range[num], CG[j * num_of_agents + k]);
-					if (!done[k])
-					{
-						Q.push(k);
-						done[k] = true;
-					}
-				}
-				else if (CG[k * num_of_agents + j] > 0)
-				{
-					range[num] = std::max(range[num], CG[k * num_of_agents + j]);
-					if (!done[k])
-					{
-						Q.push(k);
-						done[k] = true;
-					}
-				}
-			}
-			num++;
-		}
-		if (num == 1) // no edges
-			continue;
-		else if (num == 2) // only one edge
-		{
-			rst += std::max(CG[indices[0] * num_of_agents + indices[1]], CG[indices[1] * num_of_agents + indices[0]]); // add edge weight
-			continue;
-		}
-		std::vector<int> G(num * num, 0);
-		for (int j = 0; j < num; j++)
-		{
-			for (int k = j + 1; k < num; k++)
-			{
-				G[j * num + k] = std::max(CG[indices[j] * num_of_agents + indices[k]], CG[indices[k] * num_of_agents + indices[j]]);
-			}
-		}
-		if (num > ILP_node_threshold) // solve by ILP
-		{
-			rst += ILPForWMVC(G, range);
-		}
-		else // solve by dynamic programming
-		{
-			std::vector<int> x(num);
-			int best_so_far = MAX_COST;
-			rst += DPForWMVC(x, 0, 0, G, range, best_so_far);
-		}
-		double runtime = (double) (clock() - start_time) / CLOCKS_PER_SEC;
-		if (runtime > time_limit)
-			return -1; // run out of time
-	}
-
-	//test
-	/*std::vector<int> x(N, 0);
-	std::vector<int> range(N, 0);
-	for (int i = 0; i < N; i++)
-	{
-		for (int j = i + 1; j < N; j++)
-		{
-			range[i] = std::max(range[i], CG[i * N + j]);
-			range[j] = std::max(range[j], CG[i * N + j]);
-		}
-	}
-	int best_so_far = INT_MAX;
-	int rst2 = DPForWMVC(x, 0, 0, CG, range, best_so_far);
-	if ( rst != rst2)
-		std::cout << "ERROR" <<std::endl;*/
-
-	return rst;
-}
-
-bool WDGHeuristic::buildWeightedDependenceGraph(CBSNode& node, vector<int>& CG)
-{
+	num_edges = 0;
+	max_edge_weight = 1;
 	for (const auto& conflict : node.conflicts)
 	{
 		int a1 = min(conflict->a1, conflict->a2);
 		int a2 = max(conflict->a1, conflict->a2);
 		int idx = a1 * num_of_agents + a2;
-		if (node.conflictGraph.find(idx) != node.conflictGraph.end())
+		if (node.dependenceGraph.find(idx) != node.dependenceGraph.end())
 			continue;
 		auto got = lookupTable[a1][a2].find(HTableEntry(a1, a2, &node));
 		if (got != lookupTable[a1][a2].end()) // check the lookup table first
 		{
-			num_memoization++;
-			node.conflictGraph[idx] = got->second;
+			num_memoization_hits++;
+			node.dependenceGraph[idx] = got->second;
 		}
 		else if (rectangle_reasoning || mutex_reasoning)
 		{
-			node.conflictGraph[idx] = solve2Agents(a1, a2, node, false);
-			assert(node.conflictGraph[idx] >= 0);
-			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
+			node.dependenceGraph[idx] = solve2Agents(a1, a2, node, false);
+			assert(node.dependenceGraph[idx] >= 0);
+			if (screen == 2)
+			{
+				cout << "Weight of " << *conflict << " is " << node.dependenceGraph[idx] << endl;
+			}
+			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.dependenceGraph[idx];
 		}
 		else
 		{
@@ -144,28 +38,33 @@ bool WDGHeuristic::buildWeightedDependenceGraph(CBSNode& node, vector<int>& CG)
 			}
 			if (cardinal) // run 2-agent solver only for dependent agents
 			{
-				node.conflictGraph[idx] = solve2Agents(a1, a2, node, cardinal);
-				assert(node.conflictGraph[idx] >= 1);
+				node.dependenceGraph[idx] = solve2Agents(a1, a2, node, true);
+				assert(node.dependenceGraph[idx] >= 1);
+				if (screen == 2)
+				{
+					cout << "Weight of " << *conflict << " is " << node.dependenceGraph[idx] << endl;
+				}
+				// Incorrect to assume a target conflict would necessarily surprise the heuristic. Compare with DGHeuristic.cpp.
 			}
 			else
 			{
-				node.conflictGraph[idx] = 0;
+				node.dependenceGraph[idx] = 0;
 			}
-			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
+			lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.dependenceGraph[idx];
 		}
 
-		if (node.conflictGraph[idx] == MAX_COST) // no solution
+		if (node.dependenceGraph[idx] == MAX_COST) // no solution
 		{
-			return false;
+			return false;  // Why? Can't this info be used in the heuristic? For example, give the node $h=\infty$?
 		}
 
-		if (conflict->priority != conflict_priority::CARDINAL && node.conflictGraph[idx] > 0)
+		if (node.dependenceGraph[idx] > 0)
 		{
 			conflict->priority = conflict_priority::PSEUDO_CARDINAL; // the two agents are dependent, although resolving this conflict might not increase the cost
 		}
 		if ((clock() - start_time) / CLOCKS_PER_SEC > time_limit) // run out of time
 		{
-			runtime_build_dependency_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
+			runtime_build_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
 			return false;
 		}
 	}
@@ -174,15 +73,19 @@ bool WDGHeuristic::buildWeightedDependenceGraph(CBSNode& node, vector<int>& CG)
 	{
 		for (int j = i + 1; j < num_of_agents; j++)
 		{
-			auto got = node.conflictGraph.find(i * num_of_agents + j);
-			if (got != node.conflictGraph.end() && got->second > 0)
+			auto got = node.dependenceGraph.find(i * num_of_agents + j);
+			if (got != node.dependenceGraph.end() && got->second > 0)
 			{
-				CG[i * num_of_agents + j] = got->second;
-				CG[j * num_of_agents + i] = got->second;
+				if (get<0>(WDG[i][j]) == 0)
+					++num_edges;
+				WDG[i][j] = make_tuple(got->second, 1);
+				WDG[j][i] = make_tuple(got->second, 1);
+				if (got->second > max_edge_weight)
+					max_edge_weight = got->second;
 			}
 		}
 	}
-	runtime_build_dependency_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
+	runtime_build_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
 	return true;
 }
 
@@ -288,4 +191,42 @@ int WDGHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 	}
 	assert(rst >= 0);
 	return rst;
+}
+
+
+// Returns a vector of vectors where ret[a1_index][a2_index] == tuple<1,x> if a1 and a2 have
+// to increase their combined cost to resolve all conflicts between themselves,
+// where X is the expected cost increase for a1 from resolving the current conflicts between them, tuple<0,0> otherwise.
+bool NVWEWDGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& WDG, int& num_edges, int& max_edge_weight) {
+	bool succ = WDGHeuristic::buildGraph(curr, WDG, num_edges, max_edge_weight);
+	if (!succ)
+		return false;
+	// Add the near-vertex weights
+	clock_t t = clock();
+	for (const auto& conflict : curr.conflicts)
+	{
+		if (conflict->priority == conflict_priority::CARDINAL ||
+			conflict->priority == conflict_priority::PSEUDO_CARDINAL
+			)
+		{
+			int a1 = conflict->a1;
+			int a2 = conflict->a2;
+			int W = get<0>(WDG[a1][a2]);
+			uint64_t cost_increase_a1 = max(1, get<1>(WDG[a1][a2]));  // In case there are multiple conflicts between the two agents,
+																		 // take the maximum cost increase. This is a minor point because
+																		 // the solver would handle it even if we didn't.
+			if (conflict->type == conflict_type::TARGET ||
+				(!target_reasoning && conflict->type == conflict_type::STANDARD &&
+				 get<3>(conflict->constraint1.front()) > conflict->a1_path_cost)
+				 ) {  // A g-cardinal target conflict (at least semi-f-cardinal with the MVC heuristic)
+				// a1 is the agent that's at its target
+				int time_step = get<3>(conflict->constraint1.front());
+				cost_increase_a1 = max((uint64_t)(time_step + 1 - conflict->a1_path_cost), cost_increase_a1);
+			}
+			WDG[a1][a2] = make_tuple(W, cost_increase_a1);
+			WDG[a2][a1] = make_tuple(W, 1);
+		}
+	}
+	runtime_build_graph += (double) (clock() - t) / CLOCKS_PER_SEC;
+	return true;
 }

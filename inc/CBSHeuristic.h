@@ -4,17 +4,20 @@
 #include "RectangleReasoning.h"
 #include "CorridorReasoning.h"
 #include "MutexReasoning.h"
+//#include "CBS.h"
+#include <coin/OsiGrbSolverInterface.hpp>
 
 enum heuristics_type { ZERO, CG, DG, WDG, HEURISTICS_COUNT };
 
 
 struct HTableEntry // look-up table entry 
 {
-	int a1{};
-	int a2{};
-	CBSNode* n{};
+	int a1;
+	int a2;
+	CBSNode* n;
 
 	HTableEntry() = default;
+
 	HTableEntry(int a1, int a2, CBSNode* n) : a1(a1), a2(a2), n(n) {};
 
 	struct EqNode
@@ -141,71 +144,87 @@ public:
 	node_selection node_selection_rule;  // for the subproblem solver
 	int screen = 0;  // Mostly for subsolver
 
-	double runtime_build_dependency_graph = 0;
+	// Runtime stats
+	double runtime_build_graph = 0;
 	double runtime_solve_MVC = 0;
 
-	uint64_t num_merge_MDDs = 0;
-	uint64_t num_solve_2agent_problems = 0;
-	uint64_t num_memoization = 0; // number of times when memeorization helps
+	// More stats for specific subclasses. TODO: Find a way to move them to the subclasses
+	uint64_t num_merge_MDDs = 0;  // Only set by the DG heuristic
+	uint64_t num_solve_2agent_problems = 0;  // Only set by the WDG heuristic
+	uint64_t num_memoization_hits = 0; // number of times when memoization helps - only set by the DG and WDG heuristics
 
-	CBSHeuristic(int num_of_agents,
-				 const vector<Path*>& paths,
-				 vector<SingleAgentSolver*>& search_engines,
-				 const vector<ConstraintTable>& initial_constraints,
-				 MDDTable& mdd_helper) : num_of_agents(num_of_agents),
-										 paths(paths), search_engines(search_engines),
-										 initial_constraints(initial_constraints), mdd_helper(mdd_helper) {}
+
+	CBSHeuristic(int num_of_agents, const vector<Path*>& paths, vector<SingleAgentSolver*>& search_engines,
+				 const vector<ConstraintTable>& initial_constraints, MDDTable& mdd_helper) :
+		CBSHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper,
+			   		 true, false) {}
 
 	virtual void copyConflictGraph(CBSNode& child, const CBSNode& parent);
-	bool computeInformedHeuristics(CBSNode& curr, double time_limit);
+	bool computeInformedHeuristics(CBSNode& curr, double time_limit);  // Called when before a node is expanded
 	virtual void computeQuickHeuristics(CBSNode& curr); // this function is called when generating a CT node
-
 	virtual void init() {}
 	virtual void clear() {}
-
 	bool shouldEvalHeuristic(CBSNode* node);
 	virtual heuristics_type getType() const = 0;  // Just for printing its name. Consider just returning a string instead.
 
 protected:
 	int num_of_agents;
-	int ILP_node_threshold = 5; // run ILP if #nodes in the conflict graph is larger than the threshold
-	int ILP_edge_threshold = 10; // run ILP if #edges in the conflict graph is larger than the threshold
 
 	double time_limit;
-	int node_limit = 64;  // terminate the sub CBS solver if the number of its expanded nodes exceeds the node limit.
 	double start_time;
 
-	const vector<Path*>& paths;
-	const vector<SingleAgentSolver*>& search_engines;
-	const vector<ConstraintTable>& initial_constraints;
-	MDDTable& mdd_helper;
+	int node_limit = 64;  // Terminate the CBS subsolver if the number of its expanded nodes exceeds the node limit.
+						  // TODO: Clean up
 
-	int MVConAllConflicts(CBSNode& curr);
-	vector<int> buildConflictGraph(const CBSNode& curr) const;
-	int greedyMatching(const std::vector<int>& CG, int cols);
-	int minimumVertexCover(const vector<int>& CG);
-	virtual bool KVertexCover(const vector<int>& CG, int num_of_CGnodes, int num_of_CGedges, int k, int cols);
-	int ILPForWMVC(const vector<int>& CG, const vector<int>& node_max_value);
-	virtual int computeInformedHeuristicsValue(CBSNode& curr, double time_limit)=0;
+	OsiGrbSolverInterface mvc_model;
+	typedef int OsiGrbConstraint;
+	bool solved_once = false;  // If not, need to cal mvc_model.initial_solve().
 
+	inline void remove_model_constraints(vector<vector<vector<OsiGrbConstraint>>>& Constraints,
+									     const vector<vector<tuple<int,int>>>& CG, vector<bool>& CgNodeDegrees);
+	inline void calc_heuristic_graph_vertex_degrees(const vector<vector<tuple<int,int>>>& graph, vector<int>& nodeDegrees);
+	inline void add_constraints_for_heuristic_graph_edge(int a1, int a2, int weight,
+														 int a1_cost_increase, int a2_cost_increase, int& h,
+														 vector<int>& HGNodeDegrees,
+														 vector<vector<vector<OsiGrbConstraint>>>& Constraints,
+														 int& num_of_nontrivial_HG_edges, vector<bool>& nodeHasNontrivialEdges);
+	inline void add_mvc_model_constraints_from_graph(const vector<vector<tuple<int,int>>>& HG,
+													 vector<int>& CgNodeDegrees, vector<vector<vector<OsiGrbConstraint>>>& Constraints,
+													 int& num_of_nontrivial_HG_edges, vector<bool>& nodeHasNontrivialEdges,
+													 vector<int>& lowestCostIncrease, vector<int>& highestCostIncreases,
+													 int& highestCostIncrease, int& h);
+	inline void add_mvc_model_constraints_of_agent(const vector<vector<tuple<int,int>>>& graph, int i,
+												   int assume_cost_increased_by,
+												   vector<int>& HGNodeDegrees,
+												   vector<vector<vector<OsiGrbConstraint>>>& Constraints,
+												   int& num_of_nontrivial_HG_edges, vector<bool>& nodeHasNontrivialEdges);
+	inline void remove_mvc_model_constraints_of_agent(vector<vector<vector<OsiGrbConstraint>>>& Constraints, int i,
+												   vector<int>& HGNodeDegrees,
+												   vector<bool>& nodeHasNontrivialEdges);
+
+	const vector<Path*>& paths;  // For DG and WDG only
+	const vector<SingleAgentSolver*>& search_engines;  // For WDG only
+	const vector<ConstraintTable>& initial_constraints;  // For WDG only
+	MDDTable& mdd_helper;  // For DG only
+
+	CBSHeuristic(int num_of_agents, const vector<Path*>& paths, vector<SingleAgentSolver*>& search_engines,
+				 const vector<ConstraintTable>& initial_constraints, MDDTable& mdd_helper, bool max_vertex_weight_is_1,
+				 bool need_aux_variables);
+	int sizeOfAllConflictsGraphMVC(CBSNode& curr);  // For tie-breaking
+	vector<vector<tuple<int,int>>> buildConflictGraph(const CBSNode& curr) const;
+	int minimumVertexCover(const vector<vector<tuple<int,int>>>& HG, CBSNode& node);
+	virtual int computeInformedHeuristicsValue(CBSNode& curr, double time_limit) = 0;
 };
 
 
 class ZeroHeuristic: public CBSHeuristic {
 public:
-	ZeroHeuristic(int num_of_agents,
-				  const vector<Path*>& paths,
-				  vector<SingleAgentSolver*>& search_engines,
-				  const vector<ConstraintTable>& initial_constraints,
-				  MDDTable& mdd_helper) : CBSHeuristic(num_of_agents, paths, search_engines, initial_constraints,
-													   mdd_helper)
-	{
-	}
-
 	virtual heuristics_type getType() const
 	{
 		return heuristics_type::ZERO;
 	}
+
+	using CBSHeuristic::CBSHeuristic;
 
 protected:
 	int computeInformedHeuristicsValue(CBSNode& curr, double time_limit) override;
@@ -213,43 +232,26 @@ protected:
 
 class CGHeuristic: public CBSHeuristic {
 public:
-	CGHeuristic(int num_of_agents,
-				const vector<Path*>& paths,
-				vector<SingleAgentSolver*>& search_engines,
-				const vector<ConstraintTable>& initial_constraints,
-				MDDTable& mdd_helper) : CBSHeuristic(num_of_agents, paths, search_engines, initial_constraints,
-													 mdd_helper)
-	{
-	}
-
 	virtual heuristics_type getType() const
 	{
 		return heuristics_type::CG;
 	}
 
+	using CBSHeuristic::CBSHeuristic;
+
 protected:
 	int computeInformedHeuristicsValue(CBSNode& curr, double time_limit) override;
-	virtual void buildCardinalConflictGraph(CBSNode& curr, vector<int>& CG, int& num_of_CGedges);
-	using CBSHeuristic::minimumVertexCover;
-	virtual int minimumVertexCover(const vector<int>& CG, int old_mvc, int cols, int num_of_edges);
+	virtual bool buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& CG, int& num_edges, int& max_edge_weight);
 };
-
 
 class DGHeuristic: public CGHeuristic {
 public:
-	DGHeuristic(int num_of_agents,
-				const vector<Path*>& paths,
-				vector<SingleAgentSolver*>& search_engines,
-				const vector<ConstraintTable>& initial_constraints,
-				MDDTable& mdd_helper) : CGHeuristic(num_of_agents, paths, search_engines, initial_constraints,
-													mdd_helper)
-	{
-	}
-
 	virtual heuristics_type getType() const
 	{
 		return heuristics_type::DG;
 	}
+
+	using CGHeuristic::CGHeuristic;
 
 	virtual void init()
 	{
@@ -267,36 +269,27 @@ public:
 protected:
 	vector<vector<HTable> > lookupTable;
 
-	int computeInformedHeuristicsValue(CBSNode& curr, double time_limit) override;
-	virtual bool buildDependenceGraph(CBSNode& node, vector<int>& CG, int& num_of_CGedges);
-	// virtual int getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal);
+	bool buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& DG, int& num_edges, int& max_edge_weight) override;
 	virtual bool SyncMDDs(const MDD& mdd1, const MDD& mdd2);
 	virtual bool dependent(int a1, int a2, CBSNode& node);
 };
 
 class WDGHeuristic: public DGHeuristic {
 public:
-	WDGHeuristic(int num_of_agents,
-				 const vector<Path*>& paths,
-				 vector<SingleAgentSolver*>& search_engines,
-				 const vector<ConstraintTable>& initial_constraints,
-				 MDDTable& mdd_helper) : DGHeuristic(num_of_agents, paths, search_engines, initial_constraints,
-													 mdd_helper)
-	{
-	}
-
 	virtual heuristics_type getType() const
 	{
 		return heuristics_type::WDG;
 	}
 
+	WDGHeuristic(int num_of_agents, const vector<Path*>& paths, vector<SingleAgentSolver*>& search_engines,
+				 const vector<ConstraintTable>& initial_constraints, MDDTable& mdd_helper) :
+			DGHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper,
+			   			false, false) {}
+
+	using DGHeuristic::DGHeuristic;  // To inherit the other one
+
 protected:
-	int computeInformedHeuristicsValue(CBSNode& curr, double time_limit) override;
-	virtual bool buildWeightedDependenceGraph(CBSNode& node, vector<int>& CG);
+	bool buildGraph(CBSNode& node, vector<vector<tuple<int,int>>>& WDG, int& num_edges, int& max_edge_weight) override;
 	int solve2Agents(int a1, int a2, const CBSNode& node, bool cardinal);
 	int DPForWMVC(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
-	int minimumWeightedVertexCover(const vector<int>& CG);
-	int weightedVertexCover(const vector<int>& CG);
 };
-
-

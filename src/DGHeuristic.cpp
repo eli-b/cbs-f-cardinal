@@ -1,107 +1,79 @@
 #include "CBSHeuristic.h"
 
-int DGHeuristic::computeInformedHeuristicsValue(CBSNode& curr, double time_limit){
-  int h = -1;
-	int num_of_CGedges;
-	vector<int> HG(num_of_agents * num_of_agents, 0); // heuristic graph
-  if (!buildDependenceGraph(curr, HG, num_of_CGedges))
-    return false;
-  // Minimum Vertex Cover
-  if (curr.parent == nullptr || num_of_CGedges > ILP_edge_threshold) // root node of CBS tree or the CG is too large
-    h = minimumVertexCover(HG);
-  else
-    h = minimumVertexCover(HG, curr.parent->h_val, num_of_agents, num_of_CGedges);
-  return h;
-}
 
-
-bool DGHeuristic::buildDependenceGraph(CBSNode& node, vector<int>& CG, int& num_of_CGedges)
+// Returns a vector of vectors where ret[a1_index][a2_index] == ret[a2_index][a1_index] == tuple<1,1> if a1 and a2 have
+// to increase their combined cost to resolve all conflicts between themselves, tuple<0,0> otherwise
+bool DGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& DG, int& num_edges, int& max_edge_weight)
 {
-	for (auto& conflict : node.conflicts)
+	max_edge_weight = 1;
+	num_edges = 0;
+	for (auto& conflict : curr.conflicts)
 	{
 		int a1 = min(conflict->a1, conflict->a2);
 		int a2 = max(conflict->a1, conflict->a2);
 		int idx = a1 * num_of_agents + a2;
-		if (conflict->priority == conflict_priority::CARDINAL)
+		if (conflict->priority == conflict_priority::CARDINAL ||
+			conflict->priority == conflict_priority::PSEUDO_CARDINAL
+			)
 		{
-			node.conflictGraph[idx] = 1;
+			curr.dependenceGraph[idx] = 1;
 		}
-		else if (node.conflictGraph.find(idx) == node.conflictGraph.end())
+		else if (curr.dependenceGraph.find(idx) == curr.dependenceGraph.end())  // Not already found in the map
 		{
-			auto got = lookupTable[a1][a2].find(HTableEntry(a1, a2, &node));
-			if (got != lookupTable[a1][a2].end()) // check the lookup table first
+			auto got = lookupTable[a1][a2].find(HTableEntry(a1, a2, &curr));  // check the lookup table first
+			if (got != lookupTable[a1][a2].end())  // Found in the table
 			{
-				num_memoization++;
-				node.conflictGraph[idx] = got->second;
+				num_memoization_hits++;
+				curr.dependenceGraph[idx] = got->second;
 			}
 			else
 			{
-				node.conflictGraph[idx] = dependent(a1, a2, node) ? 1 : 0;
-				lookupTable[a1][a2][HTableEntry(a1, a2, &node)] = node.conflictGraph[idx];
+				curr.dependenceGraph[idx] = dependent(a1, a2, curr) ? 1 : 0;
+				lookupTable[a1][a2][HTableEntry(a1, a2, &curr)] = curr.dependenceGraph[idx];
 			}
-		}
-		if (conflict->priority != conflict_priority::CARDINAL && node.conflictGraph[idx] > 0)
-		{
-			conflict->priority = conflict_priority::PSEUDO_CARDINAL; // the two agents are dependent, although resolving this conflict might not increase the cost
 		}
 		if ((clock() - start_time) / CLOCKS_PER_SEC > time_limit) // run out of time
 		{
-			runtime_build_dependency_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
+			runtime_build_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
 			return false;
 		}
 	}
 
-	num_of_CGedges = 0;
+	// Upgrade conflicts between dependent agents to pseudo-g-cardinal, if necessary:
+	for (auto& conflict : curr.conflicts)
+	{
+		int a1 = min(conflict->a1, conflict->a2);
+		int a2 = max(conflict->a1, conflict->a2);
+		int idx = a1 * num_of_agents + a2;
+		if (conflict->priority > conflict_priority::CARDINAL &&  // Higher enum value means *lower* priority
+			curr.dependenceGraph[idx] > 0)
+		{
+			if (conflict->priority == conflict_priority::CARDINAL)
+				conflict->priority = conflict_priority::PSEUDO_CARDINAL; // the two agents are dependent, although resolving this conflict won't increase the cost immediately
+		}
+	}
 	for (int i = 0; i < num_of_agents; i++)
 	{
 		for (int j = i + 1; j < num_of_agents; j++)
 		{
-			auto got = node.conflictGraph.find(i * num_of_agents + j);
-			if (got != node.conflictGraph.end() && got->second > 0)
+			auto got = curr.dependenceGraph.find(i * num_of_agents + j);
+			if (got != curr.dependenceGraph.end() && got->second > 0)
 			{
-				CG[i * num_of_agents + j] = got->second;
-				CG[j * num_of_agents + i] = got->second;
-				num_of_CGedges++;
+				if (get<0>(DG[i][j]) == 0)
+					++num_edges;
+				DG[i][j] = make_tuple(got->second, got->second);
+				DG[j][i] = make_tuple(got->second, got->second);
 			}
 		}
 	}
-	runtime_build_dependency_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
+	runtime_build_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
 	return true;
 }
 
 
-// int DGHeuristic::getEdgeWeight(int a1, int a2, CBSNode& node, bool cardinal)
-// {
-// 	HTableEntry newEntry(a1, a2, &node);
-//   HTable::const_iterator got = lookupTable[a1][a2].find(newEntry);
-
-//   if (got != lookupTable[a1][a2].end())
-// 		{
-// 			num_memoization++;
-// 			return got->second;
-// 		}
-
-
-// 	// runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
-// 	if (screen > 2)
-// 	{
-// 		cout << "Agents " << a1 << " and " << a2 << " in node " << node.time_generated << " : ";
-// 	}
-// 	int rst = 0;
-// 	if (cardinal)
-// 		rst = 1;
-// 	else if (!mutex_reasoning) // no mutex reasoning, so we might miss some cardinal conflicts
-// 	{
-//     // merging MDDs
-//     rst = dependent(a1, a2, node)? 0 : 1;
-// 	}
-// 	lookupTable[a1][a2][newEntry] = rst;
-// 	return rst;
-// }
-
 bool DGHeuristic::dependent(int a1, int a2, CBSNode& node) // return true if the two agents are dependent
 {
-	const MDD* mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size()); // get mdds
+	const MDD* mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
 	const MDD* mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
 	if (mdd1->levels.size() > mdd2->levels.size()) // swap
 		std::swap(mdd1, mdd2);
@@ -139,7 +111,6 @@ bool DGHeuristic::SyncMDDs(const MDD &mdd, const MDD& other) // assume mdd.level
 			// Go over all the node's parents and test their coexisting nodes' children for co-existance with this node
 			for (auto parent = (*node)->parents.begin(); parent != (*node)->parents.end(); parent++)
 			{
-				//bool validParent = false;
 				for (const MDDNode* parentCoexistingNode : (*parent)->coexistingNodesFromOtherMdds)
 				{
 					for (const MDDNode* childOfParentCoexistingNode : parentCoexistingNode->children)
@@ -148,7 +119,6 @@ bool DGHeuristic::SyncMDDs(const MDD &mdd, const MDD& other) // assume mdd.level
 							continue;
 						else if ((*node)->location == parentCoexistingNode->location && (*parent)->location == childOfParentCoexistingNode->location) // edge conflict
 							continue;
-						//validParent = true;
 
 						auto it = (*node)->coexistingNodesFromOtherMdds.cbegin();
 						for (; it != (*node)->coexistingNodesFromOtherMdds.cend(); ++it)
@@ -162,19 +132,6 @@ bool DGHeuristic::SyncMDDs(const MDD &mdd, const MDD& other) // assume mdd.level
 						}
 					}
 				}
-				//if (!validParent)
-				//{
-				//	// delete the edge, and continue up the levels if necessary
-				//	SyncMDDNode* p = *parent;
-				//	parent = (*node)->parents.erase(parent);
-				//	p->children.remove((*node));
-				//	if (p->children.empty())
-				//		copy.deleteNode(p);
-				//}
-				//else
-				//{
-				//	parent++;
-				//}
 			}
 			if ((*node)->coexistingNodesFromOtherMdds.empty())
 			{
@@ -202,12 +159,48 @@ void DGHeuristic::copyConflictGraph(CBSNode& child, const CBSNode& parent)
   for (const auto& p : child.paths) {
     changed.insert(p.first);
   }
-  for (auto e : parent.conflictGraph) {
+  for (auto e : parent.dependenceGraph) {
     if (changed.find(e.first / num_of_agents) == changed.end() &&
-				changed.find(e.first % num_of_agents) == changed.end())
-      child.conflictGraph[e.first] = e.second;
+			changed.find(e.first % num_of_agents) == changed.end())
+      child.dependenceGraph[e.first] = e.second;
 
-	}
+  }
 }
 
 
+// Returns a vector of vectors where ret[a1_index][a2_index] == tuple<1,x> if a1 and a2 have
+// to increase their combined cost to resolve all conflicts between themselves,
+// where X is the expected cost increase for a1 from resolving the current conflicts between them, tuple<0,0> otherwise.
+bool NVWDGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& DG, int& num_edges, int& max_edge_weight) {
+	bool succ = DGHeuristic::buildGraph(curr, DG, num_edges, max_edge_weight);
+	if (!succ)
+		return false;
+	// Add the near-vertex weights
+	clock_t t = clock();
+	for (const auto& conflict : curr.conflicts)
+	{
+		if (conflict->priority == conflict_priority::CARDINAL ||
+			conflict->priority == conflict_priority::PSEUDO_CARDINAL
+			)
+		{
+			int a1 = conflict->a1;
+			int a2 = conflict->a2;
+			int W = get<0>(DG[a1][a2]);
+			uint64_t cost_increase_a1 = max(1, get<1>(DG[a1][a2]));  // In case there multiple conflicts between the two agents,
+																		// take the maximum cost increase. This is a minor point because
+																		// the solver would handle it even if we didn't.
+			if (conflict->type == conflict_type::TARGET ||
+				(!target_reasoning && conflict->type == conflict_type::STANDARD &&
+				 get<3>(conflict->constraint1.front()) > conflict->a1_path_cost)
+				 ) {  // A g-cardinal target conflict (at least semi-f-cardinal with the MVC heuristic)
+				// a1 is the agent that's at its target
+				int time_step = get<3>(conflict->constraint1.front());
+				cost_increase_a1 = time_step + 1 - conflict->a1_path_cost;
+			}
+			DG[a1][a2] = make_tuple(W, cost_increase_a1);
+			DG[a2][a1] = make_tuple(W, 1);
+		}
+	}
+	runtime_build_graph += (double) (clock() - t) / CLOCKS_PER_SEC;
+	return true;
+}

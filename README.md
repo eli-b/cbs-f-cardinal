@@ -2,6 +2,10 @@
 Variants of Conflict-Based Search.
  
  The code requires the external library BOOST (https://www.boost.org/).
+
+ OSI (https://github.com/coin-or/Osi), as abstract interface to a MIP solver, is also required.
+
+ Currently, Gurobi (https://www.gurobi.com/) is required as the concrete solver library, but integrating another library should be easy.
  
 ![overview](./overview.png "overview")
   
