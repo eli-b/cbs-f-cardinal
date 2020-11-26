@@ -167,7 +167,6 @@ public:
 	virtual heuristics_type getType() const = 0;  // Just for printing its name. Consider just returning a string instead.
 
 protected:
-	int screen = 0;
 	int num_of_agents;
 	int ILP_node_threshold = 5; // run ILP if #nodes in the conflict graph is larger than the threshold
 	int ILP_edge_threshold = 10; // run ILP if #edges in the conflict graph is larger than the threshold

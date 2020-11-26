@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 		("output,o", po::value<string>(), "output file for schedule")
 		("agentNum,k", po::value<int>()->default_value(0), "number of agents")
 		("cutoffTime,t", po::value<double>()->default_value(7200), "cutoff time (seconds)")
-		("screen,s", po::value<int>()->default_value(1), "screen option (0: none; 1: results; 2:all)")
+		("screen,s", po::value<int>()->default_value(1), "screen option (0: none; 1: results; 2:all, 3:all also for WDG subsolver)")
 		("seed,d", po::value<int>()->default_value(0), "random seed")
 		// params for instance generators
 		("rows", po::value<int>()->default_value(0), "number of rows")
