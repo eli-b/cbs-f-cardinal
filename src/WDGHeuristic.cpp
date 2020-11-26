@@ -260,7 +260,7 @@ int WDGHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 	CBS cbs(engines, constraints, initial_paths, heuristics_type::CG, screen);
 	cbs.setPrioritizeConflicts(PC);
 	cbs.setDisjointSplitting(disjoint_splitting);
-	cbs.setBypass(false); // I guess that bypassing does not help two-agent path finding???
+	cbs.setBypass(bypass);
 	cbs.setRectangleReasoning(rectangle_reasoning);
 	cbs.setCorridorReasoning(corridor_reasoning);
 	cbs.setTargetReasoning(target_reasoning);

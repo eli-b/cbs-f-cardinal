@@ -40,17 +40,18 @@ int main(int argc, char** argv)
 
 		// params for CBS
 		("heuristics", po::value<string>()->default_value("CG"), "heuristics for the high-level search (Zero, CG,DG, WDG)")
-		("prioritizingConflicts", po::value<bool>()->default_value(true),
-		 "conflict prioritization. If true, conflictSelection is used as a tie-breaking rule.")
+		("prioritizingConflicts", po::value<string>()->default_value("g-cardinal"),
+		 "conflict prioritization (off, g-cardinal). If not off, conflictSelection is used.")
 		("conflictSelection", po::value<string>()->default_value("Random"),
 		 "conflict selection (Random\n Earliest\n Conflicts: most conflicts with others\n MConstraints: most constraints\n "
    		 "FConstraints: fewest constraints\n Width: thinnest MDDs\n Singletons: most singletons in MDDs)")
 		("nodeSelection", po::value<string>()->default_value("Random"),
 		 "conflict selection (Random\n H: smallest h value\n Depth: depth-first manner\n Conflicts: fewest conflicts\n "
    		 "ConflictPairs: fewest conflicting pairs of agents\n MVC: MVC on the conflict graph)")
-		("bypass", po::value<bool>()->default_value(false), "Bypass1")
+		("bypass", po::value<string>()->default_value("off"), "Bypass1 (off,g-bypass)")
 		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")
 		("rectangleReasoning", po::value<bool>()->default_value(false), "Using rectangle reasoning")
+		("rectangleReasoningForHeuristic", po::value<bool>()->default_value(false), "Using rectangle reasoning for WDG")
 		("corridorReasoning", po::value<bool>()->default_value(false), "Using corridor reasoning")
 		("mutexReasoning", po::value<string>()->default_value("None"), "Using mutex reasoning (C, None)")
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
@@ -132,7 +133,8 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	if (n == node_selection::NODE_DEPTH && vm["bypass"].as<bool>()) // When using depth as the node tie breaking rule, we cannot use bypassing
+	if (n == node_selection::NODE_DEPTH && vm["bypass"].as<string>() != "off") // When using depth as the node tie
+																			   // breaking rule, we cannot use bypassing
 	{
 		cout << "When using bypassing, we cannot use DEPTH as the node tie breaking rule!" << endl;
 		return -1;
@@ -149,6 +151,28 @@ int main(int argc, char** argv)
       return -1;
     }
 
+	conflict_prioritization pc;
+	if (vm["prioritizingConflicts"].as<string>() == "g-cardinal")
+		pc = conflict_prioritization::BY_G_CARDINAL;
+	else if (vm["prioritizingConflicts"].as<string>() == "off")
+		pc = conflict_prioritization::OFF;
+	else
+	{
+		cout << "WRONG conflict prioritization strategy! (" << vm["prioritizingConflicts"].as<string>() << ")" << endl;
+		return -1;
+	}
+
+	bypass_support bp;
+	if (vm["bypass"].as<string>() == "off")
+		bp = bypass_support::NONE;
+	else if (vm["bypass"].as<string>() == "g-bypass")
+		bp = bypass_support::G_BYPASS;
+	else
+	{
+		cout << "WRONG bypass strategy! (" << vm["bypass"].as<string>() << ")" << endl;
+		return -1;
+	}
+
 	std::srand(vm["seed"].as<int>());
 
 	///////////////////////////////////////////////////////////////////////////
@@ -162,10 +186,11 @@ int main(int argc, char** argv)
 	//////////////////////////////////////////////////////////////////////
 	// initialize the solver
 	CBS cbs(instance, vm["sipp"].as<bool>(), h, vm["screen"].as<int>());
-	cbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
+	cbs.setPrioritizeConflicts(pc);
 	cbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
-	cbs.setBypass(vm["bypass"].as<bool>());
+	cbs.setBypass(bp);
 	cbs.setRectangleReasoning(vm["rectangleReasoning"].as<bool>());
+	cbs.setRectangleReasoningForHeuristic(vm["rectangleReasoningForHeuristic"].as<bool>());
 	cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
 	cbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
 	cbs.setMutexReasoning(m);

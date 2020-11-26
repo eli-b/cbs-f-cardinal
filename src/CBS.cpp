@@ -709,13 +709,14 @@ string CBS::getSolverName() const
 	string name;
 	if (disjoint_splitting)
 		name += "Disjoint ";
+
+	if (PC == conflict_prioritization::OFF)
+		name += "CBS";
+	else if (PC == conflict_prioritization::BY_G_CARDINAL)
+		name += "ICBS";
 	switch (heuristic_helper->getType())
 	{
 	case heuristics_type::ZERO:
-		if (PC)
-			name += "ICBS";
-		else
-			name += "CBS";
 		break;
 	case heuristics_type::CG:
 		name += "CG";
@@ -737,7 +738,8 @@ string CBS::getSolverName() const
 		name += "+T";
 	if (mutex_helper.strategy != mutex_strategy::N_MUTEX)
 		name += "+MP";
-	if (bypass)
+
+	if (bypass == bypass_support::G_BYPASS)
 		name += "+BP";
 	name += " with " + search_engines[0]->getName();
 	return name;
@@ -793,7 +795,7 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 			break;
 		}
 
-		if (PC) // prioritize conflicts
+		if (PC != conflict_prioritization::OFF) // prioritize conflicts
 			classifyConflicts(*curr);
 
 		if (!curr->h_computed) // heuristics has not been computed yet
@@ -898,7 +900,8 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 				{// found a solution (and finish the while look)
 					break;
 				}
-				else if (bypass && child[i]->g_val == curr->g_val && child[i]->tie_breaking < curr->tie_breaking) // Bypass1
+				else if (bypass != bypass_support::NONE &&
+						 (child[i]->g_val == curr->g_val && child[i]->tie_breaking < curr->tie_breaking)) // g-bypass
 				{
 					if (i == 1 && !solved[0])
 						continue;
@@ -941,7 +944,7 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 					delete child[i];
 					child[i] = nullptr;
 				}
-				if (PC) // prioritize conflicts
+				if (PC != conflict_prioritization::OFF) // prioritize conflicts
 					classifyConflicts(*curr); // classify the new-detected conflicts
 			}
 			else

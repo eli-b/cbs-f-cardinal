@@ -129,14 +129,17 @@ typedef unordered_map<HTableEntry, int, HTableEntry::Hasher, HTableEntry::EqNode
 class CBSHeuristic
 {
 public:
+	// Parameters for the WDG heuristic. TODO: Find a way to clean the API.
 	bool rectangle_reasoning; // using rectangle reasoning in the subproblem solver
 	bool corridor_reasoning; // using corridor reasoning in the subproblem solver
 	bool target_reasoning; // using target reasoning in the subproblem solver
 	mutex_strategy mutex_reasoning; // using mutex reasoning in the subproblem solver
 	bool disjoint_splitting; // using disjoint splitting in the subproblem solver
-	bool PC; // prioritize conflicts
+	bypass_support bypass; // using g-bypassing in the subproblem solver
+	conflict_prioritization PC; // using prioritizing conflicts in the subproblem solver, and possibly choosing f-cardinal conflicts
 	conflict_selection conflict_selection_rule;  // for the subproblem solver
 	node_selection node_selection_rule;  // for the subproblem solver
+	int screen = 0;  // Mostly for subsolver
 
 	double runtime_build_dependency_graph = 0;
 	double runtime_solve_MVC = 0;

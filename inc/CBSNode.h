@@ -3,7 +3,11 @@
 #include "common.h"
 #include "Conflict.h"
 
+enum conflict_prioritization { OFF, BY_G_CARDINAL };
+
 enum node_selection { NODE_RANDOM, NODE_H, NODE_DEPTH, NODE_CONFLICTS, NODE_CONFLICTPAIRS, NODE_MVC };
+
+enum bypass_support { NONE, G_BYPASS };
 
 class CBSNode
 {
