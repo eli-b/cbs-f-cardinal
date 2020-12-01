@@ -7,7 +7,7 @@
 //#include "CBS.h"
 #include <coin/OsiGrbSolverInterface.hpp>
 
-enum heuristics_type { ZERO, CG, DG, WDG, HEURISTICS_COUNT };
+enum heuristics_type { ZERO, CG, NVWCG, DG, NVWDG, WDG, NVWEWDG, HEURISTICS_COUNT };
 
 
 struct HTableEntry // look-up table entry 
@@ -293,4 +293,53 @@ protected:
 	bool buildGraph(CBSNode& node, vector<vector<tuple<int,int>>>& WDG, int& num_edges, int& max_edge_weight) override;
 	int solve2Agents(int a1, int a2, const CBSNode& node, bool cardinal);
 	int DPForWMVC(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
+};
+
+
+class NVWCGHeuristic: public CGHeuristic {
+public:
+	virtual heuristics_type getType() const
+	{
+		return heuristics_type::NVWCG;
+	}
+
+	NVWCGHeuristic(int num_of_agents, const vector<Path*>& paths, vector<SingleAgentSolver*>& search_engines,
+				   const vector<ConstraintTable>& initial_constraints, MDDTable& mdd_helper) :
+			CGHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper,
+						false, true) {}
+
+protected:
+	bool buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& CG, int& num_edges, int& max_edge_weight) override;
+};
+
+class NVWDGHeuristic: public DGHeuristic {
+public:
+	virtual heuristics_type getType() const
+	{
+		return heuristics_type::NVWDG;
+	}
+
+	NVWDGHeuristic(int num_of_agents, const vector<Path*>& paths, vector<SingleAgentSolver*>& search_engines,
+				   const vector<ConstraintTable>& initial_constraints, MDDTable& mdd_helper) :
+			DGHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper,
+						false, true) {}
+
+protected:
+	bool buildGraph(CBSNode& node, vector<vector<tuple<int,int>>>& DG, int& num_edges, int& max_edge_weight) override;
+};
+
+class NVWEWDGHeuristic: public WDGHeuristic {
+public:
+	virtual heuristics_type getType() const
+	{
+		return heuristics_type::NVWEWDG;
+	}
+
+	NVWEWDGHeuristic(int num_of_agents, const vector<Path*>& paths, vector<SingleAgentSolver*>& search_engines,
+					 const vector<ConstraintTable>& initial_constraints, MDDTable& mdd_helper) :
+			WDGHeuristic(num_of_agents, paths, search_engines, initial_constraints, mdd_helper,
+						 false, true) {}
+
+protected:
+	bool buildGraph(CBSNode& node, vector<vector<tuple<int,int>>>& WDG, int& num_edges, int& max_edge_weight) override;
 };

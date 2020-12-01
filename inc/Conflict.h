@@ -53,23 +53,28 @@ public:
   int loc2;
   int loc2_to=-1;
 
-	void vertexConflict(int a1, int a2, int v, int t)
+	// For NVW heuristics
+	int a1_path_cost;
+
+	void vertexConflict(int a1, int a2, int v, int t, int a1_path_cost)
 	{
 		constraint1.clear();
 		constraint2.clear();
 		this->a1 = a1;
 		this->a2 = a2;
+		this->a1_path_cost = a1_path_cost;
 		this->constraint1.emplace_back(a1, v, -1, t, constraint_type::VERTEX);
 		this->constraint2.emplace_back(a2, v, -1, t, constraint_type::VERTEX);
 		type = conflict_type::STANDARD;
 	}
 		
-	void edgeConflict(int a1, int a2, int v1, int v2, int t)
+	void edgeConflict(int a1, int a2, int v1, int v2, int t, int a1_path_cost)
 	{
 		constraint1.clear();
 		constraint2.clear();
 		this->a1 = a1;
 		this->a2 = a2;
+		this->a1_path_cost = a1_path_cost;
 		this->constraint1.emplace_back(a1, v1, v2, t, constraint_type::EDGE);
 		this->constraint2.emplace_back(a2, v2, v1, t, constraint_type::EDGE);
 		type = conflict_type::STANDARD;
@@ -98,13 +103,15 @@ public:
 	}
 
 
-	void targetConflict(int a1, int a2, int v, int t)
+	void targetConflict(int a1, int a2, int v, int t, int a1_path_cost)
 	{
 		constraint1.clear();
 		constraint2.clear();
 		this->a1 = a1;
 		this->a2 = a2;
-		this->constraint1.emplace_back(a1, v, -1, t, constraint_type::LEQLENGTH);
+		this->a1_path_cost = a1_path_cost;
+		this->constraint1.emplace_back(a1, v, -1, t, constraint_type::LEQLENGTH);  // This is first to enable bypassing
+																				   // to skip generating the second child
 		this->constraint2.emplace_back(a1, v, -1, t, constraint_type::GLENGTH);
 		type = conflict_type::TARGET;
 	}

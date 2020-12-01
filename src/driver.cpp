@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 		("warehouseWidth", po::value<int>()->default_value(0), "width of working stations on both sides, for generating instances")
 
 		// params for CBS
-		("heuristics", po::value<string>()->default_value("CG"), "heuristics for the high-level search (Zero, CG,DG, WDG)")
+		("heuristics", po::value<string>()->default_value("CG"), "heuristics for the high-level search (Zero, CG, NVWCG, DG, NVWDG, WDG, NVWEWDG)")
 		("prioritizingConflicts", po::value<string>()->default_value("g-cardinal"),
 		 "conflict prioritization (off, g-cardinal). If not off, conflictSelection is used.")
 		("conflictSelection", po::value<string>()->default_value("Random"),
@@ -83,10 +83,16 @@ int main(int argc, char** argv)
 		h = heuristics_type::ZERO;
 	else if (vm["heuristics"].as<string>() == "CG")
 		h = heuristics_type::CG;
+	else if (vm["heuristics"].as<string>() == "NVWCG")
+		h = heuristics_type::NVWCG;
 	else if (vm["heuristics"].as<string>() == "DG")
 		h = heuristics_type::DG;
+	else if (vm["heuristics"].as<string>() == "NVWDG")
+		h = heuristics_type::NVWDG;
 	else if (vm["heuristics"].as<string>() == "WDG")
 		h = heuristics_type::WDG;
+	else if (vm["heuristics"].as<string>() == "NVWEWDG")
+		h = heuristics_type::NVWEWDG;
 	else
 	{
 		cout << "WRONG heuristics strategy!" << endl;

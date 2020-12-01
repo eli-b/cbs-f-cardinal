@@ -78,17 +78,20 @@ void CBS::findConflicts(CBSNode& curr, int a1, int a2)
 		if (loc1 == loc2)
 		{
 			shared_ptr<Conflict> conflict(new Conflict());
-			if (target_reasoning && paths[a1]->size() == timestep + 1)
+			if (target_reasoning && paths[a1]->size() - 1 == timestep)
 			{
-				conflict->targetConflict(a1, a2, loc1, timestep);
+				conflict->targetConflict(a1, a2, loc1, timestep, paths[a1]->size() - 1);
 			}
-			else if (target_reasoning && paths[a2]->size() == timestep + 1)
+			else if (target_reasoning && paths[a2]->size() - 1 == timestep)
 			{
-				conflict->targetConflict(a2, a1, loc1, timestep);
+				conflict->targetConflict(a2, a1, loc1, timestep, paths[a2]->size() - 1);
 			}
 			else
 			{
-				conflict->vertexConflict(a1, a2, loc1, timestep);
+				if (paths[a1]->size() - 1 == timestep)
+					conflict->vertexConflict(a1, a2, loc1, timestep, paths[a1]->size() - 1);
+				else
+					conflict->vertexConflict(a2, a1, loc1, timestep, paths[a2]->size() - 1);
 			}
 			assert(!conflict->constraint1.empty());
 			assert(!conflict->constraint2.empty());
@@ -99,7 +102,7 @@ void CBS::findConflicts(CBSNode& curr, int a1, int a2)
 				 && loc2 == paths[a1]->at(timestep + 1).location)
 		{
 			shared_ptr<Conflict> conflict(new Conflict());
-			conflict->edgeConflict(a1, a2, loc1, loc2, timestep + 1);
+			conflict->edgeConflict(a1, a2, loc1, loc2, timestep + 1, paths[a1]->size() - 1);
 			assert(!conflict->constraint1.empty());
 			assert(!conflict->constraint2.empty());
 			curr.unknownConf.push_back(conflict); // edge conflict
@@ -107,8 +110,8 @@ void CBS::findConflicts(CBSNode& curr, int a1, int a2)
 	}
 	if (paths[a1]->size() != paths[a2]->size())
 	{
-		int a1_ = paths[a1]->size() < paths[a2]->size() ? a1 : a2;
-		int a2_ = paths[a1]->size() < paths[a2]->size() ? a2 : a1;
+		int a1_ = paths[a1]->size() < paths[a2]->size() ? a1 : a2;  // The one with the shorter path
+		int a2_ = paths[a1]->size() < paths[a2]->size() ? a2 : a1;  // The one with the longer path
 		int loc1 = paths[a1_]->back().location;
 		for (size_t timestep = min_path_length; timestep < paths[a2_]->size(); timestep++)
 		{
@@ -117,9 +120,9 @@ void CBS::findConflicts(CBSNode& curr, int a1, int a2)
 			{
 				shared_ptr<Conflict> conflict(new Conflict());
 				if (target_reasoning)
-					conflict->targetConflict(a1_, a2_, loc1, timestep);
+					conflict->targetConflict(a1_, a2_, loc1, timestep, paths[a1_]->size() - 1);
 				else
-					conflict->vertexConflict(a1_, a2_, loc1, timestep);
+					conflict->vertexConflict(a1_, a2_, loc1, timestep, paths[a1_]->size() - 1);
 				assert(!conflict->constraint1.empty());
 				assert(!conflict->constraint2.empty());
 				curr.unknownConf.push_front(conflict); // It's at least a semi conflict			
@@ -727,6 +730,15 @@ string CBS::getSolverName() const
 	case heuristics_type::WDG:
 		name += "WDG";
 		break;
+	case heuristics_type::NVWCG:
+		name += "NVWCG";
+		break;
+	case heuristics_type::NVWDG:
+		name += "NVWDG";
+		break;
+	case heuristics_type::NVWEWDG:
+		name += "NVWEWDG";
+		break;
 	case HEURISTICS_COUNT:
 		break;
 	}
@@ -1012,7 +1024,7 @@ CBS::CBS(vector<SingleAgentSolver*>& search_engines,
 		corridor_helper(search_engines, initial_constraints)
 {
 	num_of_agents = (int) search_engines.size();
-  init_heuristic(heuristic);
+	init_heuristic(heuristic);
 	mutex_helper.search_engines = search_engines;
 }
 
@@ -1040,7 +1052,7 @@ CBS::CBS(const Instance& instance, bool sipp, heuristics_type heuristic, int scr
 	}
 	runtime_preprocessing = (double) (clock() - t) / CLOCKS_PER_SEC;
 
-  init_heuristic(heuristic);
+	init_heuristic(heuristic);
 
 	mutex_helper.search_engines = search_engines;
 
@@ -1051,14 +1063,28 @@ CBS::CBS(const Instance& instance, bool sipp, heuristics_type heuristic, int scr
 }
 
 void CBS::init_heuristic(heuristics_type heuristic){
-  if (heuristic == heuristics_type::ZERO){
-    heuristic_helper = new ZeroHeuristic(search_engines[0]->instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper);
-  }else if(heuristic == heuristics_type::CG){
-    heuristic_helper = new CGHeuristic(search_engines[0]->instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper);
-  }else if(heuristic == heuristics_type::DG){
-    heuristic_helper = new DGHeuristic(search_engines[0]->instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper);
-  }else if(heuristic == heuristics_type::WDG){
-    heuristic_helper = new WDGHeuristic(search_engines[0]->instance.getDefaultNumberOfAgents(), paths, search_engines, initial_constraints, mdd_helper);
+  if (heuristic == heuristics_type::ZERO) {
+    heuristic_helper = new ZeroHeuristic(search_engines[0]->instance.getDefaultNumberOfAgents(), paths, search_engines,
+										 initial_constraints, mdd_helper);
+  } else if (heuristic == heuristics_type::CG) {
+    heuristic_helper = new CGHeuristic(search_engines[0]->instance.getDefaultNumberOfAgents(), paths, search_engines,
+									   initial_constraints, mdd_helper);
+  } else if (heuristic == heuristics_type::NVWCG) {
+	  heuristic_helper = new NVWCGHeuristic(search_engines[0]->instance.getDefaultNumberOfAgents(), paths, search_engines,
+										 	initial_constraints, mdd_helper);
+  } else if (heuristic == heuristics_type::DG) {
+    heuristic_helper = new DGHeuristic(search_engines[0]->instance.getDefaultNumberOfAgents(), paths, search_engines,
+									   initial_constraints, mdd_helper);
+  } else if (heuristic == heuristics_type::NVWDG) {
+	  heuristic_helper = new NVWDGHeuristic(search_engines[0]->instance.getDefaultNumberOfAgents(), paths, search_engines,
+										 initial_constraints, mdd_helper);
+  } else if (heuristic == heuristics_type::WDG) {
+    heuristic_helper = new WDGHeuristic(search_engines[0]->instance.getDefaultNumberOfAgents(), paths, search_engines,
+										initial_constraints, mdd_helper);
+  }
+  else if (heuristic == heuristics_type::NVWEWDG) {
+  	heuristic_helper = new NVWEWDGHeuristic(search_engines[0]->instance.getDefaultNumberOfAgents(), paths, search_engines,
+											initial_constraints, mdd_helper);
   }
 }
 
