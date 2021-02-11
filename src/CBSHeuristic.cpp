@@ -371,33 +371,42 @@ CBSHeuristic::CBSHeuristic(int num_of_agents, const vector<Path*>& paths, vector
 						   mvc_model(false),  // Use an env that's global, not local to this instance
 						   initial_constraints(initial_constraints), mdd_helper(mdd_helper)
 {
-	auto gurobi_env = mvc_model.getEnvironmentPtr();  // Note small e in type. This is the C interface
-	GRBsetintparam(gurobi_env, GRB_INT_PAR_OUTPUTFLAG, 0);  // Turn off logging
-																  // (note the coin message handler's level should be
-																  // set to 0 otherwise this is overridden)
-	GRBsetintparam(gurobi_env, GRB_INT_PAR_THREADS, 1);  // Use a single thread - we have generally simple models,
-															   // and there's an overhead to running extra threads.
-															   // It's also a more fair comparison with older algorithms.
-	auto coin_message_handler = mvc_model.messageHandler();
-	coin_message_handler->setLogLevel(0);
-
-	// Init the model's columns (variables)
-	CoinPackedVector empty;  // Copied from https://github.com/coin-or/Osi/blob/releases/0.108.6/Osi/src/OsiCommonTest/OsiSolverInterfaceTest.cpp:339
-	for (int i = 0; i < num_of_agents; ++i)
+	try
 	{
-		if (max_vertex_weight_is_1)
-			mvc_model.addCol(empty, 0, 1, 1);
-		else
-			mvc_model.addCol(empty, 0, mvc_model.getInfinity(), 1);
-		mvc_model.setInteger(i);
-	}
-	// Add num_of_agents^2 aux binary variables after the decision variables. They don't participate in the objective function.
-	if (need_aux_variables) {
-		for (int i = 0; i < num_of_agents * num_of_agents; ++i)
+		auto gurobi_env = mvc_model.getEnvironmentPtr();  // Note small e in type. This is the C interface
+		GRBsetintparam(gurobi_env, GRB_INT_PAR_OUTPUTFLAG, 0);  // Turn off logging
+		// (note the coin message handler's level should be
+		// set to 0 otherwise this is overridden)
+		GRBsetintparam(gurobi_env, GRB_INT_PAR_THREADS, 1);  // Use a single thread - we have generally simple models,
+		// and there's an overhead to running extra threads.
+		// It's also a more fair comparison with older algorithms.
+		auto coin_message_handler = mvc_model.messageHandler();
+		coin_message_handler->setLogLevel(0);
+
+		// Init the model's columns (variables)
+		CoinPackedVector empty;  // Copied from https://github.com/coin-or/Osi/blob/releases/0.108.6/Osi/src/OsiCommonTest/OsiSolverInterfaceTest.cpp:339
+		for (int i = 0; i < num_of_agents; ++i)
 		{
-			mvc_model.addCol(empty, 0, 1, 0);
-			mvc_model.setInteger(num_of_agents + i);
+			if (max_vertex_weight_is_1)
+				mvc_model.addCol(empty, 0, 1, 1);
+			else
+				mvc_model.addCol(empty, 0, mvc_model.getInfinity(), 1);
+			mvc_model.setInteger(i);
 		}
+		// Add num_of_agents^2 aux binary variables after the decision variables. They don't participate in the objective function.
+		if (need_aux_variables)
+		{
+			for (int i = 0; i < num_of_agents * num_of_agents; ++i)
+			{
+				mvc_model.addCol(empty, 0, 1, 0);
+				mvc_model.setInteger(num_of_agents + i);
+			}
+		}
+	}
+	catch (CoinError& error)
+	{
+		std::cerr << error.message() << std::endl;
+		throw;
 	}
 }
 

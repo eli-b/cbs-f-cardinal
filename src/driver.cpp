@@ -190,39 +190,47 @@ int main(int argc, char** argv)
 
 	int runs = vm["restart"].as<int>();
 	
-	//////////////////////////////////////////////////////////////////////
-	// initialize the solver
-	CBS cbs(instance, vm["sipp"].as<bool>(), h, vm["screen"].as<int>());
-	cbs.setPrioritizeConflicts(pc);
-	cbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
-	cbs.setBypass(bp);
-	cbs.setRectangleReasoning(vm["rectangleReasoning"].as<bool>());
-	cbs.setRectangleReasoningForHeuristic(vm["rectangleReasoningForHeuristic"].as<bool>());
-	cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
-	cbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
-	cbs.setMutexReasoning(m);
-	cbs.setConflictSelectionRule(conflict);
-	cbs.setNodeSelectionRule(n);
-	cbs.setSeed(seed);
-	//////////////////////////////////////////////////////////////////////
-	// run
-	double runtime = 0;
-	int min_f_val = 0;
-	for (int i = 0; i < runs; i++)
+	try
 	{
-		cbs.clear();
-		cbs.solve(vm["cutoffTime"].as<double>(), min_f_val);
-		runtime += cbs.runtime;
-		if (cbs.solution_found)
-			break;
-		min_f_val = (int) cbs.min_f_val;
-		cbs.randomRoot = true;
+		//////////////////////////////////////////////////////////////////////
+		// initialize the solver
+		CBS cbs(instance, vm["sipp"].as<bool>(), h, vm["screen"].as<int>());
+		cbs.setPrioritizeConflicts(pc);
+		cbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
+		cbs.setBypass(bp);
+		cbs.setRectangleReasoning(vm["rectangleReasoning"].as<bool>());
+		cbs.setRectangleReasoningForHeuristic(vm["rectangleReasoningForHeuristic"].as<bool>());
+		cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
+		cbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
+		cbs.setMutexReasoning(m);
+		cbs.setConflictSelectionRule(conflict);
+		cbs.setNodeSelectionRule(n);
+		cbs.setSeed(seed);
+		//////////////////////////////////////////////////////////////////////
+		// run
+		double runtime = 0;
+		int min_f_val = 0;
+		for (int i = 0; i < runs; i++)
+		{
+			cbs.clear();
+			cbs.solve(vm["cutoffTime"].as<double>(), min_f_val);
+			runtime += cbs.runtime;
+			if (cbs.solution_found)
+				break;
+			min_f_val = (int) cbs.min_f_val;
+			cbs.randomRoot = true;
+		}
+		cbs.runtime = runtime;
+		if (vm.count("output"))
+			cbs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
+		cbs.clearSearchEngines();
+		return 0;
 	}
-	cbs.runtime = runtime;
-	if (vm.count("output"))
-		cbs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
-	cbs.clearSearchEngines();
-	return 0;
+	catch (CoinError& error)
+	{
+		std::cerr << error.message() << std::endl;
+		throw;
+	}
 
 }
 
