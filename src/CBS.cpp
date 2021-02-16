@@ -654,7 +654,8 @@ void CBS::saveResults(const string& fileName, const string& instanceName) const
 	{
 		ofstream addHeads(fileName);
 		addHeads << "runtime,#high-level expanded,#high-level generated,#low-level expanded,#low-level generated," <<
-				 "solution cost,min f value,root g value, root f value," <<
+				 "solution cost,min f-value,root g-value,root f-value," <<
+				 "time limit," <<
 				 "#adopt bypasses," <<
 				 "standard conflicts,rectangle conflicts,corridor conflicts,target conflicts,mutex conflicts," <<
 				 "#merge MDDs,#solve 2 agents,#memoization," <<
@@ -663,7 +664,7 @@ void CBS::saveResults(const string& fileName, const string& instanceName) const
 				 "runtime of rectangle conflicts,runtime of corridor conflicts,runtime of mutex conflicts," <<
 				 "runtime of building MDDs,runtime of building constraint tables,runtime of building CATs," <<
 				 "runtime of path finding,runtime of generating child nodes," <<
-				 "preprocessing runtime,solver name,instance name" << endl;
+				 "preprocessing runtime,Max Mem (kB),solver name,instance name,number of agents" << endl;
 		addHeads.close();
 	}
 	ofstream stats(fileName, std::ios::app);
@@ -672,7 +673,7 @@ void CBS::saveResults(const string& fileName, const string& instanceName) const
 		  num_LL_expanded << "," << num_LL_generated << "," <<
 
 		  solution_cost << "," << min_f_val << "," << dummy_start->g_val << "," << dummy_start->g_val + dummy_start->h_val << "," <<
-
+		  time_limit << "," <<
 		  num_adopt_bypass << "," <<
 
 		  num_standard_conflicts << "," << num_rectangle_conflicts << "," << num_corridor_conflicts << "," << num_target_conflicts << ","
@@ -689,7 +690,7 @@ void CBS::saveResults(const string& fileName, const string& instanceName) const
 		  mdd_helper.accumulated_runtime << "," << runtime_build_CT << "," << runtime_build_CAT << "," <<
 		  runtime_path_finding << "," << runtime_generate_child << "," <<
 
-		  runtime_preprocessing << "," << getSolverName() << "," << instanceName << endl;
+		  runtime_preprocessing << "," << max_mem << "," << getSolverName() << "," << instanceName << "," << num_of_agents << endl;
 	stats.close();
 }
 

@@ -8,6 +8,7 @@
 * Solve a MAPF instance on 2D grids.
 */
 #include <cstdlib>  // std::srand
+#include <fstream>
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
 #include "CBS.h"
@@ -221,10 +222,33 @@ int main(int argc, char** argv)
 			cbs.randomRoot = true;
 		}
 		cbs.runtime = runtime;
+
+		// save data:
+		// 1. Get max memory
+		pid_t pid = getpid();
+		char my_proc_status_filename[100];
+		sprintf(my_proc_status_filename, "/proc/%d/status", pid);
+		std::ifstream my_proc_status_file(my_proc_status_filename);
+		string line;
+		do {
+			std::getline(my_proc_status_file, line);
+		} while ((strncmp(line.data(), "VmPeak:", 7) != 0) && (line.size() != 0));
+		if (line.size() != 0) {
+			my_proc_status_file.close();
+			char max_mem_chars[100];
+			sscanf(line.data(), "VmPeak:\t%s kB", max_mem_chars);  // max_mem_chars will catch some leading spaces
+			cbs.max_mem = max_mem_chars;
+		} else
+			cbs.max_mem = "VmPeak line not found :(";
+
+		// 2. save results to file
 		if (vm.count("output"))
 			cbs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
 		cbs.clearSearchEngines();
-		return 0;
+		if (cbs.solution_found)
+			return 0;
+		else
+			return 1;
 	}
 	catch (CoinError& error)
 	{

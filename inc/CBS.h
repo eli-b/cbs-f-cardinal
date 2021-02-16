@@ -43,6 +43,8 @@ public:
   double min_f_val;
   double focal_list_threshold;
 
+  string max_mem;  // Set externally
+
   /////////////////////////////////////////////////////////////////////////////////////////
   // set params
   void setPrioritizeConflicts(conflict_prioritization pc) {
