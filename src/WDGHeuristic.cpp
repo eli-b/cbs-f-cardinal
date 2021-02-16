@@ -160,7 +160,7 @@ int WDGHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 			ConstraintTable(initial_constraints[a2]) };
 	constraints[0].build(node, a1);
 	constraints[1].build(node, a2);
-	CBS cbs(engines, constraints, initial_paths, heuristics_type::CG, screen == 3 ? 2 : 1);
+	CBS cbs(engines, constraints, initial_paths, heuristics_type::CG, screen == 3 ? 2 : 0);
 	cbs.setPrioritizeConflicts(PC);
 	cbs.setDisjointSplitting(disjoint_splitting);
 	cbs.setBypass(bypass);
