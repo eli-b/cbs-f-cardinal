@@ -58,6 +58,7 @@ int main(int argc, char** argv)
 		("corridorReasoning", po::value<bool>()->default_value(false), "Using corridor reasoning")
 		("mutexReasoning", po::value<string>()->default_value("None"), "Using mutex reasoning (C, None)")
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
+		("targetReasoningForHeuristic", po::value<bool>()->default_value(false), "Using target reasoning for WDG")
 		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
 		("sipp", po::value<bool>()->default_value(false), "using sipp as the single agent solver")
 		;
@@ -205,6 +206,7 @@ int main(int argc, char** argv)
 		cbs.setRectangleReasoningForHeuristic(vm["rectangleReasoningForHeuristic"].as<bool>());
 		cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
 		cbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
+		cbs.setTargetReasoningForHeuristic(vm["targetReasoningForHeuristic"].as<bool>());
 		cbs.setMutexReasoning(m);
 		cbs.setConflictSelectionRule(conflict);
 		cbs.setNodeSelectionRule(n);

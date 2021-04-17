@@ -54,7 +54,8 @@ public:
   void setRectangleReasoning(bool r) { rectangle_helper.use_rectangle_reasoning = r; }
   void setRectangleReasoningForHeuristic(bool r) { heuristic_helper->rectangle_reasoning = r; }
   void setCorridorReasoning(bool c) { corridor_helper.use_corridor_reasoning = c; heuristic_helper->corridor_reasoning = c; }
-  void setTargetReasoning(bool t) { target_reasoning = t; heuristic_helper->target_reasoning = t; }
+  void setTargetReasoning(bool t) { target_reasoning = t; }
+  void setTargetReasoningForHeuristic(bool t) { heuristic_helper->target_reasoning = t; }
   void setMutexReasoning(mutex_strategy m) {mutex_helper.strategy = m; heuristic_helper->mutex_reasoning = m; }
   void setDisjointSplitting(bool d) { disjoint_splitting = d; heuristic_helper->disjoint_splitting = d; }
   void setBypass(bypass_support b) { bypass = b; heuristic_helper->bypass = b; }
