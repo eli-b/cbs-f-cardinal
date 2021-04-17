@@ -645,12 +645,12 @@ void CBS::printResults() const
 		 endl;
 }
 
-void CBS::saveResults(const string& fileName, const string& instanceName) const
+void CBS::saveResults(const string& fileName, const string& instanceName, bool writeHeader) const
 {
 	std::ifstream infile(fileName);
 	bool exist = infile.good();
 	infile.close();
-	if (!exist)
+	if (!exist && writeHeader)
 	{
 		ofstream addHeads(fileName);
 		addHeads << "runtime,#high-level expanded,#high-level generated,#low-level expanded,#low-level generated," <<

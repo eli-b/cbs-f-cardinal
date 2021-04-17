@@ -29,7 +29,9 @@ int main(int argc, char** argv)
 		("map,m", po::value<string>()->required(), "input file for map")
 		("agents,a", po::value<string>()->required(), "input file for agents")
 		("output,o", po::value<string>(), "output file for schedule")
+		("outputHeader", po::value<bool>()->default_value(true), "write a header to the output file")
 		("agentNum,k", po::value<int>()->default_value(0), "number of agents")
+		("cpuid", po::value<int>()->default_value(-1), "number of agents")
 		("cutoffTime,t", po::value<double>()->default_value(7200), "cutoff time (seconds)")
 		("screen,s", po::value<int>()->default_value(1), "screen option (0: none; 1: results; 2:all, 3:all also for WDG subsolver)")
 		("seed,d", po::value<int>()->default_value(0), "random seed")
@@ -208,6 +210,47 @@ int main(int argc, char** argv)
 		cbs.setNodeSelectionRule(n);
 		cbs.setSeed(seed);
 		//////////////////////////////////////////////////////////////////////
+		// warm up
+		int cpu_id = vm["cpuid"].as<int>();
+		if (cpu_id != -1)
+		{
+			char max_freq_filename[100];
+			sprintf(max_freq_filename, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_max_freq", cpu_id);
+
+			std::ifstream max_freq_file(max_freq_filename);
+			string line;
+			std::getline(max_freq_file, line);
+			max_freq_file.close();
+			int max_freq;
+			sscanf(line.data(), "%d", &max_freq);
+
+			char curr_freq_filename[100];
+			sprintf(max_freq_filename, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq", cpu_id);
+			unsigned int warmup_iterations;
+			for (warmup_iterations = 0 ; warmup_iterations < 20 ; ++warmup_iterations)
+			{
+				std::ifstream curr_freq_file(curr_freq_filename);
+				std::getline(curr_freq_file, line);
+				curr_freq_file.close();
+				int curr_freq;
+				sscanf(line.data(), "%d", &curr_freq);
+				if (curr_freq == max_freq)
+					break;
+				// Waste time:
+				clock_t start = clock();
+				do
+				{
+					unsigned int j;
+					for (j = 0 ; j < 9999999 ; ++j)
+					{
+						__asm__ volatile("" : "+g" (j) : :);  // From https://stackoverflow.com/questions/7083482/how-to-prevent-gcc-from-optimizing-out-a-busy-wait-loop/58758133#58758133
+					}
+				} while ((double) (clock() - start) / CLOCKS_PER_SEC < 3);  // 100% CPU
+			}
+			if (vm["screen"].as<int>() > 0)
+				std::cerr << "Warm up of core " << cpu_id << " finished in " << warmup_iterations << "iterations";
+		}
+		//////////////////////////////////////////////////////////////////////
 		// run
 		double runtime = 0;
 		int min_f_val = 0;
@@ -243,7 +286,8 @@ int main(int argc, char** argv)
 
 		// 2. save results to file
 		if (vm.count("output"))
-			cbs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
+			cbs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>(),
+							vm["outputHeader"].as<bool>());
 		cbs.clearSearchEngines();
 		if (cbs.solution_found)
 			return 0;

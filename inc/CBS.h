@@ -75,7 +75,7 @@ public:
   ~CBS();
 
   // Save results
-  void saveResults(const string& fileName, const string& instanceName) const;
+  void saveResults(const string& fileName, const string& instanceName, bool writeHeader) const;
 
   void clear(); // used for rapid random  restart
 
