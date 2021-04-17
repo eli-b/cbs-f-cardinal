@@ -77,7 +77,7 @@ void CBS::findConflicts(CBSNode& curr, int a1, int a2)
 		int loc2 = paths[a2]->at(timestep).location;
 		if (loc1 == loc2)
 		{
-			shared_ptr<Conflict> conflict(new Conflict());
+			shared_ptr<Conflict> conflict = make_shared<Conflict>();
 			if (target_reasoning && paths[a1]->size() - 1 == timestep)
 			{
 				conflict->targetConflict(a1, a2, loc1, timestep, paths[a1]->size() - 1);
@@ -101,7 +101,7 @@ void CBS::findConflicts(CBSNode& curr, int a1, int a2)
 				 && loc1 == paths[a2]->at(timestep + 1).location
 				 && loc2 == paths[a1]->at(timestep + 1).location)
 		{
-			shared_ptr<Conflict> conflict(new Conflict());
+			shared_ptr<Conflict> conflict = make_shared<Conflict>();
 			conflict->edgeConflict(a1, a2, loc1, loc2, timestep + 1, paths[a1]->size() - 1);
 			assert(!conflict->constraint1.empty());
 			assert(!conflict->constraint2.empty());
@@ -118,7 +118,7 @@ void CBS::findConflicts(CBSNode& curr, int a1, int a2)
 			int loc2 = paths[a2_]->at(timestep).location;
 			if (loc1 == loc2)
 			{
-				shared_ptr<Conflict> conflict(new Conflict());
+				shared_ptr<Conflict> conflict = make_shared<Conflict>();
 				if (target_reasoning)
 					conflict->targetConflict(a1_, a2_, loc1, timestep, paths[a1_]->size() - 1);
 				else

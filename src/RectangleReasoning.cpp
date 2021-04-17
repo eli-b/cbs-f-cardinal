@@ -69,7 +69,7 @@ shared_ptr<Conflict> RectangleReasoning::findRectangleConflictByGR(const vector<
 
 	if (!blocked(*paths[a1], constraint1) || !blocked(*paths[a2], constraint2))
 		return nullptr;
-	auto rectangle = shared_ptr<Conflict>(new Conflict());
+	auto rectangle = make_shared<Conflict>();
 	rectangle->rectangleConflict(a1, a2, Rs, Rg, Rg_t, constraint1, constraint2);
 	if (type == 2)
 		rectangle->priority = conflict_priority::CARDINAL;
