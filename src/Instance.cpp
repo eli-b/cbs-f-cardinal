@@ -73,7 +73,7 @@ void Instance::generateRandomAgents(int warehouse_width)
 	start_locations.resize(num_of_agents);
 	goal_locations.resize(num_of_agents);
 
-	if (warehouse_width == 0)//Generate agents randomly
+	if (warehouse_width == 0)  //Generate agents randomly
 	{
 		// Choose random start locations
 		int k = 0;

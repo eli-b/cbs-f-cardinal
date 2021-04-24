@@ -211,7 +211,7 @@ shared_ptr<Conflict> CBS::chooseConflict(const CBSNode& node) const
 }
 
 
-void CBS::computePriorityForConflict(Conflict& conflict, CBSNode& node)
+void CBS::computeSecondaryPriorityForConflict(Conflict& conflict, CBSNode& node)
 {
 	conflict.secondary_priority = 0;
 	switch (conflict_selection_rule)
@@ -316,17 +316,6 @@ void CBS::classifyConflicts(CBSNode& node)
 				cardinal2 = paths[a2]->at(timestep).is_single();
 		}
 
-		/*int width_1 = 1, width_2 = 1;
-
-		if (paths[a1]->size() > timestep){
-		  width_1 = paths[a1]->at(timestep).mdd_width;
-		}
-
-		if (paths[a2]->size() > timestep){
-		  width_2 = paths[a2]->at(timestep).mdd_width;
-		}
-		con -> mdd_width = width_1 * width_2;*/
-
 		if (cardinal1 && cardinal2)
 		{
 			con->priority = conflict_priority::CARDINAL;
@@ -340,13 +329,6 @@ void CBS::classifyConflicts(CBSNode& node)
 			con->priority = conflict_priority::NON;
 		}
 
-		/*if (con->priority == conflict_priority::CARDINAL && heuristic_helper->type == heuristics_type::ZERO)
-		{
-			computePriorityForConflict(*con, node);
-			node.conflicts.push_back(con);
-			return;
-		}*/
-
 		// Mutex reasoning
 		if (mutex_helper.strategy != mutex_strategy::N_MUTEX)
 		{
@@ -358,7 +340,7 @@ void CBS::classifyConflicts(CBSNode& node)
 
 			if (mutex_conflict != nullptr)
 			{
-				computePriorityForConflict(*mutex_conflict, node);
+				computeSecondaryPriorityForConflict(*mutex_conflict, node);
 				node.conflicts.push_back(mutex_conflict);
 				continue;
 			}
@@ -367,7 +349,7 @@ void CBS::classifyConflicts(CBSNode& node)
 		// Target Reasoning
 		if (con->type == conflict_type::TARGET)
 		{
-			computePriorityForConflict(*con, node);
+			computeSecondaryPriorityForConflict(*con, node);
 			node.conflicts.push_back(con);
 			continue;
 		}
@@ -401,13 +383,13 @@ void CBS::classifyConflicts(CBSNode& node)
 			auto rectangle = rectangle_helper.run(paths, timestep, a1, a2, mdd1, mdd2);
 			if (rectangle != nullptr)
 			{
-				computePriorityForConflict(*rectangle, node);
+				computeSecondaryPriorityForConflict(*rectangle, node);
 				node.conflicts.push_back(rectangle);
 				continue;
 			}
 		}
 
-		computePriorityForConflict(*con, node);
+		computeSecondaryPriorityForConflict(*con, node);
 		node.conflicts.push_back(con);
 	}
 

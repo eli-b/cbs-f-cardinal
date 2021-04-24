@@ -40,14 +40,14 @@ public:
 	list<Constraint> constraint2;
 	conflict_type type;
 	conflict_priority priority = conflict_priority::UNKNOWN;
-	double secondary_priority = 0; // used as the tie-breaking criteria for conflict selection
+	double secondary_priority = 0; // used as the tie-breaking criterion for conflict selection
 
   // For mutex propagation
   int final_len_1;
   int final_len_2;
 
   // For mutex propagation in Non-cardinal
-  // The actuall MDD node/edge which was used to generated the biclique;
+  // The actual MDD node/edge which was used to generated the biclique;
   int t1;
   int loc1;
   int loc1_to=-1;
@@ -127,7 +127,7 @@ public:
 		this->a1 = a1;
 		this->a2 = a2;
 		this->a1_path_cost = a1_path_cost;
-		this->constraint1.emplace_back(a1, v, -1, t, constraint_type::LEQLENGTH);  // This is first to enable bypassing
+		this->constraint1.emplace_back(a1, v, -1, t, constraint_type::LEQLENGTH);  // This constraint is first to enable bypassing
 																				   // to skip generating the second child
 		this->constraint2.emplace_back(a1, v, -1, t, constraint_type::GLENGTH);
 		type = conflict_type::TARGET;

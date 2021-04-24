@@ -25,10 +25,10 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 	num_expanded = 0;
 	num_generated = 0;
 	// build constraint table
-	auto starrt_time = clock();
+	auto start_time = clock();
 	ConstraintTable constraint_table(initial_constraints);
 	constraint_table.build(node, agent);
-	runtime_build_CT = (double) (clock() - starrt_time) / CLOCKS_PER_SEC;
+	runtime_build_CT = (double) (clock() - start_time) / CLOCKS_PER_SEC;
 	if (constraint_table.length_min >= MAX_TIMESTEP || constraint_table.length_min > constraint_table.length_max ||  // the agent cannot reach
 																													 // its goal location
 		constraint_table.constrained(start_location, 0)) // the agent cannot stay at its start location
@@ -36,9 +36,9 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 		return Path();
 	}
 
-	starrt_time = clock();
+	start_time = clock();
 	constraint_table.buildCAT(agent, paths, node.makespan + 1);
-	runtime_build_CAT = (double) (clock() - starrt_time) / CLOCKS_PER_SEC;
+	runtime_build_CAT = (double) (clock() - start_time) / CLOCKS_PER_SEC;
 
 	if (constraint_table.getNumOfLandmarks() > 0)
 	{
