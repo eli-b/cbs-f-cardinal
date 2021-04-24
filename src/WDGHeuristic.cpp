@@ -195,9 +195,11 @@ int WDGHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 }
 
 
-// Returns a vector of vectors where ret[a1_index][a2_index] == tuple<1,x> if a1 and a2 have
+// Returns a vector of vectors where ret[a1_index][a2_index] == tuple<W,X> if a1 and a2 have
 // to increase their combined cost to resolve all conflicts between themselves,
-// where X is the expected cost increase for a1 from resolving the current conflicts between them, tuple<0,0> otherwise.
+// where X is the expected cost increase for a1 from resolving the current conflict between them
+// and W is the expected total cost increase to resolve all conflicts between the agents,
+// tuple<0,0> otherwise.
 bool NVWEWDGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& WDG, int& num_edges, int& max_edge_weight) {
 	bool succ = WDGHeuristic::buildGraph(curr, WDG, num_edges, max_edge_weight);
 	if (!succ)
@@ -212,10 +214,11 @@ bool NVWEWDGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>&
 		{
 			int a1 = conflict->a1;
 			int a2 = conflict->a2;
+			// No need to set WDG[a1][a2] and WDG[a2][a1] for the simple case - WDGHeuristic::buildGraph already did
 			int W = get<0>(WDG[a1][a2]);
-			uint64_t cost_increase_a1 = max(1, get<1>(WDG[a1][a2]));  // In case there are multiple conflicts between the two agents,
-																		 // take the maximum cost increase. This is a minor point because
-																		 // the solver would handle it even if we didn't.
+			uint64_t cost_increase_a1 = get<1>(WDG[a1][a2]);
+			uint64_t cost_increase_a2 = get<1>(WDG[a2][a1]);
+
 			if (conflict->type == conflict_type::TARGET ||
 				(!target_reasoning && conflict->type == conflict_type::STANDARD &&
 				 get<3>(conflict->constraint1.front()) > conflict->a1_path_cost)
@@ -223,9 +226,20 @@ bool NVWEWDGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>&
 				// a1 is the agent that's at its target
 				int time_step = get<3>(conflict->constraint1.front());
 				cost_increase_a1 = max((uint64_t)(time_step + 1 - conflict->a1_path_cost), cost_increase_a1);
+				WDG[a1][a2] = make_tuple(W, cost_increase_a1);
+				WDG[a2][a1] = make_tuple(W, 1);
 			}
-			WDG[a1][a2] = make_tuple(W, cost_increase_a1);
-			WDG[a2][a1] = make_tuple(W, 1);
+			else if (conflict->type == conflict_type::CORRIDOR)  // Implementing support for reasoning about corridors
+				// when corridor reasoning isn't enabled isn't worth the trouble
+			{  // A cardinal corridor conflict
+				int cost_increase_a1_from_this_conflict = conflict->c1_lookahead - conflict->c1;
+				int cost_increase_a2_from_this_conflict = conflict->c2_lookahead - conflict->c2;
+				// Not necessary to update max_edge_weight
+				if (cost_increase_a1_from_this_conflict + cost_increase_a2_from_this_conflict < cost_increase_a1 + cost_increase_a2)
+					continue;  // A previously checked conflict would contribute more. TODO: Allow two sets of constraints from a target conflict and a corridor conflict between the same pair of agents.
+				WDG[a1][a2] = make_tuple(W, cost_increase_a1_from_this_conflict);
+				WDG[a2][a1] = make_tuple(W, cost_increase_a2_from_this_conflict);
+			}
 		}
 	}
 	runtime_build_graph += (double) (clock() - t) / CLOCKS_PER_SEC;

@@ -46,9 +46,8 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 		int t_min = MAX_TIMESTEP, t_max = 0;
 		for (const auto constraint : node.constraints)
 		{
-			int a, x, y, t, prev, curr;
-			constraint_type type;
-			tie(a, x, y, t, type) = constraint;
+			int prev, curr;
+			auto [a, x, y, t, type] = constraint;
 			switch (type)
 			{
 			case  constraint_type::LEQLENGTH:
@@ -108,13 +107,28 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 					}
 				}
 				break;
-			case constraint_type::RANGE:
+			case constraint_type::RANGE_VERTEX:
 				if (agent == a)
 				{
 					for (int i = y; i <= t; i++)
 					{
 						curr = (paths[agent]->size() <= i) ? paths[agent]->back().location : paths[agent]->at(i).location;
 						if (curr == x)
+						{
+							t_max = max(t_max, i);
+							t_min = min(t_min, i);
+						}
+					}
+				}
+				break;
+			case constraint_type::RANGE_EDGE:
+				if (agent == a)
+				{
+					for (int i = 1; i <= t; i++)
+					{
+						prev = (paths[agent]->size() <= i - 1) ? paths[agent]->back().location : paths[agent]->at(i - 1).location;
+						curr = (paths[agent]->size() <= i) ? paths[agent]->back().location : paths[agent]->at(i).location;
+						if (curr == y && prev == x)
 						{
 							t_max = max(t_max, i);
 							t_min = min(t_min, i);
@@ -423,15 +437,16 @@ Path SpaceTimeAStar::findPath(ConstraintTable& constraint_table, const pair<int,
 }
 
 
+// <upper_bound> is non-inclusive. Travel time must be less.
 int SpaceTimeAStar::getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound)
 {
-	int length = MAX_TIMESTEP;
-	if (constraint_table.length_min >= MAX_TIMESTEP || constraint_table.length_min > constraint_table.length_max ||  // the agent cannot reach
-																													 // its goal location
-		constraint_table.constrained(start, 0)) // the agent cannot stay at its start location
+	if (constraint_table.length_min >= MAX_TIMESTEP ||
+		constraint_table.length_min > constraint_table.length_max ||  // the agent cannot reach its goal location
+		constraint_table.constrained(start, 0))  // the agent cannot stay at its start location
 	{
-		return length;
+		return MAX_TIMESTEP;
 	}
+	int length = MAX_TIMESTEP;
 	auto root = new AStarNode(start, 0, compute_heuristic(start, end), nullptr, 0);
 	root->open_handle = open_list.push(root);  // add root to heap
 	allNodes_table.insert(root);       // add root to hash_table (nodes)
@@ -460,7 +475,7 @@ int SpaceTimeAStar::getTravelTime(int start, int end, const ConstraintTable& con
 			}
 			if (!constraint_table.constrained(next_location, next_timestep) &&
 				!constraint_table.constrained(curr->location, next_location, next_timestep))
-			{  // if that grid is not blocked
+			{  // if that move is not blocked
 				int next_h_val = compute_heuristic(next_location, end);
 				if (next_g_val + next_h_val >= upper_bound) // the cost of the path is larger than the upper bound
 					continue;

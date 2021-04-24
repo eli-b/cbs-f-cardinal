@@ -11,7 +11,7 @@ enum conflict_priority { CARDINAL, PSEUDO_CARDINAL, SEMI, NON, UNKNOWN, PRIORITY
 
 enum constraint_type
 {
-	LEQLENGTH, GLENGTH, RANGE, BARRIER, VERTEX, EDGE,
+	LEQLENGTH, GLENGTH, RANGE_VERTEX, RANGE_EDGE, BARRIER, VERTEX, EDGE,
 	POSITIVE_VERTEX, POSITIVE_EDGE, CONSTRAINT_COUNT
 };
 
@@ -20,9 +20,11 @@ enum conflict_selection {RANDOM, EARLIEST, CONFLICTS, MCONSTRAINTS, FCONSTRAINTS
 typedef std::tuple<int, int, int, int, constraint_type> Constraint;
 // <agent, loc, -1, t, VERTEX>
 // <agent, loc, -1, t, POSITIVE_VERTEX>
-// <agent, from, to, t, EDGE> 
+// <agent, from, to, t, EDGE>
+// <agent, from, to, t, POSITIVE_EDGE>
 // <agent, B1, B2, t, BARRIER>
-// <agent, loc, t1, t2, CORRIDOR> 
+// <agent, loc, t1, t2, RANGE_VERTEX>
+// <agent, from, to, t2, RANGE_EDGE>  // TODO: Add an int to Constraint to enable t1!=0
 // <agent, loc, -1, t, LEQLENGTH>: path of agent_id should be of length at most t, and any other agent cannot be at loc at or after timestep t
 // <agent, loc, -1, t, GLENGTH>: path of agent_id should be of length at least t + 1
 
@@ -55,6 +57,11 @@ public:
 
 	// For NVW heuristics
 	int a1_path_cost;
+	int c1_lookahead;
+	int c2_lookahead;
+	int corridor_length;
+	int c1;
+	int c2;
 
 	void vertexConflict(int a1, int a2, int v, int t, int a1_path_cost)
 	{
@@ -80,14 +87,24 @@ public:
 		type = conflict_type::STANDARD;
 	}
 
-	void corridorConflict(int a1, int a2, int v1, int v2, int t1, int t2)
+	void corridorConflict(int a1, int a2, int v1, int v2, int range_end1, int range_end2,
+						  int t1, int t2, int corridor_length,
+						  int c1_lookahead, int c2_lookahead,
+						  int c1, int c2)
 	{
 		constraint1.clear();
 		constraint2.clear();
 		this->a1 = a1;
 		this->a2 = a2;
-		this->constraint1.emplace_back(a1, v1, 0, t1, constraint_type::RANGE);
-		this->constraint2.emplace_back(a2, v2, 0, t2, constraint_type::RANGE);
+		this->c1_lookahead = c1_lookahead;
+		this->c2_lookahead = c2_lookahead;
+		this->t1 = t1;  // For debugging
+		this->t2 = t2;  // For debugging
+		this->c1 = c1;
+		this->c2 = c2;
+		this->corridor_length = corridor_length;  // For debugging
+		this->constraint1.emplace_back(a1, v1, 0, range_end1, constraint_type::RANGE_VERTEX);
+		this->constraint2.emplace_back(a2, v2, 0, range_end2, constraint_type::RANGE_VERTEX);
 		type = conflict_type::CORRIDOR;
 	}
 

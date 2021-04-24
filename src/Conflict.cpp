@@ -24,8 +24,11 @@ std::ostream& operator<<(std::ostream& os, const Constraint& constraint)
 	case constraint_type::BARRIER:
 		os << "B";
 		break;
-	case constraint_type::RANGE:
-		os << "R";
+	case constraint_type::RANGE_VERTEX:
+		os << "RV";
+		break;
+	case constraint_type::RANGE_EDGE:
+		os << "RE";
 		break;
 	case constraint_type::GLENGTH:
 		os << "G";

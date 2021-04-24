@@ -47,33 +47,56 @@ bool CGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& CG, 
 }
 
 
-// Returns a vector of vectors where ret[a1_index][a2_index] == tuple<1,X> if a1 and a2 have at
-// least one cardinal conflict, where X is the expected cost increase for a1 from resolving that conflict, tuple<0,0> otherwise
+// Returns a vector of vectors where ret[a1_index][a2_index] == tuple<W,X> if a1 and a2 have at
+// least one cardinal conflict, where X is the expected cost increase for a1 from resolving that conflict
+// and W is 1 for non-corridor conflicts or the minimum cost of resolving the corridor conflict (can be more than 1),
+// tuple<0,0> otherwise.
+// Also sets num_edges and max_edge_weight.
 bool NVWCGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& CG, int& num_edges, int& max_edge_weight)
 {
 	max_edge_weight = 1;
 	num_edges = 0;
 	for (const auto& conflict : curr.conflicts)
 	{
-		if (conflict->priority == conflict_priority::CARDINAL)
+		if (conflict->priority == conflict_priority::CARDINAL || conflict->priority == conflict_priority::PSEUDO_CARDINAL)
 		{
 			int a1 = conflict->a1;
 			int a2 = conflict->a2;
 			if (get<0>(CG[a1][a2]) == 0)  // First conflict between these agents that we encounter
 				++num_edges;
-			uint64_t cost_increase_a1 = max(1, get<1>(CG[a1][a2]));  // In case there are multiple conflicts between the two agents,
-																		// take the maximum cost increase. This is a minor point because
-																		// the solver would handle it even if we didn't.
+			if (get<0>(CG[a2][a1]) == 0)
+			{
+				// First cardinal conflict between them that we see
+				CG[a1][a2] = make_tuple(1, 1);
+				CG[a2][a1] = make_tuple(1, 1);
+			}
+			uint64_t cost_increase_a1 = get<1>(CG[a1][a2]);
+			uint64_t cost_increase_a2 = get<1>(CG[a2][a1]);
+
 			if (conflict->type == conflict_type::TARGET ||
 				(!target_reasoning && conflict->type == conflict_type::STANDARD &&
 				 get<3>(conflict->constraint1.front()) > conflict->a1_path_cost)
 				) {  // A cardinal target conflict
 				// a1 is the agent that's at its target
 				int time_step = get<3>(conflict->constraint1.front());
-				cost_increase_a1 = time_step + 1 - conflict->a1_path_cost;
+				int cost_increase_a1_from_this_conflict = time_step + 1 - conflict->a1_path_cost;
+				if (cost_increase_a1_from_this_conflict + 1 < cost_increase_a1 + cost_increase_a2)
+					continue;  // A previously checked conflict would contribute more. TODO: Allow two sets of constraints from a target conflict and a corridor conflict between the same pair of agents.
+				CG[a1][a2] = make_tuple(1, cost_increase_a1_from_this_conflict);
+				CG[a2][a1] = make_tuple(1, 1);
 			}
-			CG[a1][a2] = make_tuple(1, cost_increase_a1);
-			CG[a2][a1] = make_tuple(1, 1);
+			else if (conflict->type == conflict_type::CORRIDOR)  // Implementing support for reasoning about corridors
+																 // when corridor reasoning isn't enabled isn't worth the trouble
+			{  // A (generalized) cardinal corridor conflict
+				int cost_increase_a1_from_this_conflict = conflict->c1_lookahead - conflict->c1;
+				int cost_increase_a2_from_this_conflict = conflict->c2_lookahead - conflict->c2;
+				int edge_weight = max(1, min(cost_increase_a1_from_this_conflict, cost_increase_a2_from_this_conflict));
+				max_edge_weight = max(max_edge_weight, edge_weight);
+				if (cost_increase_a1_from_this_conflict + cost_increase_a2_from_this_conflict < cost_increase_a1 + cost_increase_a2)
+					continue;  // A previously checked conflict would contribute more. TODO: Allow two sets of constraints from a target conflict and a corridor conflict between the same pair of agents.
+				CG[a1][a2] = make_tuple(edge_weight, cost_increase_a1_from_this_conflict);
+				CG[a2][a1] = make_tuple(edge_weight, cost_increase_a2_from_this_conflict);
+			}
 		}
 	}
 	runtime_build_graph += (double)(clock() - start_time) / CLOCKS_PER_SEC;

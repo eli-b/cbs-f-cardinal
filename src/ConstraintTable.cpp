@@ -1,10 +1,12 @@
 #include "ConstraintTable.h"
 
+// t_max is non-inclusive
 void ConstraintTable::insert2CT(size_t from, size_t to, int t_min, int t_max)
 {
 	insert2CT(getEdgeIndex(from, to), t_min, t_max);
 }
 
+// t_max is non-inclusive
 void ConstraintTable::insert2CT(size_t loc, int t_min, int t_max)
 {
 	assert(loc >= 0);
@@ -115,9 +117,7 @@ void ConstraintTable::build(const CBSNode& node, int agent)
 	auto curr = &node;
 	while (curr->parent != nullptr)
 	{
-		int a, x, y, t;
-		constraint_type type;
-		tie(a, x, y, t, type) = curr->constraints.front();
+		auto[a, x, y, t, type] = curr->constraints.front();
 		switch (type)
 		{
 		case constraint_type::LEQLENGTH:
@@ -187,11 +187,21 @@ void ConstraintTable::build(const CBSNode& node, int agent)
 				}
 			}
 			break;
-		case constraint_type::RANGE:
+		case constraint_type::RANGE_VERTEX:
 			assert(curr->constraints.size() == 1);
 			if (a == agent)
 			{
-				insert2CT(x, y, t + 1); // the agent cannot stay at x from timestep y to timestep t.
+				int t1 = y;
+				int t2 = t;
+				insert2CT(x, t1, t2 + 1); // the agent cannot stay at x from timestep y to timestep t.
+			}
+			break;
+		case constraint_type::RANGE_EDGE:
+			assert(curr->constraints.size() == 1);
+			if (a == agent)
+			{
+				int t2 = t;
+				insert2CT(x, y, 0, t2 + 1); // the agent cannot use x,y from timestep 0 to timestep t.
 			}
 			break;
 		}

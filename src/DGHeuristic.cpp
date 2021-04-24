@@ -2,7 +2,7 @@
 
 
 // Returns a vector of vectors where ret[a1_index][a2_index] == ret[a2_index][a1_index] == tuple<1,1> if a1 and a2 have
-// to increase their combined cost to resolve all conflicts between themselves, tuple<0,0> otherwise
+// to increase their combined cost to resolve all conflicts between themselves, tuple<0,0> otherwise.
 bool DGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& DG, int& num_edges, int& max_edge_weight)
 {
 	max_edge_weight = 1;
@@ -61,8 +61,8 @@ bool DGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& DG, 
 			{
 				if (get<0>(DG[i][j]) == 0)
 					++num_edges;
-				DG[i][j] = make_tuple(got->second, got->second);
-				DG[j][i] = make_tuple(got->second, got->second);
+				DG[i][j] = make_tuple(got->second, 1);
+				DG[j][i] = make_tuple(got->second, 1);
 			}
 		}
 	}
@@ -168,9 +168,11 @@ void DGHeuristic::copyConflictGraph(CBSNode& child, const CBSNode& parent)
 }
 
 
-// Returns a vector of vectors where ret[a1_index][a2_index] == tuple<1,x> if a1 and a2 have
+// Returns a vector of vectors where ret[a1_index][a2_index] == tuple<W,X> if a1 and a2 have
 // to increase their combined cost to resolve all conflicts between themselves,
-// where X is the expected cost increase for a1 from resolving the current conflicts between them, tuple<0,0> otherwise.
+// where X is the expected cost increase for a1 from resolving that conflict
+// and W is 1 for non-corridor conflicts or the minimum cost of resolving the corridor conflict (can be more than 1),
+// tuple<0,0> otherwise.
 bool NVWDGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& DG, int& num_edges, int& max_edge_weight) {
 	bool succ = DGHeuristic::buildGraph(curr, DG, num_edges, max_edge_weight);
 	if (!succ)
@@ -185,20 +187,34 @@ bool NVWDGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& D
 		{
 			int a1 = conflict->a1;
 			int a2 = conflict->a2;
-			int W = get<0>(DG[a1][a2]);
-			uint64_t cost_increase_a1 = max(1, get<1>(DG[a1][a2]));  // In case there multiple conflicts between the two agents,
-																		// take the maximum cost increase. This is a minor point because
-																		// the solver would handle it even if we didn't.
+			// No need to set DG[a1][a2] and DG[a2][a1] for the simple case - DGHeuristic::buildGraph already did
+			uint64_t cost_increase_a1 = get<1>(DG[a1][a2]);
+			uint64_t cost_increase_a2 = get<1>(DG[a2][a1]);
+
 			if (conflict->type == conflict_type::TARGET ||
 				(!target_reasoning && conflict->type == conflict_type::STANDARD &&
 				 get<3>(conflict->constraint1.front()) > conflict->a1_path_cost)
 				 ) {  // A g-cardinal target conflict (at least semi-f-cardinal with the MVC heuristic)
 				// a1 is the agent that's at its target
 				int time_step = get<3>(conflict->constraint1.front());
-				cost_increase_a1 = time_step + 1 - conflict->a1_path_cost;
+				int cost_increase_a1_from_this_conflict = time_step + 1 - conflict->a1_path_cost;
+				if (1 + cost_increase_a1_from_this_conflict < cost_increase_a1 + cost_increase_a2)
+					continue;  // A previously checked conflict would contribute more. TODO: Allow two sets of constraints from a target conflict and a corridor conflict between the same pair of agents.
+				DG[a1][a2] = make_tuple(1, cost_increase_a1);
+				DG[a2][a1] = make_tuple(1, 1);
 			}
-			DG[a1][a2] = make_tuple(W, cost_increase_a1);
-			DG[a2][a1] = make_tuple(W, 1);
+			else if (conflict->type == conflict_type::CORRIDOR)  // Implementing support for reasoning about corridors
+																 // when corridor reasoning isn't enabled isn't worth the trouble
+			{  // A cardinal corridor conflict
+				int cost_increase_a1_from_this_conflict = conflict->c1_lookahead - conflict->c1;
+				int cost_increase_a2_from_this_conflict = conflict->c2_lookahead - conflict->c2;
+				int edge_weight = max(1, min(cost_increase_a1_from_this_conflict, cost_increase_a2_from_this_conflict));
+				max_edge_weight = max(max_edge_weight, edge_weight);
+				if (cost_increase_a1_from_this_conflict + cost_increase_a2_from_this_conflict < cost_increase_a1 + cost_increase_a2)
+					continue;  // A previously checked conflict would contribute more. TODO: Allow two sets of constraints from a target conflict and a corridor conflict between the same pair of agents.
+				DG[a1][a2] = make_tuple(edge_weight, cost_increase_a1_from_this_conflict);
+				DG[a2][a1] = make_tuple(edge_weight, cost_increase_a2_from_this_conflict);
+			}
 		}
 	}
 	runtime_build_graph += (double) (clock() - t) / CLOCKS_PER_SEC;

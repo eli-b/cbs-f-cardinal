@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ReservationTable.h"
 #include "Instance.h"
 #include "SingleAgentSolver.h"
 
@@ -10,6 +9,8 @@ class CorridorReasoning
 public:
 	bool use_corridor_reasoning;
 	double accumulated_runtime = 0;
+	enum calc_alt_cost_variant {NO, YES};
+	calc_alt_cost_variant calc_alt_cost;
 
 	CorridorReasoning(const vector<SingleAgentSolver*>& search_engines,
 					  const vector<ConstraintTable>& initial_constraints) :
@@ -21,7 +22,7 @@ public:
 
 private:
 	const vector<SingleAgentSolver*>& search_engines;
-	const vector<ConstraintTable>& initial_constraints;
+	const vector<ConstraintTable>& initial_constraints;  // The problem instance's initial constraints
 
 	shared_ptr<Conflict> findCorridorConflict(const shared_ptr<Conflict>& conflict,
 											  const vector<Path*>& paths,
@@ -32,12 +33,6 @@ private:
 	int getExitingTime(const std::vector<PathEntry>& path, int t);
 	int getCorridorLength(const std::vector<PathEntry>& path, int t_start, int loc_end, std::pair<int, int>& edge);
 
-
-	// int getBypassLength(int start, int end, std::pair<int, int> blocked, const bool* my_map, int num_col, int map_size);
-	// int getBypassLengthByAStar(int start, int end, std::pair<int, int> blocked,
-	//	const ConstraintTable& constraint_table, int upper_bound);
-	// int getBypassLengthBySIPP(int start, int end, std::pair<int, int> blocked,
-	//	 ReservationTable& reservation_table, int upper_bound);
 
 	bool blocked(const Path& path, const Constraint& constraint);
 

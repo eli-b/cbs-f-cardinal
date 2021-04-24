@@ -128,7 +128,7 @@ shared_ptr<Conflict> RectangleReasoning::findRectangleConflictByRM(const vector<
 						{
 							type = new_type;
 							area = new_area;
-							rectangle = shared_ptr<Conflict>(new Conflict());
+							rectangle = make_shared<Conflict>();
 							rectangle->rectangleConflict(a1, a2, Rs, Rg, Rg_t, constraint1, constraint2);
 							if (type == 2)
 							{

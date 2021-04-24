@@ -131,36 +131,27 @@ void CBSHeuristic::add_constraints_for_heuristic_graph_edge(int a1, int a2, int 
 			Constraints[a2][a1].push_back(constraint);
 		}
 		else {  // Slightly more complex case. Three constraints are needed: 1) x_agent1 + x_agent2 >= weight
-			// 2+3) constraints that force that if the agent that's at its target doesn't increase its cost enough,
-			//      to resolve the current conflict, the other agent has to increase its cost by the whole weight.
+			// 2+3) constraints that force that if an agent doesn't increase its cost enough
+			//      to resolve the current conflict, the other agent has to increase its cost by its required cost increase
+			//      x_agent1 >= y_1_2 * cost_increase1
+			//      x_agent2 >= (1 - y_1_2) * cost_increase2
 			row.insert(a1, 1);
 			row.insert(a2, 1);
-			mvc_model.addRow(row, weight, mvc_model.getInfinity());
+			mvc_model.addRow(row, weight, mvc_model.getInfinity());  // x_agent1 + x_agent2 >= weight
 			Constraints[a1][a2].push_back(constraint);
 			Constraints[a2][a1].push_back(constraint);
 			OsiGrbConstraint constraint2 = mvc_model.getNumRows();
 			CoinPackedVector row2;
-			int agent_with_increase;
-			int agent_without_increase;
-			if (a1_increase > 1) {
-				agent_with_increase = a1;
-				agent_without_increase = a2;
-			}
-			else {
-				agent_with_increase = a2;
-				agent_without_increase = a1;
-			}
-			int cost_increase = a1_increase > 1? a1_increase : a2_increase;
-			row2.insert(agent_without_increase, 1);
-			row2.insert(num_of_agents + num_of_agents * agent_with_increase + agent_without_increase, -weight);
-			mvc_model.addRow(row2, 0, mvc_model.getInfinity());  // x_agent_without_increase >= weight * y_of_agent_pair
+			row2.insert(a1, 1);
+			row2.insert(num_of_agents + num_of_agents * a1 + a2, -a1_increase);
+			mvc_model.addRow(row2, 0, mvc_model.getInfinity());  // x_agent1 >= a1_increase * y_of_agent_pair
 			Constraints[a1][a2].push_back(constraint2);
 			Constraints[a2][a1].push_back(constraint2);
 			OsiGrbConstraint constraint3 = mvc_model.getNumRows();
 			CoinPackedVector row3;
-			row3.insert(agent_with_increase, 1);
-			row3.insert(num_of_agents + num_of_agents * agent_with_increase + agent_without_increase, cost_increase);
-			mvc_model.addRow(row3, cost_increase, mvc_model.getInfinity());  // x_agent_with_increase >= cost_increase*(1 - y_of_agent_pair)
+			row3.insert(a2, 1);
+			row3.insert(num_of_agents + num_of_agents * a1 + a2, a2_increase);
+			mvc_model.addRow(row3, a2_increase, mvc_model.getInfinity());  // x_agent_with_increase >= cost_increase*(1 - y_of_agent_pair)
 			Constraints[a1][a2].push_back(constraint3);
 			Constraints[a2][a1].push_back(constraint3);
 		}
@@ -205,7 +196,6 @@ void CBSHeuristic::add_mvc_model_constraints_from_graph(const vector<vector<tupl
 				if (a2_increase > highestCostIncrease)
 					highestCostIncrease = a2_increase;
 			}
-			// We assume at most one of a1_increase and a2_increase is not 1
 			add_constraints_for_heuristic_graph_edge(i, j, weight, a1_increase, a2_increase,
 				h, HGNodeDegrees, Constraints, num_of_nontrivial_HG_edges, nodeHasNontrivialEdges);
 		}

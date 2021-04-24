@@ -375,16 +375,19 @@ void CBS::classifyConflicts(CBSNode& node)
 		// Corridor reasoning
 		if (corridor_helper.use_corridor_reasoning)
 		{
-			auto corridor = corridor_helper.run(con, paths, cardinal1 && cardinal2, node);
-			if (corridor != nullptr)
+			auto corridor_conflict = corridor_helper.run(con, paths, cardinal1 && cardinal2, node);
+			if (corridor_conflict != nullptr)
 			{
-				corridor->priority = con->priority;
-				computePriorityForConflict(*corridor, node);
-				node.conflicts.push_back(corridor);
+				corridor_conflict->priority = con->priority;
+				if (corridor_conflict->priority == conflict_priority::SEMI || corridor_conflict->priority == conflict_priority::NON)
+					if (corridor_conflict->c1_lookahead - corridor_conflict->c1 > 0 &&
+							corridor_conflict->c2_lookahead - corridor_conflict->c2 > 0)
+						corridor_conflict->priority = PSEUDO_CARDINAL;  // We currently only identify (generalized) cardinal corridor conflicts
+				computeSecondaryPriorityForConflict(*corridor_conflict, node);
+				node.conflicts.push_back(corridor_conflict);
 				continue;
 			}
 		}
-
 
 		// Rectangle reasoning
 		if (rectangle_helper.use_rectangle_reasoning &&
@@ -1056,6 +1059,10 @@ CBS::CBS(const Instance& instance, bool sipp, heuristics_type heuristic, int scr
 	init_heuristic(heuristic);
 
 	mutex_helper.search_engines = search_engines;
+
+	corridor_helper.calc_alt_cost = CorridorReasoning::calc_alt_cost_variant::NO;
+	if (heuristic == heuristics_type::NVWCG || heuristic == heuristics_type::NVWDG || heuristic == heuristics_type::NVWEWDG)
+		corridor_helper.calc_alt_cost = CorridorReasoning::calc_alt_cost_variant::YES;
 
 	if (screen >= 2) // print start and goals
 	{
