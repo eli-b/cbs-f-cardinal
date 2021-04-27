@@ -33,6 +33,35 @@ public:
   uint64_t num_LL_expanded = 0;
   uint64_t num_LL_generated = 0;
 
+  uint64_t num_delta_h_0 = 0;
+  uint64_t num_delta_h_minus_1 = 0;
+  uint64_t num_delta_h_1 = 0;
+  uint64_t sum_delta_h_minus_2_or_more = 0;
+  uint64_t num_delta_h_minus_2_or_more = 0;
+  uint64_t sum_delta_h_2_or_more = 0;
+  uint64_t num_delta_h_2_or_more = 0;
+
+  uint64_t num_delta_g_0 = 0;
+  uint64_t num_delta_g_1 = 0;
+  uint64_t sum_delta_g_2_or_more = 0;
+  uint64_t num_delta_g_2_or_more = 0;
+
+  uint64_t num_delta_f_0 = 0;
+  uint64_t num_delta_f_1 = 0;
+  uint64_t sum_delta_f_2_or_more = 0;
+  uint64_t num_delta_f_2_or_more = 0;
+
+  uint64_t num_delta_f_0_delta_g_2_or_more = 0;  // So delta_h=-delta_g
+  uint64_t num_delta_f_0_delta_g_1 = 0;  // So delta_h=-1
+  uint64_t num_delta_f_0_delta_g_0 = 0;  // So delta_h=0
+
+  uint64_t num_delta_f_1_delta_g_3_or_more = 0;  // So delta_h=-delta_g+1
+  uint64_t num_delta_f_1_delta_g_2 = 0;  // So delta_h=-1
+  uint64_t num_delta_f_1_delta_g_1 = 0;  // So delta_h=0
+  uint64_t num_delta_f_1_delta_g_0 = 0;  // So delta_h=1
+
+  uint64_t sum_num_conflicts = 0;  // Sum of number of conflicts encountered in each CT node
+  uint64_t num_num_conflicts = 0;  // Yes, probably same as num_generated
 
   CBSNode* dummy_start = nullptr;
   CBSNode* goal_node = nullptr;
@@ -159,4 +188,6 @@ private:
   bool validateSolution() const;
   inline int getAgentLocation(int agent_id, size_t timestep) const;
   inline void pushNode(CBSNode* node);
+  void update_delta_h_and_delta_f_stats(CBSNode* curr);
+  void update_delta_g_stats(CBSNode* child);
 };

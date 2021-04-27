@@ -554,8 +554,12 @@ bool CBS::generateChild(CBSNode* node, CBSNode* parent)
 		}
 	}
 
+	update_delta_g_stats(node);
+
 	assert(!node->paths.empty());
 	findConflicts(*node);
+	sum_num_conflicts += node->conflicts.size();
+	++num_num_conflicts;
 	heuristic_helper->computeQuickHeuristics(*node);
 	runtime_generate_child += (double) (clock() - t1) / CLOCKS_PER_SEC;
 	return true;
@@ -643,6 +647,12 @@ void CBS::saveResults(const string& fileName, const string& instanceName, bool w
 				 "time limit," <<
 				 "#adopt bypasses," <<
 				 "standard conflicts,rectangle conflicts,corridor conflicts,target conflicts,mutex conflicts," <<
+				 "deltaH_0,deltaH_-1,deltaH_1,sum_deltaH_le_-2,count_deltaH_le_-2,sum_deltaH_ge_2,count_deltaH_ge_2," <<
+				 "deltaG_0,deltaG_1,sum_deltaG_ge_2,count_deltaG_ge_2," <<
+				 "deltaF_0,deltaF_1,sum_deltaF_ge_2,count_deltaF_ge_2," <<
+				 "deltaF_0_deltaG_2+,deltaF_0_deltaG_1,deltaF_0_deltaG_0," <<
+				 "deltaF_1_deltaG_3+,deltaF_1_deltaG_2,deltaF_1_deltaG_1,deltaF_1_deltaG_0," <<
+				 "sum_num_conflicts,count_num_conflicts," <<
 				 "#merge MDDs,#solve 2 agents,#memoization," <<
 				 "runtime of building heuristic graph,runtime of solving MVC," <<
 				 "runtime of detecting conflicts," <<
@@ -660,10 +670,16 @@ void CBS::saveResults(const string& fileName, const string& instanceName, bool w
 		  solution_cost << "," << min_f_val << "," << dummy_start->g_val << "," << dummy_start->g_val + dummy_start->h_val << "," <<
 		  time_limit << "," <<
 		  num_adopt_bypass << "," <<
-
-		  num_standard_conflicts << "," << num_rectangle_conflicts << "," << num_corridor_conflicts << "," << num_target_conflicts << ","
-		  << num_mutex_conflicts << "," <<
-
+		  num_standard_conflicts << "," << num_rectangle_conflicts << "," << num_corridor_conflicts << "," << num_target_conflicts << "," <<
+		  num_mutex_conflicts << "," <<
+		  num_delta_h_0 << "," << num_delta_h_minus_1 << "," << num_delta_h_1 << "," <<
+		  sum_delta_h_minus_2_or_more << "," << num_delta_h_minus_2_or_more << "," <<
+		  sum_delta_h_2_or_more << "," << num_delta_h_2_or_more << "," <<
+		  num_delta_g_0 << "," << num_delta_g_1 << "," << sum_delta_g_2_or_more << "," << num_delta_g_2_or_more << "," <<
+		  num_delta_f_0 << "," << num_delta_f_1 << "," << sum_delta_f_2_or_more << "," << num_delta_f_2_or_more << "," <<
+		  num_delta_f_0_delta_g_2_or_more << "," << num_delta_f_0_delta_g_1 << "," << num_delta_f_0_delta_g_0 << "," <<
+		  num_delta_f_1_delta_g_3_or_more << "," << num_delta_f_1_delta_g_2 << "," << num_delta_f_1_delta_g_1 << "," << num_delta_f_1_delta_g_0 << "," <<
+		  sum_num_conflicts << "," << num_num_conflicts << "," <<
 		  heuristic_helper->num_merge_MDDs << "," <<
 		  heuristic_helper->num_solve_2agent_problems << "," <<
 		  heuristic_helper->num_memoization_hits << "," <<
@@ -812,6 +828,7 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 				curr->clear();
 				continue;
 			}
+			update_delta_h_and_delta_f_stats(curr);
 
 			// reinsert the node
 			curr->open_handle = open_list.push(curr);
@@ -1142,6 +1159,8 @@ bool CBS::generateRoot()
 	dummy_start->time_generated = num_HL_generated;
 	allNodes_table.push_back(dummy_start);
 	findConflicts(*dummy_start);
+	sum_num_conflicts += dummy_start->conflicts.size();
+	++num_num_conflicts;
 	// We didn't compute the node-selection tie-breaking value for the root node
 	// since it does not need it.
 	min_f_val = max(min_f_val, (double) dummy_start->g_val);
@@ -1253,4 +1272,70 @@ void CBS::clear()
 	goal_node = nullptr;
 	solution_found = false;
 	solution_cost = -2;
+}
+
+void CBS::update_delta_h_and_delta_f_stats(CBSNode* curr)
+{
+	if (curr->parent != nullptr) {
+		int64_t delta_h = curr->h_val - curr->parent->h_val;
+		uint64_t delta_f = (curr->g_val + curr->h_val) - (curr->parent->g_val + curr->parent->h_val);
+
+		if (delta_h == 0)
+			++num_delta_h_0;
+		else if (delta_h == 1)
+			++num_delta_h_1;
+		else if (delta_h == -1)
+			++num_delta_h_minus_1;
+		else if (delta_h < -1) {
+			sum_delta_h_minus_2_or_more += delta_h;
+			++num_delta_h_minus_2_or_more;
+		} else {
+			sum_delta_h_2_or_more += delta_h;
+			++num_delta_h_2_or_more;
+		}
+
+		if (delta_f == 0) {
+			++num_delta_f_0;
+			// delta_h == 1 is impossible because the cost can't decrease
+			if (delta_h == 0)
+				++num_delta_f_0_delta_g_0;  // We resolved a non-cardinal conflict (or semi-cardinal from the
+				// non-cardinal side) and didn't get a new cardinal conflict in the
+				// new path (more likely)
+			else if (delta_h == -1)
+				++num_delta_f_0_delta_g_1;  // We resolved a cardinal conflict from a side that was in the MVC
+			else if (delta_h <= -2)
+				++num_delta_f_0_delta_g_2_or_more;
+		} else if (delta_f == 1) {
+			++num_delta_f_1;
+			if (delta_h == 1)
+				++num_delta_f_1_delta_g_0;  // We resolved a non-cardinal (or semi-cardinal from the
+				// non-cardinal side) conflict and got a new cardinal conflict
+				// (less likely)
+			else if (delta_h == 0)
+				++num_delta_f_1_delta_g_1;  // We resolved a semi-cardinal conflict from the cardinal side
+				// or a cardinal conflict from a side that wasn't in the MVC
+			else if (delta_h == -1)
+				++num_delta_f_1_delta_g_2;  // We resolved a cardinal goal conflict from the goal side and the
+				// goal side was in the MVC or
+				// resolved a cardinal conflict in a disjoint way and got lucky
+			else if (delta_h <= -2)
+				++num_delta_f_1_delta_g_3_or_more;
+		} else {
+			sum_delta_f_2_or_more += delta_f;
+			++num_delta_f_2_or_more;
+		}
+	}
+}
+
+void CBS::update_delta_g_stats(CBSNode* child)
+{
+	uint64_t delta_g = child->g_val - child->parent->g_val;
+	if (delta_g == 0)
+		++num_delta_g_0;
+	else if (delta_g == 1)
+		++num_delta_g_1;
+	else {
+		sum_delta_g_2_or_more += delta_g;
+		++num_delta_g_2_or_more;
+	}
 }
