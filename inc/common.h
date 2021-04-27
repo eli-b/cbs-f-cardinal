@@ -11,6 +11,7 @@
 #include <boost/heap/pairing_heap.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/pool/pool.hpp>
 
 using boost::heap::pairing_heap;
 using boost::heap::compare;
@@ -74,3 +75,33 @@ bool isSamePath(const Path& p1, const Path& p2);
     }
 };*/
 
+struct DeleterFromPool
+{
+	explicit DeleterFromPool(boost::pool<>& pool) : pool(&pool) {}
+	DeleterFromPool(const DeleterFromPool& other) : pool(other.pool) {}
+	DeleterFromPool(DeleterFromPool&& other)  noexcept : pool(other.pool) {}
+
+	void operator()(void *p)
+	{
+		pool->free(p);
+	}
+	boost::pool<> *pool;
+};
+
+struct ConstraintState
+{
+	bool vertex = false;
+	bool edge[5] = { false, false, false, false, false };
+
+	ConstraintState() = default;
+	ConstraintState(const ConstraintState& other) : vertex(other.vertex) {
+		edge[0] = other.edge[0];
+		edge[1] = other.edge[1];
+		edge[2] = other.edge[2];
+		edge[3] = other.edge[3];
+		edge[4] = other.edge[4];
+	}
+};
+
+extern boost::pool<> constraint_state_pool;
+extern DeleterFromPool constraintStatePoolDeleter;

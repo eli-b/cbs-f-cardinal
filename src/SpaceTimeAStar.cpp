@@ -50,7 +50,7 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 			auto [a, x, y, t, type] = constraint;
 			switch (type)
 			{
-			case  constraint_type::LEQLENGTH:
+			case constraint_type::LEQLENGTH:
 				if (agent != a)
 				{
 					for (int i = t; i < (int)paths[agent]->size(); i++)
@@ -244,6 +244,11 @@ Path SpaceTimeAStar::findShortestPath(ConstraintTable& constraint_table, const p
 	min_f_val = (int) start->getFVal();
 	int holding_time = constraint_table.getHoldingTime(); // the earliest timestep that the agent can hold its goal location. The length_min is considered here.
 	lower_bound = max(holding_time - start_state.second, max(min_f_val, lowerbound));
+
+	// Note: Even if constraint_table.length_max is less than infinity, it doesn't mean any path length of length less
+	//       than or equal to that is allowed. It's still required to be minimal. The LEQLENGTH constraint could have
+	//       come from a conflict between an agent staying at its goal long after it has reached it, and another agent.
+	//       The agent staying at its goal is not suddently allowed to increase its cost.
 
 	while (!open_list.empty())
 	{

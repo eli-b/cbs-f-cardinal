@@ -11,6 +11,7 @@
 #include <fstream>
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
+#include <memory_resource>  // For pmr
 #include "CBS.h"
 
 /* Declare some static utility functions */
@@ -19,6 +20,9 @@ static void usage();
 /* Main function */
 int main(int argc, char** argv)
 {
+	std::pmr::unsynchronized_pool_resource cool_pool;
+	std::pmr::set_default_resource(&cool_pool);
+
 	namespace po = boost::program_options;
 	// Declare the supported options.
 	po::options_description desc("Allowed options");

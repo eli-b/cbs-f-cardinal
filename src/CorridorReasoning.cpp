@@ -149,8 +149,8 @@ shared_ptr<Conflict> CorridorReasoning::findCorridorConflict(const shared_ptr<Co
 	int cost_lookahead1=-1, cost_lookahead2=-1;  // The time each agent reaches its *target* under the range constraint that would force it to let other agent pass first
 	ct1.build(node, a[0]);
 	// Block the entering edge of the corridor in both directions
-	ct1.insert2CT(entry_edge1.first, entry_edge1.second, 0, MAX_TIMESTEP);
-	ct1.insert2CT(entry_edge1.second, entry_edge1.first, 0, MAX_TIMESTEP);
+	ct1.insert(entry_edge1.first, entry_edge1.second, 0, MAX_TIMESTEP);
+	ct1.insert(entry_edge1.second, entry_edge1.first, 0, MAX_TIMESTEP);
 	t3_ = search_engines[a[0]]->getTravelTime(paths[a[0]]->front().location, entrance_vertex[1], ct1,
 								  t4 + corridor_length + 1);
 	if (t3_ <= t3)  // The agent could have avoided the corridor
@@ -158,8 +158,8 @@ shared_ptr<Conflict> CorridorReasoning::findCorridorConflict(const shared_ptr<Co
 
 	ct2.build(node, a[1]);
 	// Block the entering edge of the corridor in both directions
-	ct1.insert2CT(entry_edge1.first, entry_edge1.second, 0, MAX_TIMESTEP);
-	ct1.insert2CT(entry_edge1.second, entry_edge1.first, 0, MAX_TIMESTEP);
+	ct1.insert(entry_edge1.first, entry_edge1.second, 0, MAX_TIMESTEP);
+	ct1.insert(entry_edge1.second, entry_edge1.first, 0, MAX_TIMESTEP);
 	t4_ = search_engines[a[1]]->getTravelTime(paths[a[1]]->front().location, entrance_vertex[0], ct2, t3 + corridor_length + 1);
 	if (t4_ <= t4)  // The agent could have avoided the corridor
 		return nullptr;
@@ -171,14 +171,14 @@ shared_ptr<Conflict> CorridorReasoning::findCorridorConflict(const shared_ptr<Co
 	{
 		ConstraintTable ct1_c_(initial_constraints[a[0]]);
 		ct1_c_.build(node, a[0]);
-		ct1.insert2CT(entrance_vertex[1], 0, range_end1); // Simulate the range constraint
+		ct1.insert(entrance_vertex[1], 0, range_end1); // Simulate the range constraint
 		// until the other finishes crossing it
 		cost_lookahead1 = search_engines[a[0]]->getTravelTime(paths[a[0]]->front().location, paths[a[0]]->back().location,
 															  ct1_c_, MAX_TIMESTEP);
 
 		ConstraintTable ct2_c_(initial_constraints[a[1]]);
 		ct2_c_.build(node, a[1]);
-		ct2.insert2CT(entrance_vertex[0], 0, range_end2); // Simulate the range constraint
+		ct2.insert(entrance_vertex[0], 0, range_end2); // Simulate the range constraint
 		cost_lookahead2 = search_engines[a[1]]->getTravelTime(paths[a[1]]->front().location, paths[a[1]]->back().location,
 															  ct2_c_, MAX_TIMESTEP);
 	}

@@ -21,3 +21,6 @@ bool isSamePath(const Path& p1, const Path& p2)
 	}
 	return true;
 }
+
+boost::pool<> constraint_state_pool(sizeof(ConstraintState));
+DeleterFromPool constraintStatePoolDeleter(constraint_state_pool);

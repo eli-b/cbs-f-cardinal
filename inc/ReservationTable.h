@@ -11,9 +11,9 @@ class ReservationTable: public ConstraintTable
 public:
 	double runtime;
 
-	ReservationTable() = default;
+	ReservationTable() = delete;
 	ReservationTable(size_t num_col, size_t map_size, int goal_location = -1) : ConstraintTable(num_col, map_size, goal_location) {}
-	ReservationTable(const ConstraintTable& other) { copy(other); }
+	ReservationTable(const ConstraintTable& ct) { copy(ct); }
 
 	list<Interval> get_safe_intervals(size_t location, size_t lower_bound, size_t upper_bound);
 	list<Interval> get_safe_intervals(size_t from, size_t to, size_t lower_bound, size_t upper_bound);
@@ -39,5 +39,5 @@ private:
 	
 	void updateSIT(size_t location); // update SIT at the given location
 
-	int getNumOfConflictsForStep(size_t curr_id, size_t next_id, size_t next_timestep) const;
+	[[nodiscard]] int getNumOfConflictsForStep(size_t curr_id, size_t next_id, size_t next_timestep) const;
 };
