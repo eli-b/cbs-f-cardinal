@@ -48,14 +48,14 @@ int main(int argc, char** argv)
 		// params for CBS
 		("heuristics", po::value<string>()->default_value("CG"), "heuristics for the high-level search (Zero, CG, NVWCG, DG, NVWDG, WDG, NVWEWDG)")
 		("prioritizingConflicts", po::value<string>()->default_value("g-cardinal"),
-		 "conflict prioritization (off, g-cardinal). If not off, conflictSelection is used.")
+		 "conflict prioritization (off, g-cardinal, f-cardinal). If not off, conflictSelection is used.")
 		("conflictSelection", po::value<string>()->default_value("Random"),
 		 "conflict selection (Random\n Earliest\n Conflicts: most conflicts with others\n MConstraints: most constraints\n "
    		 "FConstraints: fewest constraints\n Width: thinnest MDDs\n Singletons: most singletons in MDDs)")
 		("nodeSelection", po::value<string>()->default_value("Random"),
 		 "conflict selection (Random\n H: smallest h value\n Depth: depth-first manner\n Conflicts: fewest conflicts\n "
    		 "ConflictPairs: fewest conflicting pairs of agents\n MVC: MVC on the conflict graph)")
-		("bypass", po::value<string>()->default_value("off"), "Bypass1 (off,g-bypass)")
+		("bypass", po::value<string>()->default_value("off"), "Bypass1 (off,g-bypass,f-bypass)")
 		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")
 		("rectangleReasoning", po::value<bool>()->default_value(false), "Using rectangle reasoning")
 		("rectangleReasoningForHeuristic", po::value<bool>()->default_value(false), "Using rectangle reasoning for WDG")
@@ -63,7 +63,7 @@ int main(int argc, char** argv)
 		("mutexReasoning", po::value<string>()->default_value("None"), "Using mutex reasoning (C, None)")
 		("targetReasoning", po::value<bool>()->default_value(false), "Using target reasoning")
 		("targetReasoningForHeuristic", po::value<bool>()->default_value(false), "Using target reasoning for WDG")
-		("restart", po::value<int>()->default_value(1), "number of restart times (at least 1)")
+		("maxAttempts", po::value<int>()->default_value(1), "max attempts (at least 1)")
 		("sipp", po::value<bool>()->default_value(false), "using sipp as the single agent solver")
 		;
 
@@ -149,6 +149,7 @@ int main(int argc, char** argv)
 
 	if (n == node_selection::NODE_DEPTH && vm["bypass"].as<string>() != "off") // When using depth as the node tie
 																			   // breaking rule, we cannot use bypassing
+																			   // TODO: Sure we can, it just takes some coding
 	{
 		cout << "When using bypassing, we cannot use DEPTH as the node tie breaking rule!" << endl;
 		return -1;
@@ -168,6 +169,8 @@ int main(int argc, char** argv)
 	conflict_prioritization pc;
 	if (vm["prioritizingConflicts"].as<string>() == "g-cardinal")
 		pc = conflict_prioritization::BY_G_CARDINAL;
+	else if (vm["prioritizingConflicts"].as<string>() == "f-cardinal")
+		pc = conflict_prioritization::BY_F_CARDINAL;
 	else if (vm["prioritizingConflicts"].as<string>() == "off")
 		pc = conflict_prioritization::OFF;
 	else
@@ -181,6 +184,8 @@ int main(int argc, char** argv)
 		bp = bypass_support::NONE;
 	else if (vm["bypass"].as<string>() == "g-bypass")
 		bp = bypass_support::G_BYPASS;
+	else if (vm["bypass"].as<string>() == "f-bypass")
+		bp = bypass_support::F_BYPASS;
 	else
 	{
 		cout << "WRONG bypass strategy! (" << vm["bypass"].as<string>() << ")" << endl;
@@ -196,7 +201,7 @@ int main(int argc, char** argv)
 					  vm["agentNum"].as<int>(),
 					  vm["rows"].as<int>(), vm["cols"].as<int>(), vm["obs"].as<int>(), vm["warehouseWidth"].as<int>());
 
-	int runs = vm["restart"].as<int>();
+	int max_runs = vm["maxAttempts"].as<int>();
 	
 	try
 	{
@@ -260,7 +265,8 @@ int main(int argc, char** argv)
 		// run
 		double runtime = 0;
 		int min_f_val = 0;
-		for (int i = 0; i < runs; i++)
+		int i;
+		for (i = 0; i < max_runs; i++)
 		{
 			cbs.clear();
 			cbs.solve(vm["cutoffTime"].as<double>(), min_f_val);

@@ -48,17 +48,26 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 {
 	switch (conflict.priority)
 	{
-	case conflict_priority::CARDINAL:
-		os << "cardinal ";
+	case conflict_priority::F_CARDINAL_G_CARDINAL:
+		os << "f-cardinal-g-cardinal ";
 		break;
-	case conflict_priority::PSEUDO_CARDINAL:
-		os << "pseudo-cardinal ";
+	case conflict_priority::SEMI_F_CARDINAL_G_CARDINAL:
+		os << "semi-f-cardinal-g-cardinal ";
 		break;
-	case conflict_priority::SEMI:
-		os << "semi-cardinal ";
+	case conflict_priority::G_CARDINAL:
+		os << "g-cardinal ";
 		break;
-	case conflict_priority::NON:
-		os << "non-cardinal ";
+	case conflict_priority::PSEUDO_G_CARDINAL_SEMI_G_CARDINAL:
+		os << "pseudo-g-cardinal-semi-g-cardinal ";
+		break;
+	case conflict_priority::SEMI_G_CARDINAL:
+		os << "semi-g-cardinal ";
+		break;
+	case conflict_priority::PSEUDO_G_CARDINAL_NON_G_CARDINAL:
+		os << "pseudo-g-cardinal-non-g-cardinal ";
+		break;
+	case conflict_priority::NON_G_CARDINAL:
+		os << "non-g-cardinal ";
 		break;
 	case conflict_priority::UNKNOWN:
 		break;
@@ -95,15 +104,22 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 }
 
 
-// conflict selection
-// First compare the cardinality: cardinal > semi-cardinal > non-cardinal (This step can be skipped by the user)
+// conflict selection (larger is *better*)
+// First compare the cardinality: f-cardinal > semi-f-cardinal > g-cardinal > semi-g-cardinal > non-cardinal (This step can be skipped by the user)
+// (Note the better/more preferable values are *lower* in the enum)
 // Second compare the type: mutex > target > corridor > rectangle > vertex/edge
 // Third compare the user-specified tie-breaking rule: RANDOM, EARLIEST, CONFLICTS, MCONSTRAINTS, FCONSTRAINTS, WIDTH, SINGLETONS
 // Last break ties randomly
 // For all the values below, smaller is better
 bool operator<(const Conflict& conflict1, const Conflict& conflict2) // return true if conflict2 has higher priority
 {
-	if (conflict1.priority == conflict2.priority)
+	if (conflict1.priority == conflict2.priority ||
+		(conflict1.priority == conflict_priority::PSEUDO_G_CARDINAL_SEMI_G_CARDINAL && conflict2.priority == conflict_priority::SEMI_G_CARDINAL) ||
+		(conflict2.priority == conflict_priority::PSEUDO_G_CARDINAL_SEMI_G_CARDINAL && conflict1.priority == conflict_priority::SEMI_G_CARDINAL) ||
+		(conflict1.priority == conflict_priority::PSEUDO_G_CARDINAL_NON_G_CARDINAL && conflict2.priority == conflict_priority::NON_G_CARDINAL) ||
+		(conflict2.priority == conflict_priority::PSEUDO_G_CARDINAL_NON_G_CARDINAL && conflict1.priority == conflict_priority::NON_G_CARDINAL)
+	)  // TODO: Enable distinguishing between pseudo-g-cardinal conflicts and their origin priority based on the
+	   //       conflict_prioritization value that was chosen.
 	{
 		if (conflict1.type == conflict2.type)
 		{

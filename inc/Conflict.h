@@ -5,7 +5,9 @@
 
 enum conflict_type { MUTEX, TARGET, CORRIDOR, RECTANGLE, STANDARD, TYPE_COUNT };
 
-enum conflict_priority { CARDINAL, PSEUDO_CARDINAL, SEMI, NON, UNKNOWN, PRIORITY_COUNT };
+enum conflict_priority { F_CARDINAL_G_CARDINAL, F_CARDINAL_OTHERWISE,
+						 SEMI_F_CARDINAL_G_CARDINAL, SEMI_F_CARDINAL_OTHERWISE, G_CARDINAL, PSEUDO_G_CARDINAL_SEMI_G_CARDINAL,
+						 SEMI_G_CARDINAL, PSEUDO_G_CARDINAL_NON_G_CARDINAL, NON_G_CARDINAL, UNKNOWN, PRIORITY_COUNT };
 // Pseudo-cardinal conflicts are semi-/non-cardinal conflicts between dependent agents.
 // We prioritize them over normal semi-/non-cardinal conflicts
 
@@ -141,11 +143,9 @@ public:
 		this->a1 = a1;
 		this->a2 = a2;
 		type = conflict_type::MUTEX;
-		priority = conflict_priority::CARDINAL;
+		priority = conflict_priority::G_CARDINAL;
 		// TODO add constraints from mutex reasoning
 	}
-
-
 };
 
 std::ostream& operator<<(std::ostream& os, const Conflict& conflict);

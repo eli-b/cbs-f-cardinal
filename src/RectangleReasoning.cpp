@@ -72,11 +72,11 @@ shared_ptr<Conflict> RectangleReasoning::findRectangleConflictByGR(const vector<
 	auto rectangle = make_shared<Conflict>();
 	rectangle->rectangleConflict(a1, a2, Rs, Rg, Rg_t, constraint1, constraint2);
 	if (type == 2)
-		rectangle->priority = conflict_priority::CARDINAL;
+		rectangle->priority = conflict_priority::G_CARDINAL;
 	else if (type == 1) // && !findRectangleConflict(parent.parent, *conflict))
-		rectangle->priority = conflict_priority::SEMI;
+		rectangle->priority = conflict_priority::SEMI_G_CARDINAL;
 	else //if (type == 0 && !findRectangleConflict(parent.parent, *conflict))
-		rectangle->priority = conflict_priority::NON;
+		rectangle->priority = conflict_priority::NON_G_CARDINAL;
 	return rectangle;
 }
 
@@ -132,13 +132,13 @@ shared_ptr<Conflict> RectangleReasoning::findRectangleConflictByRM(const vector<
 							rectangle->rectangleConflict(a1, a2, Rs, Rg, Rg_t, constraint1, constraint2);
 							if (type == 2)
 							{
-								rectangle->priority = conflict_priority::CARDINAL;
+								rectangle->priority = conflict_priority::G_CARDINAL;
 								return rectangle;
 							}
 							else if (type == 1) // && !findRectangleConflict(parent.parent, *conflict))
-								rectangle->priority = conflict_priority::SEMI;
+								rectangle->priority = conflict_priority::SEMI_G_CARDINAL;
 							else //if (type == 0 && !findRectangleConflict(parent.parent, *conflict))
-								rectangle->priority = conflict_priority::NON;
+								rectangle->priority = conflict_priority::NON_G_CARDINAL;
 						}
 					}
 				}

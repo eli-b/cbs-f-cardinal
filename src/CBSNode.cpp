@@ -27,7 +27,17 @@ void CBSNode::printConflictGraph(int num_of_agents) const
 std::ostream& operator<<(std::ostream& os, const CBSNode& node)
 {
 	os << "Node " << node.time_generated << " (" << node.g_val + node.h_val << " = " << node.g_val << " + " <<
-	   node.h_val << " ) with " << node.conflicts.size() + node.unknownConf.size() << " conflicts and " <<
-	   node.paths.size() << " new paths ";
+	   node.h_val << " ) with " << node.paths.size() << " new paths and " <<
+	   node.conflicts.size() + node.unknownConf.size() << " conflicts. Cardinal conflicts:" << endl;
+	for (auto& conflict: node.conflicts)
+		if (conflict->priority == conflict_priority::G_CARDINAL ||
+			conflict->priority == conflict_priority::PSEUDO_G_CARDINAL_SEMI_G_CARDINAL ||
+			conflict->priority == conflict_priority::PSEUDO_G_CARDINAL_NON_G_CARDINAL ||
+			conflict->priority == conflict_priority::F_CARDINAL_G_CARDINAL ||
+			conflict->priority == conflict_priority::F_CARDINAL_OTHERWISE ||
+			conflict->priority == conflict_priority::SEMI_F_CARDINAL_G_CARDINAL ||
+			conflict->priority == conflict_priority::SEMI_F_CARDINAL_OTHERWISE
+			)
+			os << *conflict << endl;
 	return os;
 }

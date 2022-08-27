@@ -94,7 +94,7 @@ shared_ptr<Conflict> MutexReasoning::findMutexConflict(const vector<Path*> & pat
 }
 
 bool MutexReasoning::constraint_applicable(const vector<Path*> & paths, shared_ptr<Conflict> conflict){
-  if (conflict->priority== conflict_priority::CARDINAL){
+  if (conflict->priority== conflict_priority::G_CARDINAL){
     return true;
   }else{
     return constraint_applicable(paths, conflict->constraint1) && constraint_applicable(paths, conflict->constraint2);

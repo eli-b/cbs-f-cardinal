@@ -323,15 +323,15 @@ void CBS::classifyConflicts(CBSNode& node)
 
 		if (cardinal1 && cardinal2)
 		{
-			con->priority = conflict_priority::CARDINAL;
+			con->priority = conflict_priority::G_CARDINAL;
 		}
 		else if (cardinal1 || cardinal2)
 		{
-			con->priority = conflict_priority::SEMI;
+			con->priority = conflict_priority::SEMI_G_CARDINAL;
 		}
 		else
 		{
-			con->priority = conflict_priority::NON;
+			con->priority = conflict_priority::NON_G_CARDINAL;
 		}
 
 		// Mutex reasoning
@@ -381,7 +381,7 @@ void CBS::classifyConflicts(CBSNode& node)
 			(int) paths[con->a1]->size() > timestep &&
 			(int) paths[con->a2]->size() > timestep && //conflict happens before both agents reach their goal locations
 			type == constraint_type::VERTEX && // vertex conflict
-			con->priority != conflict_priority::CARDINAL) // not caridnal vertex conflict
+			con->priority != conflict_priority::G_CARDINAL) // not caridnal vertex conflict
 		{
 			auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
 			auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
@@ -630,6 +630,7 @@ void CBS::updateFocalList()
 
 void CBS::printResults() const
 {
+	cout << "status,runtime,HL expanded, HL generated,LL expanded,LL generated,min f-val,root g-val,root f-val" << endl;
 	if (solution_cost >= 0) // solved
 		cout << "Optimal,";
 	else if (solution_cost == -1) // time_out
@@ -640,7 +641,8 @@ void CBS::printResults() const
 		cout << "Nodesout,";
 
 	cout << solution_cost << "," << runtime << "," <<
-		 num_HL_expanded << "," << num_LL_expanded << "," << // HL_num_generated << "," << LL_num_generated << "," <<
+		 num_HL_expanded << "," << num_HL_generated << "," <<
+	     num_LL_expanded << "," << num_LL_generated << "," <<
 		 min_f_val << "," << dummy_start->g_val << "," << dummy_start->g_val + dummy_start->h_val << "," <<
 		 endl;
 }
@@ -665,7 +667,8 @@ void CBS::saveResults(const string& fileName, const string& instanceName, bool w
 				 "deltaF_1_deltaG_3+,deltaF_1_deltaG_2,deltaF_1_deltaG_1,deltaF_1_deltaG_0," <<
 				 "sum_num_conflicts,count_num_conflicts," <<
 				 "#merge MDDs,#solve 2 agents,#memoization," <<
-				 "runtime of building heuristic graph,runtime of solving MVC," <<
+				 "runtime of building heuristic graph,runtime of solving MVC,runtime of f-cardinal reasoning," <<
+				 "f-cardinal conflicts found,semi-f-cardinal g-cardinal conflicts found,g-cardinal conflicts checked for f-cardinality," <<
 				 "runtime of detecting conflicts," <<
 				 "runtime of rectangle conflicts,runtime of corridor conflicts,runtime of mutex conflicts," <<
 				 "runtime of building MDDs,runtime of building constraint tables,runtime of building CATs," <<
@@ -677,7 +680,6 @@ void CBS::saveResults(const string& fileName, const string& instanceName, bool w
 	stats << runtime << "," <<
 		  num_HL_expanded << "," << num_HL_generated << "," <<
 		  num_LL_expanded << "," << num_LL_generated << "," <<
-
 		  solution_cost << "," << min_f_val << "," << dummy_start->g_val << "," << dummy_start->g_val + dummy_start->h_val << "," <<
 		  time_limit << "," <<
 		  num_adopt_bypass << "," <<
@@ -696,7 +698,9 @@ void CBS::saveResults(const string& fileName, const string& instanceName, bool w
 		  heuristic_helper->num_memoization_hits << "," <<
 		  heuristic_helper->runtime_build_graph << "," <<
 		  heuristic_helper->runtime_solve_MVC << "," <<
-
+		  heuristic_helper->runtime_fcardinal_reasoning << "," <<
+	      heuristic_helper->f_cardinal_conflicts_found << "," << heuristic_helper->semi_f_cardinal_g_cardinal_conflicts_found << "," <<
+		  heuristic_helper->g_cardinal_conflicts_checked_for_f_cardinality << "," <<
 		  runtime_detect_conflicts << "," <<
 		  rectangle_helper.accumulated_runtime << "," << corridor_helper.accumulated_runtime << "," << mutex_helper.accumulated_runtime << "," <<
 		  mdd_helper.accumulated_runtime << "," << runtime_build_CT << "," << runtime_build_CAT << "," <<
@@ -730,6 +734,9 @@ string CBS::getSolverName() const
 		name += "CBS";
 	else if (PC == conflict_prioritization::BY_G_CARDINAL)
 		name += "ICBS";
+	else if (PC == conflict_prioritization::BY_F_CARDINAL)
+		name += "f-ICBS";
+
 	switch (heuristic_helper->getType())
 	{
 	case heuristics_type::ZERO:
@@ -766,6 +773,9 @@ string CBS::getSolverName() const
 
 	if (bypass == bypass_support::G_BYPASS)
 		name += "+BP";
+	else if (bypass == bypass_support::F_BYPASS)
+		name += "+fBP";
+
 	name += " with " + search_engines[0]->getName();
 	return name;
 }
@@ -780,12 +790,15 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 	{
 		string name = getSolverName();
 		name.resize(35, ' ');
-		cout << name << ": ";
+		cout << name << ": " << endl;
 	}
+
 	// set timer
 	start = clock();
 
 	generateRoot();
+
+	CBSNode* prev_node = nullptr;
 
 	while (!open_list.empty() && !solution_found)
 	{
@@ -812,8 +825,8 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 		if (screen > 1)
 			cout << endl << "Pop " << *curr << endl;
 
-		if (curr->unknownConf.size() + curr->conflicts.size() == 0) //no conflicts
-		{// found a solution (and finish the while look)
+		if (curr->unknownConf.size() + curr->conflicts.size() == 0) // no conflicts
+		{  // found a solution (and finish the while look)
 			solution_found = true;
 			solution_cost = curr->g_val;
 			goal_node = curr;
@@ -834,38 +847,47 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 				solution_found = false;
 				break;
 			}
-			if (!succ) // no solution, so prune this node
+			if (!succ) // no solution (a timeout probably occurred), so prune this node
 			{
 				curr->clear();
 				continue;
 			}
 			update_delta_h_and_delta_f_stats(curr);
 
-			// reinsert the node
-			curr->open_handle = open_list.push(curr);
-			if (curr->g_val + curr->h_val <= focal_list_threshold)
-				curr->focal_handle = focal_list.push(curr);
-			if (screen == 2)
+			if ((!focal_list.empty() && curr->g_val + curr->h_val > focal_list_threshold) ||  // There's something better in FOCAL
+				(focal_list.empty() && !open_list.empty() && CBSNode::compare_node()(curr, open_list.top()))  // FOCAL is empty but there's something better in OPEN
+			   )
 			{
-				cout << "	Reinsert " << *curr << endl;
+				// reinsert the node
+				curr->open_handle = open_list.push(curr);
+				auto open_head = open_list.top();
+				if (curr->g_val + curr->h_val <= focal_list_threshold)
+					curr->focal_handle = focal_list.push(curr);
+				if (screen == 2)
+				{
+					cout << "	Reinsert " << *curr << endl;
+				}
+				continue;
 			}
-			continue;
 		}
 
-		//Expand the node
+		// Expand the node
 		num_HL_expanded++;
 		curr->time_expanded = num_HL_expanded;
-		bool foundBypass = true;
-		while (foundBypass)
+		bool foundBypass = false;
+		do
 		{
-			foundBypass = false;
 			CBSNode* child[2] = { new CBSNode(), new CBSNode() };
 
 			curr->conflict = chooseConflict(*curr);
 
 			if (disjoint_splitting && curr->conflict->type == conflict_type::STANDARD)
 			{
-				int first = (bool) (std::rand() % 2);
+				int first;
+				if (curr->split_on_which_agent == split_on_agent::UNSET)
+					first = (bool) (std::rand() % 2);
+				else
+					first = curr->split_on_which_agent;
 				if (first) // disjoint splitting on the first agent
 				{
 					child[0]->constraints = curr->conflict->constraint1;
@@ -923,8 +945,8 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 					delete child[i];
 					continue;
 				}
-				if (child[i]->g_val + child[i]->h_val == min_f_val && curr->unknownConf.size() + curr->conflicts.size() == 0) //no conflicts
-				{// found a solution (and finish the while look)
+				if (child[i]->g_val + child[i]->h_val == min_f_val && curr->unknownConf.size() + curr->conflicts.size() == 0) // no conflicts
+				{  // found a solution (and finish the while look)
 					break;
 				}
 				else if (bypass != bypass_support::NONE &&
@@ -987,27 +1009,29 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 						}
 					}
 				}
+				switch (curr->conflict->type)
+				{
+				case conflict_type::RECTANGLE:
+					num_rectangle_conflicts++;
+					break;
+				case conflict_type::CORRIDOR:
+					num_corridor_conflicts++;
+					break;
+				case conflict_type::TARGET:
+					num_target_conflicts++;
+					break;
+				case conflict_type::STANDARD:
+					num_standard_conflicts++;
+					break;
+				case conflict_type::MUTEX:
+					num_mutex_conflicts++;
+					break;
+				}
+				curr->clear();
 			}
-		}
-		switch (curr->conflict->type)
-		{
-		case conflict_type::RECTANGLE:
-			num_rectangle_conflicts++;
-			break;
-		case conflict_type::CORRIDOR:
-			num_corridor_conflicts++;
-			break;
-		case conflict_type::TARGET:
-			num_target_conflicts++;
-			break;
-		case conflict_type::STANDARD:
-			num_standard_conflicts++;
-			break;
-		case conflict_type::MUTEX:
-			num_mutex_conflicts++;
-			break;
-		}
-		curr->clear();
+		} while (foundBypass);
+
+		prev_node = curr;
 	}  // end of while loop
 
 

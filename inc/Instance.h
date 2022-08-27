@@ -1,6 +1,6 @@
 #pragma once
 
-#include"common.h"
+#include "common.h"
 
 
 // Currently only works for undirected unweighted 4-neighbor grids
@@ -11,7 +11,7 @@ public:
 	int num_of_rows;
 	int map_size;
 
-	// enum valid_moves_t { NORTH, EAST, SOUTH, WEST, WAIT_MOVE, MOVE_COUNT };  // MOVE_COUNT is the enum's size
+	enum valid_moves_t { NORTH, EAST, SOUTH, WEST, WAIT_MOVE, MOVE_COUNT };  // MOVE_COUNT is the enum's size
 
 	Instance() {}
 	Instance(const string& map_fname, const string& agent_fname,

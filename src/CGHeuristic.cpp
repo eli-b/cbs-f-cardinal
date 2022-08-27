@@ -29,7 +29,9 @@ bool CGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& CG, 
 	max_edge_weight = 1;
 	for (const auto& conflict : curr.conflicts)
     {
-      if (conflict->priority == conflict_priority::CARDINAL)
+      if (conflict->priority == conflict_priority::G_CARDINAL ||
+      	  conflict->priority == conflict_priority::F_CARDINAL_G_CARDINAL ||
+		  conflict->priority == conflict_priority::SEMI_F_CARDINAL_G_CARDINAL)
         {
           int a1 = conflict->a1;
           int a2 = conflict->a2;
@@ -37,6 +39,12 @@ bool CGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& CG, 
             ++num_edges;
           CG[a1][a2] = make_tuple(1, 1);
           CG[a2][a1] = make_tuple(1, 1);
+          if (conflict->type == conflict_type::TARGET &&  // Requires that target reasoning be enabled :(
+		  	  conflict->priority == conflict_priority::G_CARDINAL &&
+			  conflict->a1_path_cost < get<3>(conflict->constraint1.front())) {
+			  conflict->priority = conflict_priority::SEMI_F_CARDINAL_G_CARDINAL;  // One child is going to give the
+																				   // heuristic a surprise
+          }
         }
     }
 	runtime_build_graph += (double)(clock() - start_time) / CLOCKS_PER_SEC;
@@ -58,7 +66,9 @@ bool NVWCGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& C
 	num_edges = 0;
 	for (const auto& conflict : curr.conflicts)
 	{
-		if (conflict->priority == conflict_priority::CARDINAL || conflict->priority == conflict_priority::PSEUDO_CARDINAL)
+		if (conflict->priority == conflict_priority::G_CARDINAL || conflict->priority == conflict_priority::PSEUDO_G_CARDINAL ||
+			conflict->priority == conflict_priority::F_CARDINAL_G_CARDINAL ||
+			conflict->priority == conflict_priority::SEMI_F_CARDINAL_G_CARDINAL)
 		{
 			int a1 = conflict->a1;
 			int a2 = conflict->a2;
@@ -76,7 +86,7 @@ bool NVWCGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& C
 			if (conflict->type == conflict_type::TARGET ||
 				(!target_reasoning && conflict->type == conflict_type::STANDARD &&
 				 get<3>(conflict->constraint1.front()) > conflict->a1_path_cost)
-				) {  // A cardinal target conflict
+				) {  // A g-cardinal target conflict (at least semi-f-cardinal with the MVC heuristic)
 				// a1 is the agent that's at its target
 				int time_step = get<3>(conflict->constraint1.front());
 				int cost_increase_a1_from_this_conflict = time_step + 1 - conflict->a1_path_cost;

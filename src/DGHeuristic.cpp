@@ -12,9 +12,13 @@ bool DGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& DG, 
 		int a1 = min(conflict->a1, conflict->a2);
 		int a2 = max(conflict->a1, conflict->a2);
 		int idx = a1 * num_of_agents + a2;
-		if (conflict->priority == conflict_priority::CARDINAL ||
-			conflict->priority == conflict_priority::PSEUDO_CARDINAL
-			)
+		if (conflict->priority == conflict_priority::F_CARDINAL_G_CARDINAL ||
+			conflict->priority == conflict_priority::SEMI_F_CARDINAL_G_CARDINAL ||
+			conflict->priority == conflict_priority::G_CARDINAL ||
+			conflict->priority == conflict_priority::PSEUDO_G_CARDINAL_SEMI_G_CARDINAL ||
+			conflict->priority == conflict_priority::PSEUDO_G_CARDINAL_NON_G_CARDINAL
+			)  // (All but the G_CARDINAL priority are only possible when inheriting an already categorized conflict
+			   // from an ancestor)
 		{
 			curr.dependenceGraph[idx] = 1;
 		}
@@ -32,26 +36,41 @@ bool DGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& DG, 
 				lookupTable[a1][a2][HTableEntry(a1, a2, &curr)] = curr.dependenceGraph[idx];
 			}
 		}
-		if ((clock() - start_time) / CLOCKS_PER_SEC > time_limit) // run out of time
+		if ((clock() - start_time) / CLOCKS_PER_SEC > time_limit) // ran out of time
 		{
 			runtime_build_graph += (double) (clock() - start_time) / CLOCKS_PER_SEC;
 			return false;
 		}
 	}
 
-	// Upgrade conflicts between dependent agents to pseudo-g-cardinal, if necessary:
+	// Upgrade conflicts between dependent agents to pseudo-g-cardinal
+	// and target conflicts to semi-f-cardinal, if necessary:
 	for (auto& conflict : curr.conflicts)
 	{
 		int a1 = min(conflict->a1, conflict->a2);
 		int a2 = max(conflict->a1, conflict->a2);
 		int idx = a1 * num_of_agents + a2;
-		if (conflict->priority > conflict_priority::CARDINAL &&  // Higher enum value means *lower* priority
+		if (conflict->priority > conflict_priority::G_CARDINAL &&  // Higher enum value means *lower* priority
 			curr.dependenceGraph[idx] > 0)
 		{
-			if (conflict->priority == conflict_priority::CARDINAL)
-				conflict->priority = conflict_priority::PSEUDO_CARDINAL; // the two agents are dependent, although resolving this conflict won't increase the cost immediately
+			if (conflict->priority == conflict_priority::SEMI_G_CARDINAL)
+				conflict->priority = conflict_priority::PSEUDO_G_CARDINAL_SEMI_G_CARDINAL; // the two agents are dependent, although resolving this conflict won't increase the cost immediately
+			if (conflict->priority == conflict_priority::NON_G_CARDINAL)
+				conflict->priority = conflict_priority::PSEUDO_G_CARDINAL_NON_G_CARDINAL; // the two agents are dependent, although resolving this conflict won't increase the cost immediately
+		}
+
+		if (curr.dependenceGraph[idx] > 0 &&
+				conflict->type == conflict_type::TARGET &&  // Requires that target reasoning be enabled :(
+				conflict->a1_path_cost < get<3>(conflict->constraint1.front())) {
+			// One child is going to give the heuristic a surprise
+			if (conflict->priority == conflict_priority::G_CARDINAL)
+				conflict->priority = conflict_priority::SEMI_F_CARDINAL_G_CARDINAL;
+			if (conflict->priority == conflict_priority::PSEUDO_G_CARDINAL_SEMI_G_CARDINAL ||
+				conflict->priority == conflict_priority::PSEUDO_G_CARDINAL_NON_G_CARDINAL)
+				conflict->priority = conflict_priority::SEMI_F_CARDINAL_OTHERWISE;
 		}
 	}
+
 	for (int i = 0; i < num_of_agents; i++)
 	{
 		for (int j = i + 1; j < num_of_agents; j++)
@@ -181,8 +200,11 @@ bool NVWDGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>& D
 	clock_t t = clock();
 	for (const auto& conflict : curr.conflicts)
 	{
-		if (conflict->priority == conflict_priority::CARDINAL ||
-			conflict->priority == conflict_priority::PSEUDO_CARDINAL
+		if (conflict->priority == conflict_priority::G_CARDINAL ||
+			conflict->priority == conflict_priority::F_CARDINAL_G_CARDINAL ||
+			conflict->priority == conflict_priority::SEMI_F_CARDINAL_G_CARDINAL ||
+			conflict->priority == conflict_priority::PSEUDO_G_CARDINAL_SEMI_G_CARDINAL ||
+			conflict->priority == conflict_priority::PSEUDO_G_CARDINAL_NON_G_CARDINAL
 			)
 		{
 			int a1 = conflict->a1;

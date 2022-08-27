@@ -34,6 +34,14 @@ public:
   uint64_t num_LL_expanded = 0;
   uint64_t num_LL_generated = 0;
 
+  uint64_t f_cardinal_conflicts_found = 0;
+  uint64_t cardinal_target_conflicts_found = 0;
+  uint64_t semi_f_cardinal_conflicts_found = 0;
+  uint64_t cardinal_conflicts_found = 0;
+  uint64_t semi_cardinal_target_conflicts_found = 0;
+  uint64_t semi_cardinal_conflicts_found = 0;
+  uint64_t non_cardinal_conflicts_found = 0;
+
   uint64_t num_delta_h_0 = 0;
   uint64_t num_delta_h_minus_1 = 0;
   uint64_t num_delta_h_1 = 0;
@@ -66,7 +74,6 @@ public:
 
   CBSNode* dummy_start = nullptr;
   CBSNode* goal_node = nullptr;
-
 
   bool solution_found = false;
   int solution_cost = -2;
@@ -108,7 +115,7 @@ public:
   // Save results
   void saveResults(const string& fileName, const string& instanceName, bool writeHeader) const;
 
-  void clear(); // used for rapid random  restart
+  void clear(); // used for rapid random restart
 
 private:
   bool target_reasoning; // using target reasoning
@@ -146,7 +153,6 @@ private:
 
   int num_of_agents;
 
-
   vector<Path*> paths;
   vector<Path> paths_found_initially;  // contain initial paths found
   // vector<MDD*> mdds_initially;  // contain initial paths found
@@ -154,7 +160,6 @@ private:
 
   // init helper
   void init_heuristic(heuristics_type heuristic);
-
   // high level search
   bool findPathForSingleAgent(CBSNode* node, int ag, int lower_bound = 0);
   bool generateChild(CBSNode* child, CBSNode* curr);

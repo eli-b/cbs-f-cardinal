@@ -31,12 +31,13 @@ bool WDGHeuristic::buildGraph(CBSNode& node, vector<vector<tuple<int,int>>>& WDG
 		}
 		else
 		{
-			bool cardinal = conflict->priority == conflict_priority::CARDINAL;
-			if (!cardinal) // using merging MDD methods before running 2-agent instance
+			bool g_cardinal = conflict->priority == conflict_priority::G_CARDINAL;
+			bool g_cardinal_or_pseudo = g_cardinal;
+			if (!g_cardinal) // using merging MDD methods before running 2-agent instance
 			{
-				cardinal = dependent(a1, a2, node);
+				g_cardinal_or_pseudo = dependent(a1, a2, node);
 			}
-			if (cardinal) // run 2-agent solver only for dependent agents
+			if (g_cardinal_or_pseudo) // run 2-agent solver only for dependent agents
 			{
 				node.dependenceGraph[idx] = solve2Agents(a1, a2, node, true);
 				assert(node.dependenceGraph[idx] >= 1);
@@ -60,7 +61,10 @@ bool WDGHeuristic::buildGraph(CBSNode& node, vector<vector<tuple<int,int>>>& WDG
 
 		if (node.dependenceGraph[idx] > 0)
 		{
-			conflict->priority = conflict_priority::PSEUDO_CARDINAL; // the two agents are dependent, although resolving this conflict might not increase the cost
+			if (conflict->priority == conflict_priority::SEMI_G_CARDINAL)
+				conflict->priority = conflict_priority::PSEUDO_G_CARDINAL_SEMI_G_CARDINAL; // the two agents are dependent, although resolving this conflict won't increase the cost immediately
+			if (conflict->priority == conflict_priority::NON_G_CARDINAL)
+				conflict->priority = conflict_priority::PSEUDO_G_CARDINAL_NON_G_CARDINAL; // the two agents are dependent, although resolving this conflict won't increase the cost immediately
 		}
 		if ((clock() - start_time) / CLOCKS_PER_SEC > time_limit) // run out of time
 		{
@@ -147,7 +151,7 @@ WDGHeuristic::DPForWMVC(std::vector<int>& x, int i, int sum, const std::vector<i
 	return best_so_far;
 }
 
-int WDGHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardinal)
+int WDGHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool g_cardinal_or_pseudo)
 {
 	vector<SingleAgentSolver*> engines(2);
 	engines[0] = search_engines[a1];
@@ -177,7 +181,7 @@ int WDGHeuristic::solve2Agents(int a1, int a2, const CBSNode& node, bool cardina
 	int root_g = (int) initial_paths[0].size() - 1 + (int) initial_paths[1].size() - 1;
 	int lowerbound = root_g;
 	int upperbound = MAX_COST;
-	if (cardinal)
+	if (g_cardinal_or_pseudo)
 		lowerbound += 1;
 	cbs.solve(time_limit - runtime, lowerbound, upperbound);
 	num_solve_2agent_problems++;
@@ -208,8 +212,11 @@ bool NVWEWDGHeuristic::buildGraph(CBSNode& curr, vector<vector<tuple<int,int>>>&
 	clock_t t = clock();
 	for (const auto& conflict : curr.conflicts)
 	{
-		if (conflict->priority == conflict_priority::CARDINAL ||
-			conflict->priority == conflict_priority::PSEUDO_CARDINAL
+		if (conflict->priority == conflict_priority::G_CARDINAL ||
+			conflict->priority == conflict_priority::F_CARDINAL_G_CARDINAL ||
+			conflict->priority == conflict_priority::SEMI_F_CARDINAL_G_CARDINAL ||
+			conflict->priority == conflict_priority::PSEUDO_G_CARDINAL_SEMI_G_CARDINAL ||
+			conflict->priority == conflict_priority::PSEUDO_G_CARDINAL_NON_G_CARDINAL
 			)
 		{
 			int a1 = conflict->a1;

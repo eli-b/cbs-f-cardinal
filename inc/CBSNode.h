@@ -3,11 +3,13 @@
 #include "common.h"
 #include "Conflict.h"
 
-enum conflict_prioritization { OFF, BY_G_CARDINAL };
+enum conflict_prioritization { OFF, BY_G_CARDINAL, BY_F_CARDINAL };
 
 enum node_selection { NODE_RANDOM, NODE_H, NODE_DEPTH, NODE_CONFLICTS, NODE_CONFLICTPAIRS, NODE_MVC };
 
-enum bypass_support { NONE, G_BYPASS };
+enum bypass_support { NONE, G_BYPASS, F_BYPASS };
+
+enum split_on_agent { SECOND, FIRST, UNSET };  // For disjoint splitting
 
 class CBSNode
 {
@@ -60,7 +62,6 @@ public:
 	// TODO: This can be deleted.
 	// It's used by the DG-, EWDG- and NVWEWDG- MVC heuristics. Do you mean it doesn't save enough time to be worth it?
 
-
 	list<pair<int, Path>> paths; // new paths
 	list<Constraint> constraints; // new constraints
 
@@ -75,6 +76,7 @@ public:
 	uint64_t time_expanded;
 	uint64_t time_generated;
 
+	split_on_agent split_on_which_agent = split_on_agent::UNSET;
 
 	void clear();
 	void printConflictGraph(int num_of_agents) const;

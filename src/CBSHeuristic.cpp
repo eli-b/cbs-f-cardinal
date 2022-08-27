@@ -84,8 +84,16 @@ int CBSHeuristic::sizeOfAllConflictsGraphMVC(CBSNode& curr)
 	auto t = clock();
 	shared_ptr<Conflict> dummy_conflict;
 
+	// Temporarily turn off selecting f-cardinal conflicts
+	conflict_prioritization current_prioritization = this->PC;
+	if (this->PC == conflict_prioritization::BY_F_CARDINAL)
+		this->PC = conflict_prioritization::BY_G_CARDINAL;
+
 	// Solve the MVC problem
 	int mvc_size = minimumVertexCover(G, curr);
+
+	// Revert the PC change
+	this->PC = current_prioritization;
 
 	runtime_solve_MVC -= (double) (clock() - t) / CLOCKS_PER_SEC;
 	return mvc_size;
@@ -248,7 +256,9 @@ void CBSHeuristic::calc_heuristic_graph_vertex_degrees(const vector<vector<tuple
 }
 
 // compute a possibly-weighted MVC for the given graph
+//// compute a possibly-weighted MVC for the given graph, and also choose a more promising conflict if one is found
 // HG[i][j] = <x,y>. x is the weight of the edge between i and j, y is the weight near i.
+// TODO: Separate the second part into a new function
 int CBSHeuristic::minimumVertexCover(const vector<vector<tuple<int,int>>>& HG, CBSNode& node)
 {
 	clock_t t = clock();
@@ -276,11 +286,15 @@ int CBSHeuristic::minimumVertexCover(const vector<vector<tuple<int,int>>>& HG, C
 											 highestCostIncrease, h);
 
 		if (NumNontrivialHGEdges == 0)
-		{
+		{  // Then there are no f-cardinal conflicts to be found. Resolving a trivial edge will decrease the H exactly by the increase in cost.
 			runtime_solve_MVC += (double) (clock() - t) / CLOCKS_PER_SEC;
 			return h;
 		}
-		if (NumNontrivialHGEdges == 2)
+
+		if ((NumNontrivialHGEdges == 2) &&
+			// Exactly three vertices and two edges - two edges that share a single vertex.
+			// (We already handled trivial edges earlier)
+			PC != conflict_prioritization::BY_F_CARDINAL)  // Otherwise we still need to run the model
 		{
 			// Find the middle agent
             for (int i = 0; i < num_of_agents; i++) {
@@ -321,6 +335,134 @@ int CBSHeuristic::minimumVertexCover(const vector<vector<tuple<int,int>>>& HG, C
 		h += nontrivial_mvc_size;
 
 		runtime_solve_MVC += (double) (clock() - t) / CLOCKS_PER_SEC;
+		t = clock();
+
+		if (PC == conflict_prioritization::BY_F_CARDINAL &&    // Look for an f-cardinal conflict among the g-cardinal conflicts,
+			NumNontrivialHGEdges != 0)  // there's a chance of finding one (removing trivial edges always decreases the h by exactly their weight).
+											  // Although, lookahead may still find f-cardinal conflicts behind trivial
+											  // edges, thanks to disjoint splitting, length constraints, or other reasons.
+		{
+			// Find an edge that increases the cost without decreasing the size of the mvc -
+			// splitting on it will increase the F of one of the children, because that node's cost will increase (by 1, usually)
+			// and its h will stay the same. That's better than splitting on conflicts where the F of both children stays the same.
+
+			// We could have a larger than 1 cost decrease from removing a vertex. For example, if 10 agents
+            // have a conflict with the same agent 3 timesteps after it reaches its goal, removing that agent would decrease
+            // the h by 4.
+			auto orig_conflict = node.conflict;
+            int best_h_decrease = std::numeric_limits<int>::max();  // A lower decrease is better
+			bool f_cardinal_found = false;
+			for (int i = 0; i < num_of_agents && !f_cardinal_found; ++i)
+			{
+				if (nodeHasNontrivialEdges[i] == false)  // Trivial edges always increase the h by exactly their weight
+					continue;
+
+				// Remove all nontrivial edges connected to agent i (trivial edges do not get into the model in the first place)
+				remove_mvc_model_constraints_of_agent(Constraints, i, HGNodeDegrees, nodeHasNontrivialEdges);
+
+				//  Assume the agent increased its cost by the minimum amount that would resolve at least the current conflict.
+				//  Add new weaker constraints if necessary.
+				add_mvc_model_constraints_of_agent(HG, i, lowestCostIncrease[i], HGNodeDegrees, Constraints,
+												   NumNontrivialHGEdges, nodeHasNontrivialEdges);
+
+				// Re-optimize
+				mvc_model.resolve();
+                mvc_model.branchAndBound();
+                int nontrivial_mvc_size_without_the_edges_of_the_node = (int) mvc_model.getObjValue();
+				int h_decrease = nontrivial_mvc_size - nontrivial_mvc_size_without_the_edges_of_the_node;
+				if (h_decrease < best_h_decrease)
+				{
+					best_h_decrease = h_decrease;
+				}
+
+				if (h_decrease < lowestCostIncrease[i])  // Delta-f > 0
+				{
+					for (auto& conflict: node.conflicts)
+					{
+						if (conflict->a1 != i && conflict->a2 != i)
+							continue;
+						++g_cardinal_conflicts_checked_for_f_cardinality;  // NO! Counting each conflict twice!
+						int j;
+						if (conflict->a1 != i)
+							j = conflict->a1;
+						else
+							j = conflict->a2;
+						if (get<1>(HG[i][j]) > lowestCostIncrease[i])
+							continue;  // This conflict has not been resolved by the imagined cost increase
+						if (get<1>(HG[j][i]) > 1 && conflict->priority == conflict_priority::G_CARDINAL)
+						{   // Our agent is the non-target side of a g-cardinal target conflict - we found a full f-cardinal conflict!
+							// Can't improve that, skip adding the edges back - we're going to remove them all anyway.
+							f_cardinal_found = true;
+							conflict->priority = conflict_priority::F_CARDINAL_G_CARDINAL;
+							node.conflict = conflict;
+							++f_cardinal_conflicts_found;
+							break;
+						}
+						if (conflict->priority == conflict_priority::G_CARDINAL) {  // But not a target conflict from the other side
+							conflict->priority = conflict_priority::SEMI_F_CARDINAL_G_CARDINAL;
+							++semi_f_cardinal_g_cardinal_conflicts_found;
+							if (highestCostIncrease == 1) {
+								// No g-cardinal target conflicts => in particular, the chosen conflict isn't a g-cardinal target conflict.
+								// g-cardinal target conflicts are better than semi-f-cardinal conflicts, but none exist, so it's better to
+								// switch to a semi-f-cardinal g-cardinal conflict
+								// TODO: Just check the chosen conflict directly!
+								node.conflict = conflict;
+								f_cardinal_found = true;
+
+								// For disjoint splitting: branch on the this agent. Adding a positive constraint on
+								// it might increase the cost of other agents besides the conflicting agent and
+								// make the conflict fully f-cardinal
+								if (conflict->a1 == i)
+									node.split_on_which_agent = split_on_agent::FIRST;
+								else
+									node.split_on_which_agent = split_on_agent::SECOND;
+								break;
+							}
+						}
+
+					}
+				}
+				else
+					g_cardinal_conflicts_checked_for_f_cardinality += HGNodeDegrees[i];  // What about edges that don't come from g-cardinal conflicts
+
+				if (!f_cardinal_found)
+				{
+					// Remove the weakened edges, if any were added
+					remove_mvc_model_constraints_of_agent(Constraints, i, HGNodeDegrees, nodeHasNontrivialEdges);
+					// Add all the edges back (since the agent has a nontrivial edge, all its edges are nontrivial so we should add them all)
+					add_mvc_model_constraints_of_agent(HG, i, 0, HGNodeDegrees, Constraints,
+													   NumNontrivialHGEdges, nodeHasNontrivialEdges);
+				}
+			}
+
+			if (f_cardinal_found)
+			{
+//				if (curr.conflict == orig_conflict)
+//					spdlog::info("The already chosen conflict {}"
+//								 " will increase the F value of at least one of its children", *curr.conflict);
+//				else
+//					spdlog::info("Switched from conflict {} to conflict {}"
+//								 " - it will increase the F value of at least one of its children", *orig_conflict,
+//								 *curr.conflict);
+			}
+			else {
+				if (node.conflict->priority > conflict_priority::F_CARDINAL_G_CARDINAL)  // Can improve
+				{
+					for (auto& conflict: node.conflicts) {
+						if (conflict->priority < node.conflict->priority)
+						{
+							node.conflict = conflict;
+//							spdlog::info("Switched from conflict {} to conflict {}"
+//								 " - it will increase the F value of at least one of its children", *orig_conflict,
+//								 *curr.conflict);
+							break;
+						}
+					}
+				}
+			}
+		}
+		runtime_fcardinal_reasoning += (double) (clock() - t) / CLOCKS_PER_SEC;
+
 		remove_model_constraints(Constraints, HG, nodeHasNontrivialEdges);  // In preparation for next call
 
 		double runtime = (double) (clock() - start_time) / CLOCKS_PER_SEC;

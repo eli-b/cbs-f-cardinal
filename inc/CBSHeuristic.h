@@ -141,19 +141,24 @@ public:
 	bypass_support bypass; // using g-bypassing in the subproblem solver
 	conflict_prioritization PC; // using prioritizing conflicts in the subproblem solver, and possibly choosing f-cardinal conflicts
 	conflict_selection conflict_selection_rule;  // for the subproblem solver
-	node_selection node_selection_rule;  // for the subproblem solver
+	node_selection node_selection_rule;  // for the subproblem solver and for setting the tie-breaking value on nodes
+										 // after computing their heuristic
 	int screen = 0;  // Mostly for subsolver
 	int seed = 0;
 
 	// Runtime stats
 	double runtime_build_graph = 0;
 	double runtime_solve_MVC = 0;
+	double runtime_fcardinal_reasoning = 0;
 
 	// More stats for specific subclasses. TODO: Find a way to move them to the subclasses
 	uint64_t num_merge_MDDs = 0;  // Only set by the DG heuristic
 	uint64_t num_solve_2agent_problems = 0;  // Only set by the WDG heuristic
 	uint64_t num_memoization_hits = 0; // number of times when memoization helps - only set by the DG and WDG heuristics
 
+	uint64_t f_cardinal_conflicts_found = 0;
+	uint64_t semi_f_cardinal_g_cardinal_conflicts_found = 0;
+	uint64_t g_cardinal_conflicts_checked_for_f_cardinality = 0;
 
 	CBSHeuristic(int num_of_agents, const vector<Path*>& paths, vector<SingleAgentSolver*>& search_engines,
 				 const vector<ConstraintTable>& initial_constraints, MDDTable& mdd_helper) :
@@ -166,7 +171,7 @@ public:
 	virtual void init() {}
 	virtual void clear() {}
 	bool shouldEvalHeuristic(CBSNode* node);
-	virtual heuristics_type getType() const = 0;  // Just for printing its name. Consider just returning a string instead.
+	virtual heuristics_type getType() const = 0;  // Just for printing its name. TODO: Consider just returning a string instead.
 
 protected:
 	int num_of_agents;
@@ -175,7 +180,6 @@ protected:
 	double start_time;
 
 	int node_limit = 64;  // Terminate the CBS subsolver if the number of its expanded nodes exceeds the node limit.
-						  // TODO: Clean up
 
 	OsiGrbSolverInterface mvc_model;
 	typedef int OsiGrbConstraint;
@@ -291,7 +295,7 @@ public:
 
 protected:
 	bool buildGraph(CBSNode& node, vector<vector<tuple<int,int>>>& WDG, int& num_edges, int& max_edge_weight) override;
-	int solve2Agents(int a1, int a2, const CBSNode& node, bool cardinal);
+	int solve2Agents(int a1, int a2, const CBSNode& node, bool g_cardinal_or_pseudo);
 	int DPForWMVC(vector<int>& x, int i, int sum, const vector<int>& CG, const vector<int>& range, int& best_so_far);
 };
 
