@@ -2,6 +2,7 @@
 
 #include "Instance.h"
 #include "ConstraintTable.h"
+#include "ConflictAvoidanceTable.h"
 
 class LLNode // low-level node
 {
@@ -105,7 +106,7 @@ public:
 	const Instance& instance;
 
 	virtual Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
-						  const vector<Path*>& paths, int agent, int lower_bound) = 0;
+						  const vector<Path*>& paths, const ConflictAvoidanceTable& cat, int agent, int lower_bound) = 0;
 	virtual int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound) = 0;
 	virtual string getName() const = 0;
 

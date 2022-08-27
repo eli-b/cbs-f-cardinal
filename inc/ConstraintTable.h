@@ -43,6 +43,11 @@ public:
 	list<pair<int, int>> decodeBarrier(int B1, int B2, int t);
 protected:
 	// Constraint Table (CT)
+	// The cost of this approach is giving up locality - nearby locations would have different hashes and edges and their
+	// ends won't be close together. The benefit is space savings - most ConstraintState and AvoidanceState are sparse
+	// in true values.
+	// Mapping x,y coordinates to location IDs could have the same issue, if there were maps that were wider than a page.
+	// For now, having width*height vectors is fine (~100,000*8 bytes is OK), but squaring that for edges is not.
 	unordered_map<size_t, list<pair<int, int>>> ct_ranges; // location -> time range, or edge -> time range
 	XytHolder<ConstraintState, DeleterFromPool> ct;
 
@@ -50,6 +55,7 @@ protected:
 
 	void insertLandmark(size_t loc, int t); // insert a landmark, i.e., the agent has to be at the given location at the given timestep
 
+	// Guaranteed not to clash with any location or any other edge
 	inline size_t getEdgeIndex(size_t from, size_t to) const { return (1 + from) * map_size + to; }
 	inline std::pair<size_t, size_t> getEdgeLocations(size_t edge_index) const {
 		return make_pair(edge_index / map_size - 1, edge_index % map_size);
@@ -59,7 +65,6 @@ private:
 	//size_t map_size_threshold = 10000;
 	//vector<list<size_t>> cat_large; // conflict avoidance table for large maps
 	//vector<vector<bool>> cat_small; // conflict avoidance table for small maps
-
 
 	size_t move_offsets[4];
 };

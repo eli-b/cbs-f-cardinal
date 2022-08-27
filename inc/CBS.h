@@ -4,6 +4,7 @@
 #include "RectangleReasoning.h"
 #include "CorridorReasoning.h"
 #include "MutexReasoning.h"
+#include "ConflictAvoidanceTable.h"
 
 class CBS
 {
@@ -173,8 +174,20 @@ private:
 
   void computeSecondaryPriorityForConflict(Conflict& conflict, CBSNode& node);
 
+  // Conflict Avoidance Table:
+  ConflictAvoidanceTable* cat;
+  void buildConflictAvoidanceTable(const CBSNode &node, int exclude_agent, ConflictAvoidanceTable &cat);
+  void updateCat(CBSNode *prev_node, CBSNode *curr,
+                 vector<Path*>& paths, ConflictAvoidanceTable *cat);
+
+  // LCA-Jumping
+  void findShortestPathFromPrevNodeToCurr(CBSNode *curr, CBSNode* prev,
+											vector<CBSNode *>& steps_up_from_prev_node_to_lowest_common_ancestor,
+											vector<CBSNode *>& steps_down_from_lowest_common_ancestor_to_curr_node);
+
   //update information
   inline void updatePaths(CBSNode* curr);
+  inline void updatePaths(CBSNode* curr, vector<Path*>& the_paths);
   void updateFocalList();
   inline void releaseNodes();
   //inline void releaseMDDTable();
@@ -185,7 +198,7 @@ private:
   void printResults() const;
   void printConflicts(const CBSNode& curr) const;
 
-  bool validateSolution() const;
+  [[nodiscard]] bool validateSolution() const;
   inline int getAgentLocation(int agent_id, size_t timestep) const;
   inline void pushNode(CBSNode* node);
   void update_delta_h_and_delta_f_stats(CBSNode* curr);

@@ -11,8 +11,13 @@
 // also, do the same for ll_min_f_vals and paths_costs (since its already "on the way").
 inline void CBS::updatePaths(CBSNode* curr)
 {
+	updatePaths(curr, this->paths);
+}
+
+inline void CBS::updatePaths(CBSNode* curr, vector<Path*>& the_paths)
+{
 	for (int i = 0; i < num_of_agents; i++)
-		paths[i] = &paths_found_initially[i];
+		the_paths[i] = &paths_found_initially[i];
 	vector<bool> updated(num_of_agents, false);  // initialized for false
 
 	while (curr != nullptr)
@@ -21,7 +26,7 @@ inline void CBS::updatePaths(CBSNode* curr)
 		{
 			if (!updated[it->first])
 			{
-				paths[it->first] = &(it->second);
+				the_paths[it->first] = &(it->second);
 				updated[it->first] = true;
 			}
 		}
@@ -436,16 +441,22 @@ void CBS::removeLowPriorityConflicts(list<shared_ptr<Conflict>>& conflicts) cons
 bool CBS::findPathForSingleAgent(CBSNode* node, int ag, int lowerbound)
 {
 	clock_t t = clock();
-	// build reservation table
-	// CAT cat(node->makespan + 1);  // initialized to false
-	// updateReservationTable(cat, ag, *node);
+	this->cat.removePath(*this->paths[ag]);
+	runtime_build_CAT += (double) (clock() - t) / CLOCKS_PER_SEC;
+
 	// find a path
-	Path new_path = search_engines[ag]->findPath(*node, initial_constraints[ag], paths, ag, lowerbound);
+	t = clock();
+	Path new_path = search_engines[ag]->findPath(*node, initial_constraints[ag], this->cat, ag, lowerbound);
+	runtime_path_finding += (double) (clock() - t) / CLOCKS_PER_SEC;
+
+	t = clock();
+	this->cat.addPath(*this->paths[ag], ag);
+	runtime_build_CAT += (double) (clock() - t) / CLOCKS_PER_SEC;
+
 	num_LL_expanded += search_engines[ag]->num_expanded;
 	num_LL_generated += search_engines[ag]->num_generated;
 	runtime_build_CT += search_engines[ag]->runtime_build_CT;
 	runtime_build_CAT += search_engines[ag]->runtime_build_CAT;
-	runtime_path_finding += (double) (clock() - t) / CLOCKS_PER_SEC;
 	if (!new_path.empty())
 	{
 		assert(!isSamePath(*paths[ag], new_path));
@@ -899,7 +910,8 @@ bool CBS::solve(double time_limit, int cost_lowerbound, int cost_upperbound)
 					 "	on " << *(curr->conflict) << endl;
 
 			bool solved[2] = { false, false };
-			vector<vector<PathEntry>*> copy(paths);
+			vector<Path*> copy(paths);
+			updateCat(prev_node, curr, this->paths, &cat);
 
 			for (int i = 0; i < 2; i++)
 			{
@@ -1044,13 +1056,20 @@ CBS::CBS(const Instance& instance, bool sipp, heuristics_type heuristic, int scr
 							   ConstraintTable(instance.num_of_cols, instance.map_size));
 
 	search_engines.resize(num_of_agents);
+
+	if (sipp) {
+		for (int i = 0; i < num_of_agents; i++)
+			search_engines[i] = new SIPP(instance, i);
+		cat = new ;
+	}
+	else {
+		for (int i = 0; i < num_of_agents; i++)
+			search_engines[i] = new SpaceTimeAStar(instance, i);
+		cat = new ConflictAvoidanceTable(instance->get)
+	}
+
 	for (int i = 0; i < num_of_agents; i++)
 	{
-		if (sipp)
-			search_engines[i] = new SIPP(instance, i);
-		else
-			search_engines[i] = new SpaceTimeAStar(instance, i);
-
 		initial_constraints[i].goal_location = search_engines[i]->goal_location;
 	}
 	runtime_preprocessing = (double) (clock() - t) / CLOCKS_PER_SEC;
@@ -1124,8 +1143,6 @@ bool CBS::generateRoot()
 
 		for (auto i : agents)
 		{
-			//CAT cat(dummy_start->makespan + 1);  // initialized to false
-			//updateReservationTable(cat, i, *dummy_start);
 			paths_found_initially[i] = search_engines[i]->findPath(*dummy_start, initial_constraints[i], paths, i, 0);
 			if (paths_found_initially[i].empty())
 			{
@@ -1137,6 +1154,7 @@ bool CBS::generateRoot()
 			dummy_start->g_val += (int) paths_found_initially[i].size() - 1;
 			num_LL_expanded += search_engines[i]->num_expanded;
 			num_LL_generated += search_engines[i]->num_generated;
+			cat.addPath(paths_found_initially[i], i);
 		}
 	}
 	else
@@ -1337,5 +1355,127 @@ void CBS::update_delta_g_stats(CBSNode* child)
 	else {
 		sum_delta_g_2_or_more += delta_g;
 		++num_delta_g_2_or_more;
+	}
+}
+
+
+// build conflict avoidance table
+// update cat: Set cat[time_step][location].vertex or .edge[direction] to the number of other agents that plan to use it
+// Assume this->paths contains the paths of the given node
+void CBS::buildConflictAvoidanceTable(const CBSNode &node, int exclude_agent, ConflictAvoidanceTable &cat)
+{
+	if (node.makespan == 0)
+		return;
+	for (int ag = 0; ag < num_of_agents; ag++)
+	{
+		if (ag != exclude_agent &&
+			this->paths[ag]->size() != 0  // Happens when computing the initial paths for the root node
+				)
+		{
+			cat.addPath(*this->paths[ag], ag);
+		}
+	}
+}
+
+
+void CBS::findShortestPathFromPrevNodeToCurr(CBSNode *curr, CBSNode* prev,
+											 vector<CBSNode *>& steps_up_from_prev_node_to_lowest_common_ancestor,
+											 vector<CBSNode *>& steps_down_from_lowest_common_ancestor_to_curr_node) {
+	// TODO: Consider implementing the online lowest common ancestor algorithm from https://hackage.haskell.org/package/lca
+	std::set<CBSNode *> branch_of_curr;
+	CBSNode *node = curr;
+	while (node != nullptr) {
+		if (node == prev) {  // happy case - node is a direct descendant of prev
+			std::reverse(steps_down_from_lowest_common_ancestor_to_curr_node.begin(), steps_down_from_lowest_common_ancestor_to_curr_node.end());
+			return;
+		}
+		steps_down_from_lowest_common_ancestor_to_curr_node.push_back(node);
+		branch_of_curr.insert(node);
+		node = node->parent;
+	}
+	node = prev;
+	auto end_of_branch_of_curr = branch_of_curr.end();
+	while (node != nullptr) {
+		if (branch_of_curr.find(node) != end_of_branch_of_curr) {
+			while (steps_down_from_lowest_common_ancestor_to_curr_node.back() != node) {
+				steps_down_from_lowest_common_ancestor_to_curr_node.pop_back();
+			}
+			steps_down_from_lowest_common_ancestor_to_curr_node.pop_back();  // this common parent itself shouldn't be a step
+			std::reverse(steps_down_from_lowest_common_ancestor_to_curr_node.begin(), steps_down_from_lowest_common_ancestor_to_curr_node.end());
+			return;
+		}
+		steps_up_from_prev_node_to_lowest_common_ancestor.push_back(node);
+		node = node->parent;
+	}
+	cout << "Lowest common ancestor not found!!" << endl;
+	std::abort();
+}
+
+
+void CBS::updateCat(CBSNode *prev_node, CBSNode *curr,
+					vector<Path*>& paths, ConflictAvoidanceTable *cat)
+{
+	if (prev_node != nullptr)
+	{
+		auto lca_jumping_start = std::clock();
+		auto wall_lca_jumping_start = std::chrono::system_clock::now();
+
+		vector<CBSNode*> steps_up_from_prev_node_to_lowest_common_ancestor;
+		vector<CBSNode*> steps_down_from_lowest_common_ancestor_to_curr_node;
+		findShortestPathFromPrevNodeToCurr(curr, prev_node,
+										   steps_up_from_prev_node_to_lowest_common_ancestor,
+										   steps_down_from_lowest_common_ancestor_to_curr_node);
+		if (screen == 3)
+			cout << "Updating CAT from #" << prev_node->time_generated << " at depth "<< prev_node->depth << " to #" <<
+				    curr->time_generated << " at depth " << curr->depth << " in " <<
+				    steps_up_from_prev_node_to_lowest_common_ancestor.size() << " steps up and " <<
+					steps_down_from_lowest_common_ancestor_to_curr_node.size()<< " steps down" << endl;
+
+		// Prepare the CAT:
+		// for every step up from prev_node to curr (might be empty):
+		//   for every path in new_paths that wasn't already deleted from the CAT:
+		//	  cat.removePath(path, agent_id);
+		// for every step down from prev_node to curr (can't be empty):
+		//   for every path in new_paths that wasn't already deleted from the CAT:
+		//	  cat.removePath(prev_path, agent_id);
+		// for every path we removed:
+		//   cat.addPath(curr node's path for the same agent, agent_id)
+
+		// Remove paths from the CAT
+		std::set<int> ids_of_agents_whose_paths_we_removed;
+		auto end_of_ids_of_agents_whose_paths_we_removed = ids_of_agents_whose_paths_we_removed.end();
+		for (auto node : steps_up_from_prev_node_to_lowest_common_ancestor)
+		{
+			for (auto& agent_id_and_new_path : node->paths)
+			{
+				if (ids_of_agents_whose_paths_we_removed.find(agent_id_and_new_path.first) ==
+					end_of_ids_of_agents_whose_paths_we_removed)
+				{  // not already deleted
+					cat->removePath(agent_id_and_new_path.second);
+					ids_of_agents_whose_paths_we_removed.insert(agent_id_and_new_path.first);
+				}
+			}
+		}
+		CBSNode* lowestCommonAncestor = steps_down_from_lowest_common_ancestor_to_curr_node.front()->parent;
+		vector<Path*> lca_paths(num_of_agents, nullptr);
+		updatePaths(lowestCommonAncestor, lca_paths);
+		for (auto node : steps_down_from_lowest_common_ancestor_to_curr_node)
+		{
+			for (const auto& agent_id_and_new_path : node->paths)
+			{
+				if (ids_of_agents_whose_paths_we_removed.find(agent_id_and_new_path.first) ==
+					end_of_ids_of_agents_whose_paths_we_removed)
+				{  // not already deleted
+					cat->removePath(*lca_paths[agent_id_and_new_path.first]);
+					ids_of_agents_whose_paths_we_removed.insert(agent_id_and_new_path.first);
+				}
+			}
+		}
+		// Add the current node's paths to the CAT for each path we removed
+		for (auto agent_id : ids_of_agents_whose_paths_we_removed)
+		{
+			cat->addPath(*paths[agent_id]);
+		}
+		// The CAT is finally ready
 	}
 }

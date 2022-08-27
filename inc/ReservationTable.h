@@ -6,6 +6,7 @@
 typedef tuple<size_t, size_t, size_t> Interval; // [t_min, t_max), num_of_collisions
 
 //TODO:: merge ReservationTable with ConstraintTable
+// Currently used by SIPP only
 class ReservationTable: public ConstraintTable
 {
 public:

@@ -107,7 +107,7 @@ public:
 	// minimizing the number of internal conflicts (that is, conflicts with known_paths for other agents found so far).
 	// lowerbound is an underestimation of the length of the path in order to speed up the search.
 	Path findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
-				  const vector<Path*>& paths, int agent, int lower_bound) override;
+				  const vector<Path*>& paths, const ConflictAvoidanceTable& cat, int agent, int lower_bound) override;
 
 	int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound) override;
 
@@ -131,8 +131,10 @@ private:
 	hashtable_t allNodes_table;
 
 	// find path
-	Path findShortestPath(ConstraintTable& constraint_table, const pair<int, int> start_state, int lowerbound);
-	Path findPath(ConstraintTable& constraint_table, const pair<int, int> start, const pair<int, int> goal);
+	Path findShortestPath(ConstraintTable& constraint_table, const ConflictAvoidanceTable& cat,
+						  const pair<int, int> start_state, int lowerbound);
+	Path findPath(ConstraintTable& constraint_table, const ConflictAvoidanceTable& cat,
+				  const pair<int, int> start, const pair<int, int> goal);
 
 	// Updates the path datamember
 	void updatePath(const LLNode* goal, vector<PathEntry>& path);

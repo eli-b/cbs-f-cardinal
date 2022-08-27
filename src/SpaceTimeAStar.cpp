@@ -20,7 +20,7 @@ void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry>& path)
 // minimizing the number of internal conflicts (that is conflicts with known_paths for other agents found so far).
 // lowerbound is an underestimation of the length of the path in order to speed up the search.
 Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
-							  const vector<Path*>& paths, int agent, int lowerbound)
+							  const vector<Path*>& paths, const ConflictAvoidanceTable& cat, int agent, int lowerbound)
 {
 	num_expanded = 0;
 	num_generated = 0;
@@ -35,10 +35,6 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 	{
 		return Path();
 	}
-
-	start_time = clock();
-	constraint_table.buildCAT(agent, paths, node.makespan + 1);
-	runtime_build_CAT = (double) (clock() - start_time) / CLOCKS_PER_SEC;
 
 	if (constraint_table.getNumOfLandmarks() > 0)
 	{
@@ -177,9 +173,9 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 		if (goal_state.second == MAX_TIMESTEP)
 		{
 			// debug
-			// auto test_path = findShortestPath(constraint_table, make_pair(start_location, 0), lowerbound);
+			// auto test_path = findShortestPath(constraint_table, cat, make_pair(start_location, 0), lowerbound);
 
-			auto path_segment = findShortestPath(constraint_table, start_state, lowerbound - start_state.second);
+			auto path_segment = findShortestPath(constraint_table, cat, start_state, lowerbound - start_state.second);
 			if (path_segment.empty())
 			{
 				// assert(test_path.empty());
@@ -199,9 +195,9 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 		else
 		{
 			// debug
-			// auto test_path = findShortestPath(constraint_table, make_pair(start_location, 0), lowerbound);
+			// auto test_path = findShortestPath(constraint_table, cat, make_pair(start_location, 0), lowerbound);
 
-			auto path_segment = findPath(constraint_table, start_state, goal_state);
+			auto path_segment = findPath(constraint_table, cat, start_state, goal_state);
 			
 			if (path_segment.empty())
 			{
@@ -221,11 +217,12 @@ Path SpaceTimeAStar::findPath(const CBSNode& node, const ConstraintTable& initia
 		}
 	}
 	else
-		return findShortestPath(constraint_table, make_pair(start_location, 0), lowerbound);
+		return findShortestPath(constraint_table, cat, make_pair(start_location, 0), lowerbound);
 }
 
 
-Path SpaceTimeAStar::findShortestPath(ConstraintTable& constraint_table, const pair<int, int> start_state, int lowerbound)
+Path SpaceTimeAStar::findShortestPath(ConstraintTable& constraint_table, const ConflictAvoidanceTable& cat,
+									  const pair<int, int> start_state, int lowerbound)
 {
 	// generate start and add it to the OPEN & FOCAL list
 	Path path;
@@ -291,7 +288,8 @@ Path SpaceTimeAStar::findShortestPath(ConstraintTable& constraint_table, const p
 			if (next_g_val + next_h_val > constraint_table.length_max)
 				continue;
 			int next_internal_conflicts = curr->num_of_conflicts +
-										  constraint_table.getNumOfConflictsForStep(curr->location, next_location, next_timestep);
+										  cat.num_conflicts_for_step(curr->location, next_location, next_timestep);
+
 
 			// generate (maybe temporary) node
 			auto next = new AStarNode(next_location, next_g_val, next_h_val,
@@ -353,7 +351,8 @@ Path SpaceTimeAStar::findShortestPath(ConstraintTable& constraint_table, const p
 }
 
 
-Path SpaceTimeAStar::findPath(ConstraintTable& constraint_table, const pair<int, int> start_state, const pair<int, int> goal_state)
+Path SpaceTimeAStar::findPath(ConstraintTable& constraint_table, const ConflictAvoidanceTable& cat,
+							  const pair<int, int> start_state, const pair<int, int> goal_state)
 {
 	// generate start and add it to the OPEN & FOCAL list
 	Path path;
@@ -401,7 +400,8 @@ Path SpaceTimeAStar::findPath(ConstraintTable& constraint_table, const pair<int,
 			if (next_timestep + next_h_val > goal_state.second)
 				continue;
 			int next_internal_conflicts = curr->num_of_conflicts +
-				constraint_table.getNumOfConflictsForStep(curr->location, next_location, next_timestep);
+										  cat.num_conflicts_for_step(curr->location, next_location, next_timestep);
+
 
 			// generate (maybe temporary) node
 			auto next = new AStarNode(next_location, next_g_val, next_h_val,

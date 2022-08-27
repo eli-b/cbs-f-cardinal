@@ -28,7 +28,7 @@
 }*/
 
 
-// build the constraint table and the conflict avoidance table
+// build the conflict avoidance table
 void ReservationTable::buildCAT(int agent, const vector<Path*>& paths)
 {
 	for (size_t ag = 0; ag < paths.size(); ag++)

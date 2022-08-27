@@ -312,95 +312,95 @@ void ConstraintTable::build(const CBSNode& node, int agent)
 //	}
 //}
 
-int ConstraintTable::getNumOfConflictsForStep(size_t curr_id, size_t next_id, int next_timestep) const
-{
-	if (map_size < map_size_threshold)
-	{
-		if (next_timestep >= (int) cat_small.size())
-		{
-			if (cat_small.back()[next_id])
-				return 1;
-			else
-				return 0;
-		}
-		if (cat_small[next_timestep][next_id] ||
-			(curr_id != next_id && cat_small[next_timestep - 1][next_id] && cat_small[next_timestep][curr_id]))
-			return 1;
-		else
-			return 0;
-	}
-	else
-	{
-		if (next_timestep >= (int) cat_large.size())
-		{
-			for (const auto& loc : cat_large.back())
-			{
-				if (loc == next_id)
-					return 1;
-			}
-			return 0;
-		}
-		for (const auto& loc : cat_large[next_timestep])
-		{
-			if (loc == next_id)
-			{
-				return 1;
-			}
-			if (loc == getEdgeIndex(curr_id, next_id))
-			{
-				return 1;
-			}
-		}
-		return 0;
-		/*auto& it = cat.back().find(next_id);
-		if (it != cat.back().end())
-			return 1;
-		else
-			return 0;*/
-	}
-	/*int rst = 0;
-	auto& it = cat[next_timestep].find(next_id);
-	if (it != cat[next_timestep].end())
-	{
-		rst++;
-	}
-	if (curr_id != next_id)
-	{
-		it = cat[next_timestep].find(getEdgeIndex(curr_id, next_id));
-		if (it != cat[next_timestep].end())
-		{
-			rst++;
-		}
-	}
-	return rst;*/
-
-
-	/*if (next_timestep >= (int)cat.size())
-	{
-		auto& it = cat.back().find(next_id);
-		if (it != cat.back().end())
-			return 1;
-		else
-			return 0;
-	}
-	int rst = 0;
-	auto& it = cat[next_timestep].find(next_id);
-	if (it != cat[next_timestep].end())
-	{
-		rst++;
-	}
-	if (curr_id != next_id)
-	{
-		it = cat[next_timestep].find(getEdgeIndex(curr_id, next_id));
-		if (it != cat[next_timestep].end())
-		{
-			rst++;
-		}
-	}
-	return rst;
-
-	*/
-}
+//int ConstraintTable::getNumOfConflictsForStep(size_t curr_id, size_t next_id, int next_timestep) const
+//{
+//	if (map_size < map_size_threshold)
+//	{
+//		if (next_timestep >= (int) cat_small.size())
+//		{
+//			if (cat_small.back()[next_id])
+//				return 1;
+//			else
+//				return 0;
+//		}
+//		if (cat_small[next_timestep][next_id] ||
+//			(curr_id != next_id && cat_small[next_timestep - 1][next_id] && cat_small[next_timestep][curr_id]))
+//			return 1;
+//		else
+//			return 0;
+//	}
+//	else
+//	{
+//		if (next_timestep >= (int) cat_large.size())
+//		{
+//			for (const auto& loc : cat_large.back())
+//			{
+//				if (loc == next_id)
+//					return 1;
+//			}
+//			return 0;
+//		}
+//		for (const auto& loc : cat_large[next_timestep])
+//		{
+//			if (loc == next_id)
+//			{
+//				return 1;
+//			}
+//			if (loc == getEdgeIndex(curr_id, next_id))
+//			{
+//				return 1;
+//			}
+//		}
+//		return 0;
+//		/*auto& it = cat.back().find(next_id);
+//		if (it != cat.back().end())
+//			return 1;
+//		else
+//			return 0;*/
+//	}
+//	/*int rst = 0;
+//	auto& it = cat[next_timestep].find(next_id);
+//	if (it != cat[next_timestep].end())
+//	{
+//		rst++;
+//	}
+//	if (curr_id != next_id)
+//	{
+//		it = cat[next_timestep].find(getEdgeIndex(curr_id, next_id));
+//		if (it != cat[next_timestep].end())
+//		{
+//			rst++;
+//		}
+//	}
+//	return rst;*/
+//
+//
+//	/*if (next_timestep >= (int)cat.size())
+//	{
+//		auto& it = cat.back().find(next_id);
+//		if (it != cat.back().end())
+//			return 1;
+//		else
+//			return 0;
+//	}
+//	int rst = 0;
+//	auto& it = cat[next_timestep].find(next_id);
+//	if (it != cat[next_timestep].end())
+//	{
+//		rst++;
+//	}
+//	if (curr_id != next_id)
+//	{
+//		it = cat[next_timestep].find(getEdgeIndex(curr_id, next_id));
+//		if (it != cat[next_timestep].end())
+//		{
+//			rst++;
+//		}
+//	}
+//	return rst;
+//
+//	*/
+//}
 
 
 // return the earliest timestep that the agent can hold its goal location

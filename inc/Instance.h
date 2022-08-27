@@ -62,7 +62,6 @@ public:
 	int getDefaultNumberOfAgents() const { return num_of_agents; }
 
 private:
-	// int moves_offset[MOVE_COUNT];
 	vector<bool> my_map;
 	string map_fname;
 	string agent_fname;

@@ -29,7 +29,7 @@ void SIPP::updatePath(const LLNode* goal, vector<PathEntry>& path)
 // minimizing the number of internal conflicts (that is conflicts with known_paths for other agents found so far).
 // lowerbound is an underestimation of the length of the path in order to speed up the search.
 Path SIPP::findPath(const CBSNode& node, const ConstraintTable& initial_constraints,
-					const vector<Path*>& paths, int agent, int lowerbound)
+					const vector<Path*>& paths, const ConflictAvoidanceTable& cat, int agent, int lowerbound)
 {
 	Path path;
 	auto t = clock();
