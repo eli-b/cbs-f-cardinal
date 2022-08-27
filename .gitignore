@@ -7,3 +7,10 @@ bin
 .gitignore
 vs
 experiments
+*.orig
+*.BASE
+*.BASE1
+*.LOCAL
+*.REMOTE
+*.REMOTE1
+*.LOCAL1
