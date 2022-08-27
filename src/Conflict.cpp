@@ -36,6 +36,8 @@ std::ostream& operator<<(std::ostream& os, const Constraint& constraint)
 	case constraint_type::LEQLENGTH:
 		os << "L";
 		break;
+	case constraint_type::CONSTRAINT_TYPE_COUNT:
+		break;
 	}
 	os << ">";
 	return os;
@@ -57,6 +59,8 @@ std::ostream& operator<<(std::ostream& os, const Conflict& conflict)
 		break;
 	case conflict_priority::NON:
 		os << "non-cardinal ";
+		break;
+	case conflict_priority::UNKNOWN:
 		break;
 	case conflict_priority::PRIORITY_COUNT:
 		break;
